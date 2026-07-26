@@ -16,6 +16,23 @@ from typing import Any
 # has no explicit death record (common for 19th-century ancestors).
 PRESUMED_DECEASED_AGE = 110
 
+# GEDCOM exports the same locality under different spellings; show one full label.
+PLACE_CANONICAL = {
+    "с.мокрое": "село Мокрое Тульской области",
+    "село мокрое": "село Мокрое Тульской области",
+    "село мокрое тульской области": "село Мокрое Тульской области",
+    "с. мокрое (тульская обл.)": "село Мокрое Тульской области",
+    "с.мокрое, белевский уезд тульской губернии": "село Мокрое Тульской области",
+}
+
+
+def canonical_place(place: str) -> str:
+    """Return a single full place label for display."""
+    place = (place or "").strip()
+    if not place:
+        return ""
+    return PLACE_CANONICAL.get(place.casefold(), place)
+
 
 MONTHS_RU = {
     "JAN": "января", "FEB": "февраля", "MAR": "марта", "APR": "апреля",
@@ -141,7 +158,9 @@ class Person:
     @property
     def public_place(self) -> str:
         """Birthplace is hidden for living people."""
-        return "" if self.is_living else (self.birt_plac or self.deat_plac)
+        if self.is_living:
+            return ""
+        return canonical_place(self.birt_plac or self.deat_plac)
 
     @property
     def has_match(self) -> bool:
