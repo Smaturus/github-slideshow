@@ -133,4 +133,16 @@ nav .brand{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--ivo
 footer{padding:48px 0;border-top:1px solid var(--line);color:var(--tech);font-size:13.5px}
 footer b{color:var(--champ)}
 @media(max-width:900px){.g2,.g3,.strip{grid-template-columns:1fr}section{padding:56px 0}.route .from{min-width:150px}}
+@media(max-width:600px){
+  body{font-size:16px}
+  .wrap{padding:0 18px}
+  nav .wrap{gap:6px;padding-top:10px;padding-bottom:10px}
+  nav .brand{font-size:15px;line-height:1.15;max-width:34%}
+  .navbtn{padding:8px 12px;font-size:13px}
+  .hero{padding:56px 0 44px}
+  .stats{gap:22px 28px}
+  .stats b{font-size:30px}
+  .card{padding:22px}
+  .goalrow .n{font-size:22px;min-width:26px}
+}
 

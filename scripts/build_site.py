@@ -9,7 +9,15 @@ from pathlib import Path
 
 from collections import Counter
 
-from parse_gedcom import Family, Person, ancestors, direct_lines, parse_gedcom, stats
+from parse_gedcom import (
+    Family,
+    Person,
+    ancestors,
+    direct_lines,
+    format_date,
+    parse_gedcom,
+    stats,
+)
 
 ROOT_ID = "@I1@"
 GEDCOM_PATH = Path(__file__).resolve().parents[1] / "data" / "skiba.ged"
@@ -95,7 +103,7 @@ def esc(text: str) -> str:
 
 def chain_text(people: list[Person]) -> str:
     return " → ".join(
-        f"<b>{esc(p.surn)} {esc(p.givn.split()[0] if p.givn else '')}</b> ({esc(p.public_years)})"
+        f"<b>{esc(p.surname)} {esc(p.name.split()[0] if p.name else '')}</b> ({esc(p.public_years)})"
         for p in people
     )
 
@@ -113,103 +121,183 @@ def count_generations(pid: str, people: dict[str, Person], families: dict[str, F
     return depth
 
 
-def missing_parent_goals(people: dict[str, Person], families: dict[str, Family], limit: int = 9) -> list[tuple[Person, str]]:
-    goals: list[tuple[Person, str]] = []
-    for person in people.values():
-        if person.famc and person.famc in families:
-            family = families[person.famc]
-            if not family.husb:
-                goals.append((person, "отец"))
-            if not family.wife:
-                goals.append((person, "мать"))
-        elif person.birt and person.id not in {"@I1@", "@I2@", "@I3@"}:
-            goals.append((person, "родители"))
-    goals.sort(key=lambda item: (0 if item[1] == "родители" else 1, item[0].birt or "ZZZ"))
+def missing_parent_goals(
+    root_ids: list[str],
+    people: dict[str, Person],
+    families: dict[str, Family],
+    limit: int = 9,
+) -> list[tuple[Person, str, int]]:
+    """Gaps in the direct ancestor line only — closest generations first."""
+    goals: list[tuple[Person, str, int]] = []
+    seen: set[str] = set()
+
+    def walk(pid: str, depth: int) -> None:
+        if pid in seen or pid not in people:
+            return
+        seen.add(pid)
+        person = people[pid]
+        family = families.get(person.famc) if person.famc else None
+
+        if family is None:
+            if depth > 0:
+                goals.append((person, "родители", depth))
+            return
+
+        if not family.husb:
+            goals.append((person, "отец", depth))
+        if not family.wife:
+            goals.append((person, "мать", depth))
+
+        for parent in (family.husb, family.wife):
+            if parent:
+                walk(parent, depth + 1)
+
+    for root_id in root_ids:
+        walk(root_id, 0)
+
+    goals.sort(key=lambda item: (item[2], item[0].surname))
     return goals[:limit]
 
 
+GENERATION_NAMES = {
+    1: "родители",
+    2: "деды и бабушки",
+    3: "прадеды",
+    4: "прапрадеды",
+    5: "прапрапрадеды",
+    6: "шестое поколение",
+}
+
+BOX_W = 158
+BOX_H = 44
+COL_W = 186
+ROW_H = 58
+TOP_PAD = 42
+LEFT_PAD = 12
+
+COLUMN_TITLES = [
+    "СЕМЬЯ",
+    "РОДИТЕЛИ",
+    "ДЕДЫ И БАБУШКИ",
+    "ПРАДЕДЫ",
+    "ПРАПРАДЕДЫ",
+    "ПРАПРАПРАДЕДЫ",
+]
+
+
 class TreeNode:
-    def __init__(self, person: Person | None, gen: int, branch: str, slot: int):
+    """One slot in the ancestor chart; person is None when the ancestor is unknown."""
+
+    def __init__(self, person: Person | None, gen: int, placeholder: str = ""):
         self.person = person
         self.gen = gen
-        self.branch = branch  # father / mother
-        self.slot = slot
+        self.placeholder = placeholder
         self.children: list[TreeNode] = []
+        self.y: float = 0.0
 
     @property
-    def missing(self) -> bool:
+    def is_missing(self) -> bool:
         return self.person is None
 
 
-def build_branch(
+def build_ancestor_tree(
     pid: str | None,
-    gen: int,
-    branch: str,
-    slot: int,
     people: dict[str, Person],
     families: dict[str, Family],
     max_gen: int,
-) -> TreeNode | None:
-    if gen > max_gen:
-        return None
+    gen: int = 0,
+    placeholder: str = "",
+) -> TreeNode:
     person = people.get(pid) if pid else None
-    node = TreeNode(person, gen, branch, slot)
-    if not person or not person.famc or person.famc not in families:
+    node = TreeNode(person, gen, placeholder)
+
+    if gen >= max_gen or person is None:
         return node
-    family = families[person.famc]
-    father = build_branch(family.husb, gen + 1, branch, slot * 2, people, families, max_gen)
-    mother = build_branch(family.wife, gen + 1, branch, slot * 2 + 1, people, families, max_gen)
-    if father:
-        node.children.append(father)
-    if mother:
-        node.children.append(mother)
+
+    family = families.get(person.famc) if person.famc else None
+    if family is None:
+        return node
+
+    # Only draw an unknown-parent slot when at least one parent is known,
+    # otherwise the chart fills up with empty pairs.
+    if not family.husb and not family.wife:
+        return node
+
+    node.children.append(
+        build_ancestor_tree(family.husb, people, families, max_gen, gen + 1, "отец не найден")
+    )
+    node.children.append(
+        build_ancestor_tree(family.wife, people, families, max_gen, gen + 1, "мать не найдена")
+    )
     return node
 
 
-def layout_tree(
-    father_root: TreeNode | None,
-    mother_root: TreeNode | None,
-    max_gen: int,
-) -> tuple[list[dict], float]:
-    """Assign y positions for pedigree boxes."""
-    boxes: list[dict] = []
-    row_h = 96
-    top_base = 80
-    bottom_base = 80 + row_h * (2 ** max_gen) / 2
+def assign_positions(node: TreeNode, cursor: list[float]) -> float:
+    """Leaves stack top-down; parents centre on their children."""
+    if not node.children:
+        node.y = cursor[0]
+        cursor[0] += ROW_H
+        return node.y
 
-    def place(node: TreeNode | None, gen: int, y: float, x_col: int, branch: str) -> None:
-        if node is None:
-            return
-        x = 10 + gen * 184
-        person = node.person
-        if person:
-            cls = "me" if gen == 0 else ("q" if not person.famc else "")
-            if gen == max_gen and person.birt:
-                cls = (cls + " deep").strip()
-            boxes.append(
-                {
-                    "x": x,
-                    "y": y,
-                    "person": person,
-                    "cls": cls,
-                    "gen": gen,
-                    "branch": branch,
-                }
-            )
-        if node.children:
-            span = row_h * (2 ** (max_gen - gen - 1))
-            start_y = y - span / 2 + row_h / 4
-            for i, child in enumerate(node.children):
-                place(child, gen + 1, start_y + i * span, x_col, branch)
+    child_ys = [assign_positions(child, cursor) for child in node.children]
+    node.y = (child_ys[0] + child_ys[-1]) / 2
+    return node.y
 
-    if father_root:
-        place(father_root, 0, top_base + row_h * 1.5, 0, "father")
-    if mother_root:
-        place(mother_root, 0, bottom_base + row_h * 3, 0, "mother")
 
-  # family box at generation -1 equivalent
-    height = max(b["y"] for b in boxes) + 80 if boxes else 600
-    return boxes, height
+def collect_nodes(node: TreeNode, acc: list[TreeNode]) -> None:
+    acc.append(node)
+    for child in node.children:
+        collect_nodes(child, acc)
+
+
+def render_connectors(node: TreeNode, max_gen: int) -> list[str]:
+    """Draw the bracket between a person and their two parents."""
+    if not node.children:
+        return []
+
+    out: list[str] = []
+    x_right = LEFT_PAD + node.gen * COL_W + BOX_W
+    x_mid = x_right + (COL_W - BOX_W) / 2
+    x_parent = LEFT_PAD + (node.gen + 1) * COL_W
+    tops = [child.y for child in node.children]
+
+    out.append(f'<path class="ln" d="M{x_right} {node.y:.1f} H{x_mid:.1f}"/>')
+    out.append(f'<path class="ln" d="M{x_mid:.1f} {min(tops):.1f} V{max(tops):.1f}"/>')
+    for child in node.children:
+        out.append(f'<path class="ln" d="M{x_mid:.1f} {child.y:.1f} H{x_parent}"/>')
+        out.extend(render_connectors(child, max_gen))
+    return out
+
+
+def render_box(node: TreeNode, max_gen: int) -> str:
+    x = LEFT_PAD + node.gen * COL_W
+    y = node.y - BOX_H / 2
+
+    if node.is_missing:
+        return (
+            f'<g class="bx q"><rect x="{x}" y="{y:.1f}" width="{BOX_W}" height="{BOX_H}" rx="8"/>'
+            f'<text x="{x + 10}" y="{node.y - 6:.1f}" class="t1">—</text>'
+            f'<text x="{x + 10}" y="{node.y + 12:.1f}" class="t3">{esc(node.placeholder)}</text></g>'
+        )
+
+    person = node.person
+    assert person is not None
+    classes = ["bx"]
+    if node.gen == 0:
+        classes.append("me")
+    elif not node.children and person.birt:
+        classes.append("deep")
+
+    surname = person.surname or person.name
+    given = person.name if person.surname else ""
+    years = person.public_years.replace("р. ", "").replace("ум. ", "† ")
+
+    return (
+        f'<g class="{" ".join(classes)}"><rect x="{x}" y="{y:.1f}" width="{BOX_W}" height="{BOX_H}" rx="8"/>'
+        f'<text x="{x + 10}" y="{node.y - 9:.1f}" class="t1">{esc(surname)}</text>'
+        f'<text x="{x + 10}" y="{node.y + 3:.1f}" class="t2">{esc(given)}</text>'
+        f'<text x="{x + 10}" y="{node.y + 15:.1f}" class="t3">{esc(years)}</text></g>'
+    )
 
 
 def render_pedigree_svg(
@@ -220,86 +308,57 @@ def render_pedigree_svg(
     families: dict[str, Family],
     max_gen: int = 4,
 ) -> str:
-    father_root = build_branch(root.id, 0, "father", 0, people, families, max_gen)
-    mother_root = build_branch(spouse.id, 0, "mother", 0, people, families, max_gen)
+    """Two stacked ancestor charts: the husband's line above, the wife's below."""
+    father_tree = build_ancestor_tree(root.id, people, families, max_gen)
+    mother_tree = build_ancestor_tree(spouse.id, people, families, max_gen)
 
-    boxes: list[dict] = []
-    row_h = 88
-    cols = ["СЕМЬЯ", "РОДИТЕЛИ", "ДЕДЫ", "ПРАДЕДЫ", "ПРАПРАДЕДЫ", "ГЛУБЖЕ"]
+    cursor = [TOP_PAD + ROW_H]
+    assign_positions(father_tree, cursor)
+    cursor[0] += ROW_H * 1.5
+    assign_positions(mother_tree, cursor)
 
-    def walk(node: TreeNode | None, gen: int, y_center: float, branch: str) -> float:
-        if node is None:
-            return y_center
-        x = 12 + gen * 176
-        p = node.person
-        if p:
-            boxes.append({"x": x, "y": y_center, "p": p, "gen": gen, "branch": branch, "missing": not p.famc})
-        if not node.children:
-            return y_center
-        span = row_h * max(1, 2 ** (len(node.children) - 1))
-        start = y_center - span / 2 + row_h / 2
-        ys = []
-        for i, child_node in enumerate(node.children):
-            cy = start + i * (span / max(1, len(node.children) - 1)) if len(node.children) > 1 else y_center
-            ys.append(walk(child_node, gen + 1, cy, branch))
-        return y_center
+    nodes: list[TreeNode] = []
+    collect_nodes(father_tree, nodes)
+    collect_nodes(mother_tree, nodes)
 
-    walk(father_root, 0, 150, "father")
-    walk(mother_root, 0, 430, "mother")
+    parts: list[str] = []
+    for index, title in enumerate(COLUMN_TITLES[: max_gen + 1]):
+        parts.append(f'<text x="{LEFT_PAD + index * COL_W}" y="20" class="colhead">{esc(title)}</text>')
 
-    # family card
-    fam_y = 290
-    boxes.insert(
-        0,
-        {
-            "x": 12,
-            "y": fam_y,
-            "p": None,
-            "gen": -1,
-            "branch": "family",
-            "missing": False,
-            "custom": [root, spouse, child] if child else [root, spouse],
-        },
+    parts.extend(render_connectors(father_tree, max_gen))
+    parts.extend(render_connectors(mother_tree, max_gen))
+
+    # Marriage bracket joining the two root people.
+    x_mid = LEFT_PAD - 6
+    parts.append(
+        f'<path class="ln" d="M{x_mid} {father_tree.y:.1f} V{mother_tree.y:.1f}"/>'
+        f'<path class="ln" d="M{x_mid} {father_tree.y:.1f} H{LEFT_PAD}"/>'
+        f'<path class="ln" d="M{x_mid} {mother_tree.y:.1f} H{LEFT_PAD}"/>'
     )
+    if child:
+        y_child = (father_tree.y + mother_tree.y) / 2
+        parts.append(f'<path class="ln" d="M{x_mid} {y_child:.1f} H{LEFT_PAD}"/>')
+        parts.append(
+            f'<g class="bx me"><rect x="{LEFT_PAD}" y="{y_child - BOX_H / 2:.1f}" '
+            f'width="{BOX_W}" height="{BOX_H}" rx="8"/>'
+            f'<text x="{LEFT_PAD + 10}" y="{y_child - 9:.1f}" class="t1">{esc(child.surname)}</text>'
+            f'<text x="{LEFT_PAD + 10}" y="{y_child + 3:.1f}" class="t2">{esc(child.name)}</text>'
+            f'<text x="{LEFT_PAD + 10}" y="{y_child + 15:.1f}" class="t3">'
+            f'{esc(child.public_years.replace("р. ", ""))}</text></g>'
+        )
 
-    max_y = max(b["y"] for b in boxes) + 60
-    width = 12 + (max_gen + 2) * 176
+    for node in nodes:
+        parts.append(render_box(node, max_gen))
 
-    lines: list[str] = []
-    for i, title in enumerate(cols[: max_gen + 2]):
-        lines.append(f'<text x="{12 + i * 176}" y="18" class="colhead">{esc(title)}</text>')
+    width = LEFT_PAD * 2 + (max_gen + 1) * COL_W
+    height = max(node.y for node in nodes) + ROW_H
 
-    for box in boxes:
-        x, y = box["x"], box["y"]
-        if box.get("custom"):
-            people_line = box["custom"]
-            lines.append(f'<g class="bx me"><rect x="{x}" y="{y - 21}" width="160" height="52" rx="8"/>')
-            lines.append(f'<text x="{x + 9}" y="{y - 6}" class="t1">Семья Матюхиных</text>')
-            names = " · ".join(esc(p.givn.split()[0] if p.givn else p.surn) for p in people_line)
-            lines.append(f'<text x="{x + 9}" y="{y + 6}" class="t2">{names}</text>')
-            lines.append(f'<text x="{x + 9}" y="{y + 18}" class="t3">ныне живущие</text></g>')
-            continue
-        p: Person = box["p"]
-        cls = "bx"
-        if box["gen"] == 0:
-            cls += " me"
-        elif box["missing"] and box["gen"] > 0:
-            cls += " q"
-        elif box["gen"] == max_gen:
-            cls += " deep"
-        givn = p.givn.split()[0] if p.givn else ""
-        lines.append(f'<g class="{cls}"><rect x="{x}" y="{y - 21}" width="160" height="42" rx="8"/>')
-        lines.append(f'<text x="{x + 9}" y="{y - 6}" class="t1">{esc(p.surn)}</text>')
-        lines.append(f'<text x="{x + 9}" y="{y + 6}" class="t2">{esc(p.givn)}</text>')
-        yrs = p.public_years.replace("р. ", "").replace("ум. ", "")
-        lines.append(f'<text x="{x + 9}" y="{y + 17}" class="t3">{esc(yrs)}</text></g>')
-
-    svg = (
-        f'<svg class="pedigree" viewBox="0 0 {width} {max_y}" xmlns="http://www.w3.org/2000/svg" style="min-width:{width}px">'
-        + "".join(lines)
+    return (
+        f'<svg class="pedigree" viewBox="0 0 {width} {height:.0f}" '
+        f'xmlns="http://www.w3.org/2000/svg" style="min-width:{width}px">'
+        + "".join(parts)
         + "</svg>"
     )
-    return svg
 
 
 def build_html(people: dict[str, Person], families: dict[str, Family], meta: dict[str, str]) -> str:
@@ -319,7 +378,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
     gens_father = count_generations(ROOT_ID, people, families)
     gens_skiba = count_generations(spouse_id, people, families)
     documented_gens = max(gens_father, gens_skiba) + 1
-    goals = missing_parent_goals(people, families)
+    goals = missing_parent_goals([ROOT_ID, spouse_id], people, families)
 
     timeline_people = father_line[:6]
     if len(timeline_people) < 4:
@@ -353,24 +412,31 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
         timeline_html += f"""
       <div class="tl-item{me}">
         <div class="tl-gen">Поколение {len(timeline_people) - i} · линия Матюхиных</div>
-        <h3>{esc(person.surn)} {esc(person.givn)}</h3>
+        <h3>{esc(person.label)}</h3>
         <div class="yrs">{esc(person.public_years)}</div>
         <p>{esc(person.public_place or 'Место уточняется по метрикам и семейным записям.')}</p>
       </div>"""
 
     goals_html = ""
-    for i, (person, kind) in enumerate(goals, 1):
+    for i, (person, kind, depth) in enumerate(goals, 1):
+        generation = GENERATION_NAMES.get(depth, f"{depth}-е поколение")
+        place = person.public_place
+        hint = (
+            f"Известное место — {place}: искать метрики этого прихода."
+            if place
+            else "Место рождения в базе не указано — сначала нужно установить приход."
+        )
         goals_html += f"""
         <div class="goalrow"><div class="n">{i}</div><div>
-          <b>{kind.capitalize()} — {esc(person.label)} ({esc(person.public_years)})</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>{kind.capitalize()} — {esc(person.label)}</b>
+          <p>{esc(person.public_years)} · {esc(generation)} по прямой линии. {esc(hint)}</p>
+          <div class="st">{esc(generation.capitalize())} · пробел в прямой линии</div>
         </div></div>"""
 
-    pedigree_svg = render_pedigree_svg(root, spouse, child, people, families, max_gen=4)
-    export_date = meta.get("date", "2026")
+    pedigree_svg = render_pedigree_svg(root, spouse, child, people, families, max_gen=5)
+    export_date = format_date(meta.get("date", "")) or "2026"
     child_line_text = (
-        f" {esc(child.givn.split()[0])} ({esc(child.public_years)})" if child else " следующего поколения"
+        f" {esc(child.name.split()[0])} ({esc(child.public_years)})" if child else " следующего поколения"
     )
 
     css = CSS.read_text(encoding="utf-8") if CSS.exists() else ""
@@ -398,13 +464,13 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
     <div class="label">Семейный архив · MyHeritage · экспорт {esc(export_date)}</div>
     <h1>Летопись рода Матюхиных и Скиба</h1>
     <p class="sub">Две главные линии — <b>Матюхины</b> из села Мокрое Тульской губернии и <b>Скибы</b> с донбасской Лозовой Павловки — сошлись в семье Сергея и Надежды. Тульская земля и Донбасс, Валдай и Татария, Подмосковье; {st['people']} человек в базе, {st['surnames']} фамилий, {documented_gens} поколений прослежено.</p>
-    <p class="sub" style="font-size:15px;margin-top:-14px">Сайт собран автоматически из GEDCOM-файла, экспортированного из MyHeritage ({esc(meta.get('file', 'SKIBA'))}).</p>
+    <p class="sub" style="font-size:15px;margin-top:-14px">Страница собрана автоматически из семейного древа MyHeritage — данные ныне живущих на ней не публикуются.</p>
     <button class="btn" onclick="showPage(2)">Открыть древо</button>
     <div class="stats">
       <div><b>{documented_gens}</b><span>ПОКОЛЕНИЙ ПРОСЛЕЖЕНО</span></div>
       <div><b>{st['people']}</b><span>ЧЕЛОВЕК В БАЗЕ</span></div>
       <div><b>{st['surnames']}</b><span>РОДОВЫХ ФАМИЛИЙ</span></div>
-      <div><b>{esc(st['earliest'] or 'XIX в.')}</b><span>САМАЯ РАННЯЯ ДАТА</span></div>
+      <div><b>{st['earliest_year'] or 'XIX в.'}</b><span>ГОД РОЖДЕНИЯ САМОГО РАННЕГО ПРЕДКА</span></div>
     </div>
   </div>
 </div>
@@ -419,28 +485,28 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
     </div>
     <div class="grid g2" style="margin-bottom:44px">
       <div class="card">
-        <div class="tag">Линия отца · Матюхины</div>
+        <div class="tag">Линия Сергея · по отцу</div>
         <h3>Матюхины</h3>
         <p>{chain_text(father_line[:5])}</p>
         <p>Корни в селе <b>Мокрое</b> Белевского уезда Тульской губернии. Прапрадед <b>Федот Матюхин</b> — самая ранняя подтверждённая точка линии в экспорте.</p>
         <div class="mini">Вглубь: метрики и ревизии Белевского уезда (ГАТО, Тула)</div>
       </div>
       <div class="card">
-        <div class="tag">Линия отца · Астафьевы</div>
+        <div class="tag">Линия Сергея · по матери</div>
         <h3>Астафьевы</h3>
         <p>{chain_text(mother_line[:4])}</p>
         <p>Линия матери Сергея — <b>Надежды Астафьевой</b> (1931, Дмитров — 1997, Долгопрудный). Дед <b>Алексей Астафьев</b>; бабушка <b>Мария Архиповна</b> — пока без девичьей фамилии в базе.</p>
         <div class="mini">Цель: девичья фамилия Марии Архиповны и предки Петра Астафьева</div>
       </div>
       <div class="card">
-        <div class="tag">Линия матери · Скибы</div>
+        <div class="tag">Линия Надежды · по отцу</div>
         <h3>Скибы</h3>
         <p>{chain_text(skiba_father[:5])}</p>
         <p>Донбасская ветвь: род из села <b>Лозовая Павловка</b> (ныне Луганщина). Дед <b>Алексей Скиба</b> (1907, Лозовая Павловка — 1955, Химки), прадед <b>Григорий</b> (р. 1879), прапрадед <b>Андрей Скиба</b>. Жена Алексея — <b>Маргарита Алексеева</b> (1909, Донецкая обл.) из донбасской ветви Алексеевых.</p>
         <div class="mini">Вглубь: метрики Славяносербского уезда Екатеринославской губернии</div>
       </div>
       <div class="card">
-        <div class="tag">Линия матери · Поташкины и Захаровы</div>
+        <div class="tag">Линия Надежды · по матери</div>
         <h3>Поташкины и Захаровы</h3>
         <p>{chain_text(skiba_mother[:5])}</p>
         <p>Бабушка <b>Нина Поташкина</b> (1938, Торопец): отец — <b>Федор Поташкин</b> с Валдая, мать — <b>Серафима Алексеева</b> из Чистополя, дочь <b>Григория Захарова-Алексеева</b> и <b>Зинаиды Елисеевой</b> из Толкиша.</p>

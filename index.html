@@ -139,6 +139,18 @@ nav .brand{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--ivo
 footer{padding:48px 0;border-top:1px solid var(--line);color:var(--tech);font-size:13.5px}
 footer b{color:var(--champ)}
 @media(max-width:900px){.g2,.g3,.strip{grid-template-columns:1fr}section{padding:56px 0}.route .from{min-width:150px}}
+@media(max-width:600px){
+  body{font-size:16px}
+  .wrap{padding:0 18px}
+  nav .wrap{gap:6px;padding-top:10px;padding-bottom:10px}
+  nav .brand{font-size:15px;line-height:1.15;max-width:34%}
+  .navbtn{padding:8px 12px;font-size:13px}
+  .hero{padding:56px 0 44px}
+  .stats{gap:22px 28px}
+  .stats b{font-size:30px}
+  .card{padding:22px}
+  .goalrow .n{font-size:22px;min-width:26px}
+}
 
 </style>
 </head>
@@ -154,16 +166,16 @@ footer b{color:var(--champ)}
 <div class="page visible" id="page1">
 <div class="hero">
   <div class="wrap">
-    <div class="label">Семейный архив · MyHeritage · экспорт 17 JUL 2026</div>
+    <div class="label">Семейный архив · MyHeritage · экспорт 17 июля 2026</div>
     <h1>Летопись рода Матюхиных и Скиба</h1>
     <p class="sub">Две главные линии — <b>Матюхины</b> из села Мокрое Тульской губернии и <b>Скибы</b> с донбасской Лозовой Павловки — сошлись в семье Сергея и Надежды. Тульская земля и Донбасс, Валдай и Татария, Подмосковье; 233 человек в базе, 40 фамилий, 6 поколений прослежено.</p>
-    <p class="sub" style="font-size:15px;margin-top:-14px">Сайт собран автоматически из GEDCOM-файла, экспортированного из MyHeritage (Exported by MyHeritage.com from SKIBA in Скиба Web Site on Fri, 17 Jul 2026).</p>
+    <p class="sub" style="font-size:15px;margin-top:-14px">Страница собрана автоматически из семейного древа MyHeritage — данные ныне живущих на ней не публикуются.</p>
     <button class="btn" onclick="showPage(2)">Открыть древо</button>
     <div class="stats">
       <div><b>6</b><span>ПОКОЛЕНИЙ ПРОСЛЕЖЕНО</span></div>
       <div><b>233</b><span>ЧЕЛОВЕК В БАЗЕ</span></div>
       <div><b>40</b><span>РОДОВЫХ ФАМИЛИЙ</span></div>
-      <div><b>1 JUL 1884</b><span>САМАЯ РАННЯЯ ДАТА</span></div>
+      <div><b>1827</b><span>ГОД РОЖДЕНИЯ САМОГО РАННЕГО ПРЕДКА</span></div>
     </div>
   </div>
 </div>
@@ -178,30 +190,30 @@ footer b{color:var(--champ)}
     </div>
     <div class="grid g2" style="margin-bottom:44px">
       <div class="card">
-        <div class="tag">Линия отца · Матюхины</div>
+        <div class="tag">Линия Сергея · по отцу</div>
         <h3>Матюхины</h3>
-        <p><b>Матюхин Сергей</b> (р. 1971) → <b>Матюхин Андрей</b> (1 OCT 1931 – 10 MAY 1996) → <b>Матюхин Иван(1)</b> (NOV 1892 – 1971) → <b>Матюхин Андрей</b> (р. 1870) → <b>Матюхин Федот</b> (р. 1852)</p>
+        <p><b>Матюхин Сергей</b> (р. 1971) → <b>Матюхин Андрей</b> (1 октября 1931 – 10 мая 1996) → <b>Матюхин Иван</b> (ноя. 1892 – 1971) → <b>Матюхин Андрей</b> (р. 1870) → <b>Матюхин Федот</b> (р. 1852)</p>
         <p>Корни в селе <b>Мокрое</b> Белевского уезда Тульской губернии. Прапрадед <b>Федот Матюхин</b> — самая ранняя подтверждённая точка линии в экспорте.</p>
         <div class="mini">Вглубь: метрики и ревизии Белевского уезда (ГАТО, Тула)</div>
       </div>
       <div class="card">
-        <div class="tag">Линия отца · Астафьевы</div>
+        <div class="tag">Линия Сергея · по матери</div>
         <h3>Астафьевы</h3>
-        <p><b>Матюхин Сергей</b> (р. 1971) → <b>Астафьева Надежда</b> (22 AUG 1931 – 4 DEC 1997) → <b> Мария</b> (ум. зима 1961)</p>
+        <p><b>Матюхин Сергей</b> (р. 1971) → <b>Астафьева Надежда</b> (22 августа 1931 – 4 декабря 1997) → <b> Мария</b> (ум. зима 1961)</p>
         <p>Линия матери Сергея — <b>Надежды Астафьевой</b> (1931, Дмитров — 1997, Долгопрудный). Дед <b>Алексей Астафьев</b>; бабушка <b>Мария Архиповна</b> — пока без девичьей фамилии в базе.</p>
         <div class="mini">Цель: девичья фамилия Марии Архиповны и предки Петра Астафьева</div>
       </div>
       <div class="card">
-        <div class="tag">Линия матери · Скибы</div>
+        <div class="tag">Линия Надежды · по отцу</div>
         <h3>Скибы</h3>
-        <p><b>Скиба Надежда</b> (р. 1969) → <b>Скиба Эдуард</b> (19 FEB 1937 – 25 MAY 2015) → <b>Скиба Алексей</b> (10 APR 1907 – 13 OCT 1955) → <b>Скиба Григорий</b> (1879 – AFT 7 JAN 1956) → <b>Скиба Андрей</b> (ум. 1891)</p>
+        <p><b>Скиба Надежда</b> (р. 1969) → <b>Скиба Эдуард</b> (19 февраля 1937 – 25 мая 2015) → <b>Скиба Алексей</b> (10 апреля 1907 – 13 октября 1955) → <b>Скиба Григорий</b> (1879 – после 7 января 1956) → <b>Скиба Андрей</b> (ум. 1891)</p>
         <p>Донбасская ветвь: род из села <b>Лозовая Павловка</b> (ныне Луганщина). Дед <b>Алексей Скиба</b> (1907, Лозовая Павловка — 1955, Химки), прадед <b>Григорий</b> (р. 1879), прапрадед <b>Андрей Скиба</b>. Жена Алексея — <b>Маргарита Алексеева</b> (1909, Донецкая обл.) из донбасской ветви Алексеевых.</p>
         <div class="mini">Вглубь: метрики Славяносербского уезда Екатеринославской губернии</div>
       </div>
       <div class="card">
-        <div class="tag">Линия матери · Поташкины и Захаровы</div>
+        <div class="tag">Линия Надежды · по матери</div>
         <h3>Поташкины и Захаровы</h3>
-        <p><b>Скиба Надежда</b> (р. 1969) → <b>Поташкина Нина</b> (11 JUN 1938 – 23 APR 2000) → <b>Алексеева Серафима</b> (11 AUG 1912 – 26 JUL 1988) → <b>Елисеева Зинаида</b> (8 NOV 1888 – 25 FEB 1973)</p>
+        <p><b>Скиба Надежда</b> (р. 1969) → <b>Поташкина Нина</b> (11 июня 1938 – 23 апреля 2000) → <b>Алексеева Серафима</b> (11 августа 1912 – 26 июля 1988) → <b>Елисеева Зинаида</b> (8 ноября 1888 – 25 февраля 1973)</p>
         <p>Бабушка <b>Нина Поташкина</b> (1938, Торопец): отец — <b>Федор Поташкин</b> с Валдая, мать — <b>Серафима Алексеева</b> из Чистополя, дочь <b>Григория Захарова-Алексеева</b> и <b>Зинаиды Елисеевой</b> из Толкиша.</p>
         <div class="mini">Вглубь: метрики Валдайского уезда (Поташкины) и Чистопольского уезда (Захаровы)</div>
       </div>
@@ -256,13 +268,13 @@ footer b{color:var(--champ)}
       <div class="tl-item">
         <div class="tl-gen">Поколение 4 · линия Матюхиных</div>
         <h3>Матюхин Андрей Иванович</h3>
-        <div class="yrs">1 OCT 1931 – 10 MAY 1996</div>
+        <div class="yrs">1 октября 1931 – 10 мая 1996</div>
         <p>село Мокрое Тульской области</p>
       </div>
       <div class="tl-item">
         <div class="tl-gen">Поколение 3 · линия Матюхиных</div>
-        <h3>Матюхин Иван(1) Андреевич</h3>
-        <div class="yrs">NOV 1892 – 1971</div>
+        <h3>Матюхин Иван Андреевич</h3>
+        <div class="yrs">ноя. 1892 – 1971</div>
         <p>село Мокрое</p>
       </div>
       <div class="tl-item">
@@ -322,7 +334,7 @@ footer b{color:var(--champ)}
       <div class="card">
         <div class="tag">Источник</div>
         <h3>MyHeritage · SKIBA</h3>
-        <p>Экспорт GEDCOM 5.5.1 от 17 JUL 2026: 233 человек, 90 семейных пар, 50 дат смерти. Публикуется только часть, относящаяся к ушедшим поколениям.</p>
+        <p>Экспорт GEDCOM 5.5.1 от 17 июля 2026: 233 человек, 90 семейных пар, 50 дат смерти. Публикуется только часть, относящаяся к ушедшим поколениям.</p>
       </div>
     </div>
   </div>
@@ -374,7 +386,7 @@ footer b{color:var(--champ)}
 </section>
 
 <section style="overflow-x:auto;padding-top:20px">
-  <div class="wrap" style="max-width:none"><svg class="pedigree" viewBox="0 0 1068 886.0" xmlns="http://www.w3.org/2000/svg" style="min-width:1068px"><text x="12" y="18" class="colhead">СЕМЬЯ</text><text x="188" y="18" class="colhead">РОДИТЕЛИ</text><text x="364" y="18" class="colhead">ДЕДЫ</text><text x="540" y="18" class="colhead">ПРАДЕДЫ</text><text x="716" y="18" class="colhead">ПРАПРАДЕДЫ</text><text x="892" y="18" class="colhead">ГЛУБЖЕ</text><g class="bx me"><rect x="12" y="269" width="160" height="52" rx="8"/><text x="21" y="284" class="t1">Семья Матюхиных</text><text x="21" y="296" class="t2">Сергей · Надежда · Анна</text><text x="21" y="308" class="t3">ныне живущие</text></g><g class="bx me"><rect x="12" y="129" width="160" height="42" rx="8"/><text x="21" y="144" class="t1">Матюхин</text><text x="21" y="156" class="t2">Сергей Андреевич</text><text x="21" y="167" class="t3">1971</text></g><g class="bx"><rect x="188" y="85.0" width="160" height="42" rx="8"/><text x="197" y="100.0" class="t1">Матюхин</text><text x="197" y="112.0" class="t2">Андрей Иванович</text><text x="197" y="123.0" class="t3">1 OCT 1931 – 10 MAY 1996</text></g><g class="bx"><rect x="364" y="41.0" width="160" height="42" rx="8"/><text x="373" y="56.0" class="t1">Матюхин</text><text x="373" y="68.0" class="t2">Иван(1) Андреевич</text><text x="373" y="79.0" class="t3">NOV 1892 – 1971</text></g><g class="bx"><rect x="540" y="-3.0" width="160" height="42" rx="8"/><text x="549" y="12.0" class="t1">Матюхин</text><text x="549" y="24.0" class="t2">Андрей Федотович</text><text x="549" y="35.0" class="t3">1870</text></g><g class="bx deep"><rect x="716" y="-47.0" width="160" height="42" rx="8"/><text x="725" y="-32.0" class="t1">Матюхин</text><text x="725" y="-20.0" class="t2">Федот</text><text x="725" y="-9.0" class="t3">1852</text></g><g class="bx"><rect x="540" y="173.0" width="160" height="42" rx="8"/><text x="549" y="188.0" class="t1">Горелова</text><text x="549" y="200.0" class="t2">Мария Федоровна</text><text x="549" y="211.0" class="t3">1871</text></g><g class="bx q"><rect x="716" y="129.0" width="160" height="42" rx="8"/><text x="725" y="144.0" class="t1">Горелов</text><text x="725" y="156.0" class="t2">Федор</text><text x="725" y="167.0" class="t3">ныне живущий</text></g><g class="bx"><rect x="364" y="217.0" width="160" height="42" rx="8"/><text x="373" y="232.0" class="t1">Алексанова</text><text x="373" y="244.0" class="t2">Прасковья Власовна</text><text x="373" y="255.0" class="t3">1892 – 1969</text></g><g class="bx q"><rect x="540" y="173.0" width="160" height="42" rx="8"/><text x="549" y="188.0" class="t1">Алексанов</text><text x="549" y="200.0" class="t2">Влас</text><text x="549" y="211.0" class="t3">1874</text></g><g class="bx"><rect x="188" y="261.0" width="160" height="42" rx="8"/><text x="197" y="276.0" class="t1">Астафьева</text><text x="197" y="288.0" class="t2">Надежда Алексеевна</text><text x="197" y="299.0" class="t3">22 AUG 1931 – 4 DEC 1997</text></g><g class="bx"><rect x="364" y="217.0" width="160" height="42" rx="8"/><text x="373" y="232.0" class="t1">Астафьев</text><text x="373" y="244.0" class="t2">Алексей Петрович</text><text x="373" y="255.0" class="t3">BEF 1898 – 22 AUG 1972</text></g><g class="bx q"><rect x="540" y="173.0" width="160" height="42" rx="8"/><text x="549" y="188.0" class="t1">Астафьев</text><text x="549" y="200.0" class="t2">Петр</text><text x="549" y="211.0" class="t3">ныне живущий</text></g><g class="bx"><rect x="364" y="393.0" width="160" height="42" rx="8"/><text x="373" y="408.0" class="t1"></text><text x="373" y="420.0" class="t2">Мария Архиповна</text><text x="373" y="431.0" class="t3">зима 1961</text></g><g class="bx q"><rect x="540" y="349.0" width="160" height="42" rx="8"/><text x="549" y="364.0" class="t1"></text><text x="549" y="376.0" class="t2">Архип</text><text x="549" y="387.0" class="t3">ныне живущий</text></g><g class="bx me"><rect x="12" y="409" width="160" height="42" rx="8"/><text x="21" y="424" class="t1">Скиба</text><text x="21" y="436" class="t2">Надежда Эдуардовна</text><text x="21" y="447" class="t3">1969</text></g><g class="bx"><rect x="188" y="365.0" width="160" height="42" rx="8"/><text x="197" y="380.0" class="t1">Скиба</text><text x="197" y="392.0" class="t2">Эдуард Алексеевич</text><text x="197" y="403.0" class="t3">19 FEB 1937 – 25 MAY 2015</text></g><g class="bx"><rect x="364" y="321.0" width="160" height="42" rx="8"/><text x="373" y="336.0" class="t1">Скиба</text><text x="373" y="348.0" class="t2">Алексей Григорьевич</text><text x="373" y="359.0" class="t3">10 APR 1907 – 13 OCT 1955</text></g><g class="bx"><rect x="540" y="277.0" width="160" height="42" rx="8"/><text x="549" y="292.0" class="t1">Скиба</text><text x="549" y="304.0" class="t2">Григорий Андреевич</text><text x="549" y="315.0" class="t3">1879 – AFT 7 JAN 1956</text></g><g class="bx q"><rect x="716" y="233.0" width="160" height="42" rx="8"/><text x="725" y="248.0" class="t1">Скиба</text><text x="725" y="260.0" class="t2">Андрей Степанович</text><text x="725" y="271.0" class="t3">1891</text></g><g class="bx q"><rect x="716" y="409.0" width="160" height="42" rx="8"/><text x="725" y="424.0" class="t1"></text><text x="725" y="436.0" class="t2">Пелагея Васильевна</text><text x="725" y="447.0" class="t3">1937</text></g><g class="bx"><rect x="540" y="453.0" width="160" height="42" rx="8"/><text x="549" y="468.0" class="t1">Захарченкова(Захарченко?)</text><text x="549" y="480.0" class="t2">Зинаида Агеевна</text><text x="549" y="491.0" class="t3">ныне живущий</text></g><g class="bx q"><rect x="716" y="409.0" width="160" height="42" rx="8"/><text x="725" y="424.0" class="t1">Захарченко</text><text x="725" y="436.0" class="t2">Агей Никифорович</text><text x="725" y="447.0" class="t3">1921</text></g><g class="bx q"><rect x="716" y="585.0" width="160" height="42" rx="8"/><text x="725" y="600.0" class="t1"></text><text x="725" y="612.0" class="t2">Ульяна Васильевна</text><text x="725" y="623.0" class="t3">1947</text></g><g class="bx"><rect x="364" y="497.0" width="160" height="42" rx="8"/><text x="373" y="512.0" class="t1">Алексеева</text><text x="373" y="524.0" class="t2">Маргарита Васильевна</text><text x="373" y="535.0" class="t3">8 SEP 1909 – 19 JUL 1987</text></g><g class="bx"><rect x="540" y="453.0" width="160" height="42" rx="8"/><text x="549" y="468.0" class="t1">Алексеев</text><text x="549" y="480.0" class="t2">Василий Васильевич</text><text x="549" y="491.0" class="t3">1875 – 1935</text></g><g class="bx q"><rect x="716" y="409.0" width="160" height="42" rx="8"/><text x="725" y="424.0" class="t1">Алексеев</text><text x="725" y="436.0" class="t2">Василий</text><text x="725" y="447.0" class="t3">ныне живущий</text></g><g class="bx q"><rect x="540" y="629.0" width="160" height="42" rx="8"/><text x="549" y="644.0" class="t1"></text><text x="549" y="656.0" class="t2">Агафья Андреевна</text><text x="549" y="667.0" class="t3">1880 – 1944</text></g><g class="bx"><rect x="188" y="541.0" width="160" height="42" rx="8"/><text x="197" y="556.0" class="t1">Поташкина</text><text x="197" y="568.0" class="t2">Нина Федоровна</text><text x="197" y="579.0" class="t3">11 JUN 1938 – 23 APR 2000</text></g><g class="bx"><rect x="364" y="497.0" width="160" height="42" rx="8"/><text x="373" y="512.0" class="t1">Поташкин</text><text x="373" y="524.0" class="t2">Федор Георгиевич</text><text x="373" y="535.0" class="t3">23 FEB 1904 – 11 JAN 1970</text></g><g class="bx q"><rect x="540" y="453.0" width="160" height="42" rx="8"/><text x="549" y="468.0" class="t1">Поташкин</text><text x="549" y="480.0" class="t2">Георгий</text><text x="549" y="491.0" class="t3">MAR 1919</text></g><g class="bx q"><rect x="540" y="629.0" width="160" height="42" rx="8"/><text x="549" y="644.0" class="t1"></text><text x="549" y="656.0" class="t2">Дарья</text><text x="549" y="667.0" class="t3">ныне живущий</text></g><g class="bx"><rect x="364" y="673.0" width="160" height="42" rx="8"/><text x="373" y="688.0" class="t1">Алексеева</text><text x="373" y="700.0" class="t2">Серафима Григорьевна</text><text x="373" y="711.0" class="t3">11 AUG 1912 – 26 JUL 1988</text></g><g class="bx"><rect x="540" y="629.0" width="160" height="42" rx="8"/><text x="549" y="644.0" class="t1">Захаров/Алексеев</text><text x="549" y="656.0" class="t2">Григорий Спиридонович</text><text x="549" y="667.0" class="t3">23 JAN 1887 – 16 NOV 1966</text></g><g class="bx deep"><rect x="716" y="585.0" width="160" height="42" rx="8"/><text x="725" y="600.0" class="t1">Захаров</text><text x="725" y="612.0" class="t2">Спиридон Ермилович(Ермолаевич)</text><text x="725" y="623.0" class="t3">1861</text></g><g class="bx q"><rect x="716" y="761.0" width="160" height="42" rx="8"/><text x="725" y="776.0" class="t1"></text><text x="725" y="788.0" class="t2">Елизавета Николаевна</text><text x="725" y="799.0" class="t3">1864</text></g><g class="bx"><rect x="540" y="805.0" width="160" height="42" rx="8"/><text x="549" y="820.0" class="t1">Елисеева</text><text x="549" y="832.0" class="t2">Зинаида Петровна</text><text x="549" y="843.0" class="t3">8 NOV 1888 – 25 FEB 1973</text></g><g class="bx q"><rect x="716" y="761.0" width="160" height="42" rx="8"/><text x="725" y="776.0" class="t1">Елисеев</text><text x="725" y="788.0" class="t2">Петр</text><text x="725" y="799.0" class="t3">ныне живущий</text></g></svg>
+  <div class="wrap" style="max-width:none"><svg class="pedigree" viewBox="0 0 1140 1637" xmlns="http://www.w3.org/2000/svg" style="min-width:1140px"><text x="12" y="20" class="colhead">СЕМЬЯ</text><text x="198" y="20" class="colhead">РОДИТЕЛИ</text><text x="384" y="20" class="colhead">ДЕДЫ И БАБУШКИ</text><text x="570" y="20" class="colhead">ПРАДЕДЫ</text><text x="756" y="20" class="colhead">ПРАПРАДЕДЫ</text><text x="942" y="20" class="colhead">ПРАПРАПРАДЕДЫ</text><path class="ln" d="M170 460.7 H184.0"/><path class="ln" d="M184.0 328.4 V593.0"/><path class="ln" d="M184.0 328.4 H198"/><path class="ln" d="M356 328.4 H370.0"/><path class="ln" d="M370.0 237.8 V419.0"/><path class="ln" d="M370.0 237.8 H384"/><path class="ln" d="M542 237.8 H556.0"/><path class="ln" d="M556.0 172.5 V303.0"/><path class="ln" d="M556.0 172.5 H570"/><path class="ln" d="M728 172.5 H742.0"/><path class="ln" d="M742.0 129.0 V216.0"/><path class="ln" d="M742.0 129.0 H756"/><path class="ln" d="M914 129.0 H928.0"/><path class="ln" d="M928.0 100.0 V158.0"/><path class="ln" d="M928.0 100.0 H942"/><path class="ln" d="M928.0 158.0 H942"/><path class="ln" d="M742.0 216.0 H756"/><path class="ln" d="M556.0 303.0 H570"/><path class="ln" d="M728 303.0 H742.0"/><path class="ln" d="M742.0 274.0 V332.0"/><path class="ln" d="M742.0 274.0 H756"/><path class="ln" d="M742.0 332.0 H756"/><path class="ln" d="M370.0 419.0 H384"/><path class="ln" d="M542 419.0 H556.0"/><path class="ln" d="M556.0 390.0 V448.0"/><path class="ln" d="M556.0 390.0 H570"/><path class="ln" d="M556.0 448.0 H570"/><path class="ln" d="M184.0 593.0 H198"/><path class="ln" d="M356 593.0 H370.0"/><path class="ln" d="M370.0 535.0 V651.0"/><path class="ln" d="M370.0 535.0 H384"/><path class="ln" d="M542 535.0 H556.0"/><path class="ln" d="M556.0 506.0 V564.0"/><path class="ln" d="M556.0 506.0 H570"/><path class="ln" d="M556.0 564.0 H570"/><path class="ln" d="M370.0 651.0 H384"/><path class="ln" d="M542 651.0 H556.0"/><path class="ln" d="M556.0 622.0 V680.0"/><path class="ln" d="M556.0 622.0 H570"/><path class="ln" d="M556.0 680.0 H570"/><path class="ln" d="M170 1196.6 H184.0"/><path class="ln" d="M184.0 1020.8 V1372.4"/><path class="ln" d="M184.0 1020.8 H198"/><path class="ln" d="M356 1020.8 H370.0"/><path class="ln" d="M370.0 912.0 V1129.5"/><path class="ln" d="M370.0 912.0 H384"/><path class="ln" d="M542 912.0 H556.0"/><path class="ln" d="M556.0 854.0 V970.0"/><path class="ln" d="M556.0 854.0 H570"/><path class="ln" d="M728 854.0 H742.0"/><path class="ln" d="M742.0 825.0 V883.0"/><path class="ln" d="M742.0 825.0 H756"/><path class="ln" d="M742.0 883.0 H756"/><path class="ln" d="M556.0 970.0 H570"/><path class="ln" d="M728 970.0 H742.0"/><path class="ln" d="M742.0 941.0 V999.0"/><path class="ln" d="M742.0 941.0 H756"/><path class="ln" d="M742.0 999.0 H756"/><path class="ln" d="M370.0 1129.5 H384"/><path class="ln" d="M542 1129.5 H556.0"/><path class="ln" d="M556.0 1086.0 V1173.0"/><path class="ln" d="M556.0 1086.0 H570"/><path class="ln" d="M728 1086.0 H742.0"/><path class="ln" d="M742.0 1057.0 V1115.0"/><path class="ln" d="M742.0 1057.0 H756"/><path class="ln" d="M742.0 1115.0 H756"/><path class="ln" d="M556.0 1173.0 H570"/><path class="ln" d="M184.0 1372.4 H198"/><path class="ln" d="M356 1372.4 H370.0"/><path class="ln" d="M370.0 1260.0 V1484.8"/><path class="ln" d="M370.0 1260.0 H384"/><path class="ln" d="M542 1260.0 H556.0"/><path class="ln" d="M556.0 1231.0 V1289.0"/><path class="ln" d="M556.0 1231.0 H570"/><path class="ln" d="M556.0 1289.0 H570"/><path class="ln" d="M370.0 1484.8 H384"/><path class="ln" d="M542 1484.8 H556.0"/><path class="ln" d="M556.0 1419.5 V1550.0"/><path class="ln" d="M556.0 1419.5 H570"/><path class="ln" d="M728 1419.5 H742.0"/><path class="ln" d="M742.0 1376.0 V1463.0"/><path class="ln" d="M742.0 1376.0 H756"/><path class="ln" d="M914 1376.0 H928.0"/><path class="ln" d="M928.0 1347.0 V1405.0"/><path class="ln" d="M928.0 1347.0 H942"/><path class="ln" d="M928.0 1405.0 H942"/><path class="ln" d="M742.0 1463.0 H756"/><path class="ln" d="M556.0 1550.0 H570"/><path class="ln" d="M728 1550.0 H742.0"/><path class="ln" d="M742.0 1521.0 V1579.0"/><path class="ln" d="M742.0 1521.0 H756"/><path class="ln" d="M742.0 1579.0 H756"/><path class="ln" d="M6 460.7 V1196.6"/><path class="ln" d="M6 460.7 H12"/><path class="ln" d="M6 1196.6 H12"/><path class="ln" d="M6 828.6 H12"/><g class="bx me"><rect x="12" y="806.6" width="158" height="44" rx="8"/><text x="22" y="819.6" class="t1">Матюхина</text><text x="22" y="831.6" class="t2">Анна Сергеевна</text><text x="22" y="843.6" class="t3">2002</text></g><g class="bx me"><rect x="12" y="438.7" width="158" height="44" rx="8"/><text x="22" y="451.7" class="t1">Матюхин</text><text x="22" y="463.7" class="t2">Сергей Андреевич</text><text x="22" y="475.7" class="t3">1971</text></g><g class="bx"><rect x="198" y="306.4" width="158" height="44" rx="8"/><text x="208" y="319.4" class="t1">Матюхин</text><text x="208" y="331.4" class="t2">Андрей Иванович</text><text x="208" y="343.4" class="t3">1 октября 1931 – 10 мая 1996</text></g><g class="bx"><rect x="384" y="215.8" width="158" height="44" rx="8"/><text x="394" y="228.8" class="t1">Матюхин</text><text x="394" y="240.8" class="t2">Иван Андреевич</text><text x="394" y="252.8" class="t3">ноя. 1892 – 1971</text></g><g class="bx"><rect x="570" y="150.5" width="158" height="44" rx="8"/><text x="580" y="163.5" class="t1">Матюхин</text><text x="580" y="175.5" class="t2">Андрей Федотович</text><text x="580" y="187.5" class="t3">1870</text></g><g class="bx"><rect x="756" y="107.0" width="158" height="44" rx="8"/><text x="766" y="120.0" class="t1">Матюхин</text><text x="766" y="132.0" class="t2">Федот</text><text x="766" y="144.0" class="t3">1852</text></g><g class="bx deep"><rect x="942" y="78.0" width="158" height="44" rx="8"/><text x="952" y="91.0" class="t1">Матюхин</text><text x="952" y="103.0" class="t2"></text><text x="952" y="115.0" class="t3">1827</text></g><g class="bx q"><rect x="942" y="136.0" width="158" height="44" rx="8"/><text x="952" y="152.0" class="t1">—</text><text x="952" y="170.0" class="t3">мать не найдена</text></g><g class="bx q"><rect x="756" y="194.0" width="158" height="44" rx="8"/><text x="766" y="210.0" class="t1">—</text><text x="766" y="228.0" class="t3">мать не найдена</text></g><g class="bx"><rect x="570" y="281.0" width="158" height="44" rx="8"/><text x="580" y="294.0" class="t1">Горелова</text><text x="580" y="306.0" class="t2">Мария Федоровна</text><text x="580" y="318.0" class="t3">1871</text></g><g class="bx"><rect x="756" y="252.0" width="158" height="44" rx="8"/><text x="766" y="265.0" class="t1">Горелов</text><text x="766" y="277.0" class="t2">Федор</text><text x="766" y="289.0" class="t3">ныне живущий</text></g><g class="bx q"><rect x="756" y="310.0" width="158" height="44" rx="8"/><text x="766" y="326.0" class="t1">—</text><text x="766" y="344.0" class="t3">мать не найдена</text></g><g class="bx"><rect x="384" y="397.0" width="158" height="44" rx="8"/><text x="394" y="410.0" class="t1">Алексанова</text><text x="394" y="422.0" class="t2">Прасковья Власовна</text><text x="394" y="434.0" class="t3">1892 – 1969</text></g><g class="bx deep"><rect x="570" y="368.0" width="158" height="44" rx="8"/><text x="580" y="381.0" class="t1">Алексанов</text><text x="580" y="393.0" class="t2">Влас</text><text x="580" y="405.0" class="t3">1874</text></g><g class="bx q"><rect x="570" y="426.0" width="158" height="44" rx="8"/><text x="580" y="442.0" class="t1">—</text><text x="580" y="460.0" class="t3">мать не найдена</text></g><g class="bx"><rect x="198" y="571.0" width="158" height="44" rx="8"/><text x="208" y="584.0" class="t1">Астафьева</text><text x="208" y="596.0" class="t2">Надежда Алексеевна</text><text x="208" y="608.0" class="t3">22 августа 1931 – 4 декабря 1997</text></g><g class="bx"><rect x="384" y="513.0" width="158" height="44" rx="8"/><text x="394" y="526.0" class="t1">Астафьев</text><text x="394" y="538.0" class="t2">Алексей Петрович</text><text x="394" y="550.0" class="t3">до 1898 – 22 августа 1972</text></g><g class="bx"><rect x="570" y="484.0" width="158" height="44" rx="8"/><text x="580" y="497.0" class="t1">Астафьев</text><text x="580" y="509.0" class="t2">Петр</text><text x="580" y="521.0" class="t3">ныне живущий</text></g><g class="bx q"><rect x="570" y="542.0" width="158" height="44" rx="8"/><text x="580" y="558.0" class="t1">—</text><text x="580" y="576.0" class="t3">мать не найдена</text></g><g class="bx"><rect x="384" y="629.0" width="158" height="44" rx="8"/><text x="394" y="642.0" class="t1">Мария Архиповна</text><text x="394" y="654.0" class="t2"></text><text x="394" y="666.0" class="t3">† зима 1961</text></g><g class="bx"><rect x="570" y="600.0" width="158" height="44" rx="8"/><text x="580" y="613.0" class="t1">Архип</text><text x="580" y="625.0" class="t2"></text><text x="580" y="637.0" class="t3">ныне живущий</text></g><g class="bx q"><rect x="570" y="658.0" width="158" height="44" rx="8"/><text x="580" y="674.0" class="t1">—</text><text x="580" y="692.0" class="t3">мать не найдена</text></g><g class="bx me"><rect x="12" y="1174.6" width="158" height="44" rx="8"/><text x="22" y="1187.6" class="t1">Скиба</text><text x="22" y="1199.6" class="t2">Надежда Эдуардовна</text><text x="22" y="1211.6" class="t3">1969</text></g><g class="bx"><rect x="198" y="998.8" width="158" height="44" rx="8"/><text x="208" y="1011.8" class="t1">Скиба</text><text x="208" y="1023.8" class="t2">Эдуард Алексеевич</text><text x="208" y="1035.8" class="t3">19 февраля 1937 – 25 мая 2015</text></g><g class="bx"><rect x="384" y="890.0" width="158" height="44" rx="8"/><text x="394" y="903.0" class="t1">Скиба</text><text x="394" y="915.0" class="t2">Алексей Григорьевич</text><text x="394" y="927.0" class="t3">10 апреля 1907 – 13 октября 1955</text></g><g class="bx"><rect x="570" y="832.0" width="158" height="44" rx="8"/><text x="580" y="845.0" class="t1">Скиба</text><text x="580" y="857.0" class="t2">Григорий Андреевич</text><text x="580" y="869.0" class="t3">1879 – после 7 января 1956</text></g><g class="bx"><rect x="756" y="803.0" width="158" height="44" rx="8"/><text x="766" y="816.0" class="t1">Скиба</text><text x="766" y="828.0" class="t2">Андрей Степанович</text><text x="766" y="840.0" class="t3">† 1891</text></g><g class="bx"><rect x="756" y="861.0" width="158" height="44" rx="8"/><text x="766" y="874.0" class="t1">Пелагея Васильевна</text><text x="766" y="886.0" class="t2"></text><text x="766" y="898.0" class="t3">† 1937</text></g><g class="bx"><rect x="570" y="948.0" width="158" height="44" rx="8"/><text x="580" y="961.0" class="t1">Захарченкова(Захарченко?)</text><text x="580" y="973.0" class="t2">Зинаида Агеевна</text><text x="580" y="985.0" class="t3">ныне живущий</text></g><g class="bx"><rect x="756" y="919.0" width="158" height="44" rx="8"/><text x="766" y="932.0" class="t1">Захарченко</text><text x="766" y="944.0" class="t2">Агей Никифорович</text><text x="766" y="956.0" class="t3">† 1921</text></g><g class="bx"><rect x="756" y="977.0" width="158" height="44" rx="8"/><text x="766" y="990.0" class="t1">Ульяна Васильевна</text><text x="766" y="1002.0" class="t2"></text><text x="766" y="1014.0" class="t3">† 1947</text></g><g class="bx"><rect x="384" y="1107.5" width="158" height="44" rx="8"/><text x="394" y="1120.5" class="t1">Алексеева</text><text x="394" y="1132.5" class="t2">Маргарита Васильевна</text><text x="394" y="1144.5" class="t3">8 сентября 1909 – 19 июля 1987</text></g><g class="bx"><rect x="570" y="1064.0" width="158" height="44" rx="8"/><text x="580" y="1077.0" class="t1">Алексеев</text><text x="580" y="1089.0" class="t2">Василий Васильевич</text><text x="580" y="1101.0" class="t3">1875 – 1935</text></g><g class="bx"><rect x="756" y="1035.0" width="158" height="44" rx="8"/><text x="766" y="1048.0" class="t1">Алексеев</text><text x="766" y="1060.0" class="t2">Василий</text><text x="766" y="1072.0" class="t3">ныне живущий</text></g><g class="bx q"><rect x="756" y="1093.0" width="158" height="44" rx="8"/><text x="766" y="1109.0" class="t1">—</text><text x="766" y="1127.0" class="t3">мать не найдена</text></g><g class="bx deep"><rect x="570" y="1151.0" width="158" height="44" rx="8"/><text x="580" y="1164.0" class="t1">Агафья Андреевна</text><text x="580" y="1176.0" class="t2"></text><text x="580" y="1188.0" class="t3">1880 – 1944</text></g><g class="bx"><rect x="198" y="1350.4" width="158" height="44" rx="8"/><text x="208" y="1363.4" class="t1">Поташкина</text><text x="208" y="1375.4" class="t2">Нина Федоровна</text><text x="208" y="1387.4" class="t3">11 июня 1938 – 23 апреля 2000</text></g><g class="bx"><rect x="384" y="1238.0" width="158" height="44" rx="8"/><text x="394" y="1251.0" class="t1">Поташкин</text><text x="394" y="1263.0" class="t2">Федор Георгиевич</text><text x="394" y="1275.0" class="t3">23 февраля 1904 – 11 января 1970</text></g><g class="bx"><rect x="570" y="1209.0" width="158" height="44" rx="8"/><text x="580" y="1222.0" class="t1">Поташкин</text><text x="580" y="1234.0" class="t2">Георгий</text><text x="580" y="1246.0" class="t3">† ма1919</text></g><g class="bx"><rect x="570" y="1267.0" width="158" height="44" rx="8"/><text x="580" y="1280.0" class="t1">Дарья</text><text x="580" y="1292.0" class="t2"></text><text x="580" y="1304.0" class="t3">ныне живущий</text></g><g class="bx"><rect x="384" y="1462.8" width="158" height="44" rx="8"/><text x="394" y="1475.8" class="t1">Алексеева</text><text x="394" y="1487.8" class="t2">Серафима Григорьевна</text><text x="394" y="1499.8" class="t3">11 августа 1912 – 26 июля 1988</text></g><g class="bx"><rect x="570" y="1397.5" width="158" height="44" rx="8"/><text x="580" y="1410.5" class="t1">Захаров/Алексеев</text><text x="580" y="1422.5" class="t2">Григорий Спиридонович</text><text x="580" y="1434.5" class="t3">23 января 1887 – 16 ноября 1966</text></g><g class="bx"><rect x="756" y="1354.0" width="158" height="44" rx="8"/><text x="766" y="1367.0" class="t1">Захаров</text><text x="766" y="1379.0" class="t2">Спиридон Ермилович(Ермолаевич)</text><text x="766" y="1391.0" class="t3">1861</text></g><g class="bx deep"><rect x="942" y="1325.0" width="158" height="44" rx="8"/><text x="952" y="1338.0" class="t1">Захаров</text><text x="952" y="1350.0" class="t2">Ермил(а)/Ермолай</text><text x="952" y="1362.0" class="t3">1845</text></g><g class="bx q"><rect x="942" y="1383.0" width="158" height="44" rx="8"/><text x="952" y="1399.0" class="t1">—</text><text x="952" y="1417.0" class="t3">мать не найдена</text></g><g class="bx deep"><rect x="756" y="1441.0" width="158" height="44" rx="8"/><text x="766" y="1454.0" class="t1">Елизавета Николаевна</text><text x="766" y="1466.0" class="t2"></text><text x="766" y="1478.0" class="t3">1864</text></g><g class="bx"><rect x="570" y="1528.0" width="158" height="44" rx="8"/><text x="580" y="1541.0" class="t1">Елисеева</text><text x="580" y="1553.0" class="t2">Зинаида Петровна</text><text x="580" y="1565.0" class="t3">8 ноября 1888 – 25 февраля 1973</text></g><g class="bx"><rect x="756" y="1499.0" width="158" height="44" rx="8"/><text x="766" y="1512.0" class="t1">Елисеев</text><text x="766" y="1524.0" class="t2">Петр</text><text x="766" y="1536.0" class="t3">ныне живущий</text></g><g class="bx q"><rect x="756" y="1557.0" width="158" height="44" rx="8"/><text x="766" y="1573.0" class="t1">—</text><text x="766" y="1591.0" class="t3">мать не найдена</text></g></svg>
     <div class="legend">
       <span><i style="background:rgba(58,16,40,.9);border:1px solid var(--border)"></i>установленный предок</span>
       <span><i style="border:1px dashed var(--line)"></i>связь не замкнута</span>
@@ -393,56 +405,56 @@ footer b{color:var(--champ)}
     </div>
     <div class="grid g2">
         <div class="goalrow"><div class="n">1</div><div>
-          <b>Родители — Цыганов Александр Павлович (10 SEP 1925 – 15 DEC 2013)</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>Мать — Мария Архиповна</b>
+          <p>ум. зима 1961 · деды и бабушки по прямой линии. Место рождения в базе не указано — сначала нужно установить приход.</p>
+          <div class="st">Деды и бабушки · пробел в прямой линии</div>
         </div></div>
         <div class="goalrow"><div class="n">2</div><div>
-          <b>Родители — Карачкова Мария Михайловна (12 AUG 1923 – 2014)</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>Мать — Алексанова Прасковья Власовна</b>
+          <p>1892 – 1969 · деды и бабушки по прямой линии. Место рождения в базе не указано — сначала нужно установить приход.</p>
+          <div class="st">Деды и бабушки · пробел в прямой линии</div>
         </div></div>
         <div class="goalrow"><div class="n">3</div><div>
-          <b>Родители — Чернова (Перова, Кузнецова) Марта Николаевна (13 MAR 1935 – 1 AUG 1993)</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>Мать — Астафьев Алексей Петрович</b>
+          <p>до 1898 – 22 августа 1972 · деды и бабушки по прямой линии. Место рождения в базе не указано — сначала нужно установить приход.</p>
+          <div class="st">Деды и бабушки · пробел в прямой линии</div>
         </div></div>
         <div class="goalrow"><div class="n">4</div><div>
-          <b>Родители — Успенский Евгений Андреевич (18 SEP 1949 – 7 JUL 2005)</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>Родители — Архип</b>
+          <p>ныне живущий · прадеды по прямой линии. Место рождения в базе не указано — сначала нужно установить приход.</p>
+          <div class="st">Прадеды · пробел в прямой линии</div>
         </div></div>
         <div class="goalrow"><div class="n">5</div><div>
-          <b>Родители — Сахаров Николай (1837 – 1 FEB 1916)</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>Родители — Агафья Андреевна</b>
+          <p>1880 – 1944 · прадеды по прямой линии. Место рождения в базе не указано — сначала нужно установить приход.</p>
+          <div class="st">Прадеды · пробел в прямой линии</div>
         </div></div>
         <div class="goalrow"><div class="n">6</div><div>
-          <b>Родители — Елизавета Николаевна (р. 1864)</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>Родители — Дарья</b>
+          <p>ныне живущий · прадеды по прямой линии. Место рождения в базе не указано — сначала нужно установить приход.</p>
+          <div class="st">Прадеды · пробел в прямой линии</div>
         </div></div>
         <div class="goalrow"><div class="n">7</div><div>
-          <b>Родители — Марфа Павловна (р. 1866)</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>Родители — Алексанов Влас</b>
+          <p>р. 1874 · прадеды по прямой линии. Место рождения в базе не указано — сначала нужно установить приход.</p>
+          <div class="st">Прадеды · пробел в прямой линии</div>
         </div></div>
         <div class="goalrow"><div class="n">8</div><div>
-          <b>Родители — Александра Ивановна (р. 1877)</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>Мать — Алексеев Василий Васильевич</b>
+          <p>1875 – 1935 · прадеды по прямой линии. Место рождения в базе не указано — сначала нужно установить приход.</p>
+          <div class="st">Прадеды · пробел в прямой линии</div>
         </div></div>
         <div class="goalrow"><div class="n">9</div><div>
-          <b>Родители — Александра Ивановна (р. 1877)</b>
-          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
-          <div class="st">MyHeritage · метрики · архивные запросы</div>
+          <b>Родители — Астафьев Петр</b>
+          <p>ныне живущий · прадеды по прямой линии. Место рождения в базе не указано — сначала нужно установить приход.</p>
+          <div class="st">Прадеды · пробел в прямой линии</div>
         </div></div></div>
   </div>
 </section>
 </div>
 
 <footer>
-  <div class="wrap"><b>Род Матюхиных и Скиба</b> · семейный архив · данные MyHeritage SKIBA · экспорт 17 JUL 2026 · сайт сгенерирован из GEDCOM</div>
+  <div class="wrap"><b>Род Матюхиных и Скиба</b> · семейный архив · данные MyHeritage SKIBA · экспорт 17 июля 2026 · сайт сгенерирован из GEDCOM</div>
 </footer>
 
 <script>
