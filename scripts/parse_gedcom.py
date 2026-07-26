@@ -54,6 +54,25 @@ class Person:
     def is_living(self) -> bool:
         return not self.deat
 
+    @property
+    def public_years(self) -> str:
+        """Years safe to publish: living people are reduced to a birth year."""
+        if self.is_living:
+            year = year_only(self.birt)
+            return f"р. {year}" if year else "ныне живущий"
+        return self.years
+
+    @property
+    def public_place(self) -> str:
+        """Birthplace is hidden for living people."""
+        return "" if self.is_living else (self.birt_plac or self.deat_plac)
+
+
+def year_only(date: str) -> str:
+    """Extract a four-digit year from a GEDCOM date value."""
+    match = re.search(r"\b(\d{4})\b", date or "")
+    return match.group(1) if match else ""
+
 
 @dataclass
 class Family:
@@ -148,7 +167,7 @@ def parse_gedcom(path: Path) -> tuple[dict[str, Person], dict[str, Family], dict
                 elif path == ("FAMC",):
                     person.famc = value
                 elif path == ("RESI", "EMAIL"):
-                    person.email = value
+                    person.email = value  # kept in memory only, never rendered
             people[person.id] = person
         elif record["tag"] == "FAM":
             family = Family(id=record["xref"] or "")

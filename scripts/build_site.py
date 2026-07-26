@@ -94,7 +94,10 @@ def esc(text: str) -> str:
 
 
 def chain_text(people: list[Person]) -> str:
-    return " → ".join(f"<b>{esc(p.surn)} {esc(p.givn.split()[0] if p.givn else '')}</b> ({esc(p.years)})" for p in people)
+    return " → ".join(
+        f"<b>{esc(p.surn)} {esc(p.givn.split()[0] if p.givn else '')}</b> ({esc(p.public_years)})"
+        for p in people
+    )
 
 
 def count_generations(pid: str, people: dict[str, Person], families: dict[str, Family]) -> int:
@@ -288,7 +291,7 @@ def render_pedigree_svg(
         lines.append(f'<g class="{cls}"><rect x="{x}" y="{y - 21}" width="160" height="42" rx="8"/>')
         lines.append(f'<text x="{x + 9}" y="{y - 6}" class="t1">{esc(p.surn)}</text>')
         lines.append(f'<text x="{x + 9}" y="{y + 6}" class="t2">{esc(p.givn)}</text>')
-        yrs = p.years.replace("р. ", "").replace("ум. ", "")
+        yrs = p.public_years.replace("р. ", "").replace("ум. ", "")
         lines.append(f'<text x="{x + 9}" y="{y + 17}" class="t3">{esc(yrs)}</text></g>')
 
     svg = (
@@ -324,6 +327,8 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 
     merged_places: Counter[str] = Counter()
     for person in people.values():
+        if person.is_living:
+            continue
         for raw_place in (person.birt_plac, person.deat_plac):
             raw_place = raw_place.strip()
             if raw_place and raw_place not in {"Россия", "Украина"}:
@@ -349,22 +354,24 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
       <div class="tl-item{me}">
         <div class="tl-gen">Поколение {len(timeline_people) - i} · линия Матюхиных</div>
         <h3>{esc(person.surn)} {esc(person.givn)}</h3>
-        <div class="yrs">{esc(person.years)}</div>
-        <p>{esc(person.birt_plac or person.deat_plac or 'Место уточняется по метрикам и семейным записям.')}</p>
+        <div class="yrs">{esc(person.public_years)}</div>
+        <p>{esc(person.public_place or 'Место уточняется по метрикам и семейным записям.')}</p>
       </div>"""
 
     goals_html = ""
     for i, (person, kind) in enumerate(goals, 1):
         goals_html += f"""
         <div class="goalrow"><div class="n">{i}</div><div>
-          <b>{kind.capitalize()} — {esc(person.label)} ({esc(person.years)})</b>
+          <b>{kind.capitalize()} — {esc(person.label)} ({esc(person.public_years)})</b>
           <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
           <div class="st">MyHeritage · метрики · архивные запросы</div>
         </div></div>"""
 
     pedigree_svg = render_pedigree_svg(root, spouse, child, people, families, max_gen=4)
     export_date = meta.get("date", "2026")
-    child_line = f" и {esc(child.givn.split()[0])}" if child else ""
+    child_line_text = (
+        f" {esc(child.givn.split()[0])} ({esc(child.public_years)})" if child else " следующего поколения"
+    )
 
     css = CSS.read_text(encoding="utf-8") if CSS.exists() else ""
 
@@ -513,20 +520,20 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
   <div class="wrap">
     <div class="sect-head">
       <div class="label">Точка встречи</div>
-      <h2>Химки · 25 ноября 2000</h2>
-      <p><b>{esc(root.label)}</b> ({esc(root.years)}, {esc(root.birt_plac)}) и <b>{esc(spouse.label)}</b> ({esc(spouse.years)}, {esc(spouse.birt_plac)}) поженились в Химках. Дочь <b>{esc(child.label) if child else '—'}</b>{' (' + esc(child.years) + ')' if child else ''} — продолжение рода.</p>
+      <h2>Где сходятся две линии</h2>
+      <p>Тульская линия Матюхиных и донбасско-валдайская линия Скиба сошлись в подмосковных Химках: <b>{esc(root.short)}</b> ({esc(root.public_years)}) и <b>{esc(spouse.short)}</b> ({esc(spouse.public_years)}) — родители{child_line_text}.</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2">
       <div class="card">
         <div class="tag">Ныне живущие</div>
-        <h3>Сергей{child_line} и Надежда</h3>
-        <p>Семейный архив ведётся в MyHeritage. Этот сайт — публичная витрина экспортированных данных.</p>
+        <h3>Сегодняшнее поколение</h3>
+        <p>Данные ныне живущих родственников на сайте не публикуются: указаны только годы рождения, без точных дат, мест и контактов.</p>
       </div>
       <div class="card">
         <div class="tag">Источник</div>
         <h3>MyHeritage · SKIBA</h3>
-        <p>Экспорт GEDCOM 5.5.1 от {esc(export_date)}. {st['with_birth']} дат рождения, {st['with_death']} дат смерти, {st['families']} семейных пар.</p>
+        <p>Экспорт GEDCOM 5.5.1 от {esc(export_date)}: {st['people']} человек, {st['families']} семейных пар, {st['with_death']} дат смерти. Публикуется только часть, относящаяся к ушедшим поколениям.</p>
       </div>
     </div>
   </div>
