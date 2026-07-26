@@ -235,8 +235,22 @@ def direct_lines(
     return lines
 
 
+def canonical_surname(surname: str, known: set[str]) -> str:
+    """Fold feminine surname forms into masculine ones (Матюхина → Матюхин)."""
+    if surname.endswith("ая"):
+        masculine = surname[:-2] + "ий"
+        if masculine in known:
+            return masculine
+    if surname.endswith("а") and surname[:-1] in known:
+        return surname[:-1]
+    return surname
+
+
 def stats(people: dict[str, Person], families: dict[str, Family]) -> dict[str, Any]:
-    surnames = Counter(p.surn for p in people.values() if p.surn)
+    raw_surnames = {p.surn for p in people.values() if p.surn}
+    surnames = Counter(
+        canonical_surname(p.surn, raw_surnames) for p in people.values() if p.surn
+    )
     places = Counter()
     for person in people.values():
         for place in (person.birt_plac, person.deat_plac):
