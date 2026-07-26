@@ -14,9 +14,12 @@ from parse_gedcom import (
     Person,
     ancestors,
     canonical_place,
+    counted,
     direct_lines,
     format_date,
+    genitive_given_name,
     parse_gedcom,
+    plural,
     stats,
 )
 
@@ -96,9 +99,12 @@ def missing_parent_goals(
     people: dict[str, Person],
     families: dict[str, Family],
     limit: int = 9,
-) -> list[tuple[Person, str, int]]:
-    """Gaps in the direct ancestor line only — closest generations first."""
-    goals: list[tuple[Person, str, int]] = []
+) -> list[tuple[Person, int]]:
+    """Gaps in the direct ancestor line only — closest generations first.
+
+    One entry per person, whether the father, the mother or both are unknown.
+    """
+    goals: list[tuple[Person, int]] = []
     seen: set[str] = set()
 
     def walk(pid: str, depth: int) -> None:
@@ -110,13 +116,11 @@ def missing_parent_goals(
 
         if family is None:
             if depth > 0:
-                goals.append((person, "родители", depth))
+                goals.append((person, depth))
             return
 
-        if not family.husb:
-            goals.append((person, "отец", depth))
-        if not family.wife:
-            goals.append((person, "мать", depth))
+        if not family.husb or not family.wife:
+            goals.append((person, depth))
 
         for parent in (family.husb, family.wife):
             if parent:
@@ -125,7 +129,7 @@ def missing_parent_goals(
     for root_id in root_ids:
         walk(root_id, 0)
 
-    goals.sort(key=lambda item: (item[2], item[0].surname))
+    goals.sort(key=lambda item: (item[1], item[0].surname))
     return goals[:limit]
 
 
@@ -368,7 +372,8 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
                 merged_places[canonical_place(raw_place)] += 1
 
     places_html = "".join(
-        f'<div class="card"><div class="tag">География · {count} записей</div><h4>{esc(place)}</h4>'
+        f'<div class="card"><div class="tag">География · '
+        f'{counted(count, ("запись", "записи", "записей"))}</div><h4>{esc(place)}</h4>'
         f'<p>{esc(PLACE_NOTES.get(place, "Место из записей о рождении и смерти в семейной базе."))}</p></div>'
         for place, count in merged_places.most_common(9)
     )
@@ -376,7 +381,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
     surnames_html = "".join(
         f'<div class="card"><h4>{esc(name)}</h4>'
         f'<p>{esc(SURNAME_NOTES.get(name, "Фамилия встречается в семейном древе; происхождение уточняется."))}</p>'
-        f'<div class="mini">{count} носителей в базе</div></div>'
+        f'<div class="mini">{counted(count, ("носитель", "носителя", "носителей"))} в базе</div></div>'
         for name, count in st["top_surnames"][:10]
     )
 
@@ -392,7 +397,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
       </div>"""
 
     goals_html = ""
-    for i, (person, kind, depth) in enumerate(goals, 1):
+    for i, (person, depth) in enumerate(goals, 1):
         generation = GENERATION_NAMES.get(depth, f"{depth}-е поколение")
         place = person.public_place
         hint = (
@@ -402,7 +407,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
         )
         goals_html += f"""
         <div class="goalrow"><div class="n">{i}</div><div>
-          <b>{kind.capitalize()} — {esc(person.label)}</b>
+          <b>Не найдены родители: {esc(person.display_name)}</b>
           <p>{esc(person.public_years)} · {esc(generation)} по прямой линии. {esc(hint)}</p>
           <div class="st">{esc(generation.capitalize())} · пробел в прямой линии</div>
         </div></div>"""
@@ -410,7 +415,9 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
     pedigree_svg = render_pedigree_svg(root, spouse, child, people, families, max_gen=5)
     export_date = format_date(meta.get("date", "")) or "2026"
     child_line_text = (
-        f" {esc(child.name.split()[0])} ({esc(child.public_years)})" if child else " следующего поколения"
+        f" {esc(genitive_given_name(child.name, child.sex))} ({esc(child.public_years)})"
+        if child
+        else " следующего поколения"
     )
 
     css = CSS.read_text(encoding="utf-8") if CSS.exists() else ""
@@ -437,12 +444,12 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
   <div class="wrap">
     <div class="label">Семейный архив · MyHeritage · экспорт {esc(export_date)}</div>
     <h1>Летопись рода Матюхиных и Скиба</h1>
-    <p class="sub">Две главные линии — <b>Матюхины</b> из села Мокрое Тульской губернии и <b>Скибы</b> с донбасской Лозовой Павловки — сошлись в семье Сергея и Надежды. Тульская земля и Донбасс, Валдай и Татария, Подмосковье; {st['people']} человек в базе, {st['surnames']} фамилий, {documented_gens} поколений прослежено.</p>
-    <p class="sub" style="font-size:15px;margin-top:-14px">Страница собрана автоматически из семейного древа MyHeritage — данные ныне живущих на ней не публикуются.</p>
+    <p class="sub">Две главные линии — <b>Матюхины</b> из села Мокрое Тульской губернии и <b>Скибы</b> с донбасской Лозовой Павловки — сошлись в семье Сергея и Надежды. Тульская земля и Донбасс, Валдай и Татария, Подмосковье; {counted(st['people'], ('человек', 'человека', 'человек'))} в базе, {counted(st['surnames'], ('фамилия', 'фамилии', 'фамилий'))}, {counted(documented_gens, ('поколение', 'поколения', 'поколений'))} прослежено.</p>
+    <p class="sub" style="font-size:15px;margin-top:-14px">Страница собрана автоматически из семейного древа MyHeritage. Точные даты, места рождения и контактные данные ныне живущих не публикуются; указаны только имена и годы рождения.</p>
     <button class="btn" onclick="showPage(2)">Открыть древо</button>
     <div class="stats">
-      <div><b>{documented_gens}</b><span>ПОКОЛЕНИЙ ПРОСЛЕЖЕНО</span></div>
-      <div><b>{st['people']}</b><span>ЧЕЛОВЕК В БАЗЕ</span></div>
+      <div><b>{documented_gens}</b><span>{plural(documented_gens, ('ПОКОЛЕНИЕ', 'ПОКОЛЕНИЯ', 'ПОКОЛЕНИЙ'))} ПРОСЛЕЖЕНО</span></div>
+      <div><b>{st['people']}</b><span>{plural(st['people'], ('ЧЕЛОВЕК', 'ЧЕЛОВЕКА', 'ЧЕЛОВЕК'))} В БАЗЕ</span></div>
       <div><b>{st['surnames']}</b><span>РОДОВЫХ ФАМИЛИЙ</span></div>
       <div><b>{st['earliest_year'] or 'XIX в.'}</b><span>ГОД РОЖДЕНИЯ САМОГО РАННЕГО ПРЕДКА</span></div>
     </div>
@@ -463,7 +470,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
         <h3>Матюхины</h3>
         <p>{chain_text(father_line[:5])}</p>
         <p>Корни в селе <b>Мокрое</b> Белевского уезда Тульской губернии. По архивным документам подтверждены родители Андрея — <b>Федот Григорьев</b> и <b>Параскева Петрова</b>.</p>
-        <p>В базе он записан как «Федот Матюхин, р. до 1852», но <b>фамилия, дата рождения и отождествление с Федотом 1818/1819 года — пока гипотеза</b><span class="gip">гипотеза</span>: карточка не имеет источника, дата вычислена от года рождения сына.</p>
+        <p>В базе он записан как «Федот Матюхин, р. до 1852», но <b>фамилия, дата рождения и отождествление с Федотом 1818/1819 года — пока гипотеза</b>: карточка не имеет источника, дата вычислена от года рождения сына.</p>
         <div class="mini">Проверить: ревизские сказки и метрики Белевского уезда (ГАТО, Тула)</div>
       </div>
       <div class="card">
@@ -569,12 +576,12 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
       <div class="card">
         <div class="tag">Ныне живущие</div>
         <h3>Сегодняшнее поколение</h3>
-        <p>Данные ныне живущих родственников на сайте не публикуются: указаны только годы рождения, без точных дат, мест и контактов.</p>
+        <p>Для ныне живущих родственников указаны только имена и годы рождения. Точные даты, места рождения и контактные данные не публикуются.</p>
       </div>
       <div class="card">
         <div class="tag">Источник</div>
         <h3>MyHeritage · SKIBA</h3>
-        <p>Экспорт GEDCOM 5.5.1 от {esc(export_date)}: {st['people']} человек, {st['families']} семейных пар, {st['with_death']} дат смерти. Публикуется только часть, относящаяся к ушедшим поколениям.</p>
+        <p>Экспорт GEDCOM 5.5.1 от {esc(export_date)}: {counted(st['people'], ('человек', 'человека', 'человек'))}, {counted(st['families'], ('семейная запись', 'семейные записи', 'семейных записей'))}, {counted(st['with_death'], ('дата', 'даты', 'дат'))} смерти. У ныне живущих опубликованы только имена и годы рождения.</p>
       </div>
     </div>
   </div>
@@ -593,16 +600,21 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
         <h3>Что откуда взято</h3>
         <ul>
           <li><b>Имена, даты, связи</b> — GEDCOM MyHeritage, проект SKIBA</li>
-          <li><b>Точная дата рождения</b> — у {st['exact_dated']} из {st['people']} человек</li>
-          <li><b>Дата выведена расчётом</b> — у {st['reconstructed']}: такие записи помечены как гипотеза</li>
           <li><b>Тексты разделов</b> — сгенерированы автоматически, архивно не проверены</li>
+        </ul>
+        <p style="margin:10px 0">Из {counted(st['people'], ('человека', 'человек', 'человек'))} в базе запись о рождении есть у {st['with_birth']}. Насколько точно известна дата:</p>
+        <ul>
+          <li><b>День, месяц и год</b> — {counted(st['birth_full'], ('запись', 'записи', 'записей'))}</li>
+          <li><b>Только год</b> — {st['birth_year_only']}; месяц и год — {st['birth_month_year']}</li>
+          <li><b>С пометой «до», «около», «между»</b> — {st['birth_qualified']}: такая дата выведена от родственников, а не прочитана в документе</li>
+          <li><b>Дата рождения отсутствует</b> — {st['birth_missing']} {plural(st['birth_missing'], ('человек', 'человека', 'человек'))}</li>
         </ul>
       </div>
       <div class="scard">
         <h3>Чего в файле нет</h3>
         <p style="margin-bottom:10px">Ссылки на источники в экспорте есть, но за ними стоят <b>не архивные документы</b>:</p>
         <ul>
-          <li><b>{st['matched']} записей</b> связаны со Smart Match — совпадением с деревом другого пользователя MyHeritage</li>
+          <li><b>{counted(st['matched'], ('запись', 'записи', 'записей'))}</b> связаны со Smart Match — совпадением с деревом другого пользователя MyHeritage</li>
           <li>Такое совпадение — <b>зацепка, а не доказательство</b>: чужое дерево может содержать ту же ошибку</li>
           <li>Ссылок на метрические книги, ревизские сказки и записи ЗАГС в файле нет ни одной</li>
         </ul>
@@ -610,7 +622,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
       <div class="scard">
         <h3>Как читать пометки</h3>
         <ul>
-          <li><span class="leg">гипотеза</span> запись без источника с вычисленной датой</li>
+          <li><span class="leg">гипотеза</span> запись без источника: дата вычислена от родственников или отсутствует</li>
           <li><b>«до 1852», «ок. 1870»</b> — дата выведена от родственников, а не из документа</li>
           <li><b>Пунктирная карточка в древе</b> — предок не найден, это цель поиска</li>
         </ul>
@@ -647,7 +659,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
   <div class="wrap" style="max-width:none">{pedigree_svg}
     <div class="legend">
       <span><i style="background:rgba(58,16,40,.9);border:1px solid var(--border)"></i>предок с записью в базе</span>
-      <span><i style="border:1px dashed var(--champ2);background:rgba(58,16,40,.55)"></i>гипотеза — нет источника, дата вычислена</span>
+      <span><i style="border:1px dashed var(--champ2);background:rgba(58,16,40,.55)"></i>гипотеза — нет источника, дата вычислена или отсутствует</span>
       <span><i style="border:1px dashed var(--line)"></i>предок не найден — цель поиска</span>
       <span><i style="background:rgba(14,143,75,.25);border:1px solid var(--green)"></i>ныне живущие</span>
     </div>
