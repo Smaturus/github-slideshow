@@ -131,7 +131,8 @@ class Person:
         return "" if self.is_living else (self.birt_plac or self.deat_plac)
 
     @property
-    def has_source(self) -> bool:
+    def has_match(self) -> bool:
+        """MyHeritage Smart Match with another user tree — a lead, not evidence."""
         return bool(self.sources)
 
     @property
@@ -142,9 +143,11 @@ class Person:
 
     @property
     def is_reconstructed(self) -> bool:
-        """No source and no exact date: the entry is a research hypothesis."""
-        if self.has_source:
-            return False
+        """Date was derived rather than recorded: treat the entry as a hypothesis.
+
+        Smart Matches are deliberately not counted as evidence — they only mean
+        another MyHeritage user has a similar entry.
+        """
         return self.has_derived_date or not self.birt
 
 
@@ -367,8 +370,10 @@ def stats(people: dict[str, Person], families: dict[str, Family]) -> dict[str, A
         "top_places": places.most_common(12),
         "with_birth": sum(1 for p in people.values() if p.birt),
         "with_death": sum(1 for p in people.values() if p.deat),
-        "sourced": sum(1 for p in people.values() if p.has_source),
-        "unsourced": sum(1 for p in people.values() if not p.has_source),
+        "matched": sum(1 for p in people.values() if p.has_match),
+        "exact_dated": sum(
+            1 for p in people.values() if p.birt and not p.has_derived_date
+        ),
         "reconstructed": sum(1 for p in people.values() if p.is_reconstructed),
         "earliest_year": min(birth_years, default=0),
     }
