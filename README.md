@@ -1,13 +1,29 @@
-# Your GitHub Learning Lab Repository for Introducing GitHub
+# Род Матюхиных и Скибиных — семейный архив
 
-Welcome to **your** repository for your GitHub Learning Lab course. This repository will be used during the different activities that I will be guiding you through. See a word you don't understand? We've included an emoji 📖 next to some key terms. Click on it to see its definition.
+Статический сайт семейного архива, сгенерированный из GEDCOM-экспорта MyHeritage (проект SKIBA).
 
-Oh! I haven't introduced myself...
+## Структура
 
-I'm the GitHub Learning Lab bot and I'm here to help guide you in your journey to learn and master the various topics covered in this course. I will be using Issue and Pull Request comments to communicate with you. In fact, I already added an issue for you to check out.
+- `data/skiba.ged` — исходный GEDCOM (233 человека, 90 семей)
+- `scripts/parse_gedcom.py` — парсер GEDCOM
+- `scripts/build_site.py` — генератор `index.html`
+- `assets/site.css` — стили (по образцу [баталовы.древо.рус](https://баталовы.древо.рус/))
+- `index.html` — готовый сайт (летопись + SVG-древо)
 
-![issue tab](https://lab.github.com/public/images/issue_tab.png)
+## Пересборка сайта
 
-I'll meet you over there, can't wait to get started!
+```bash
+python3 scripts/build_site.py
+```
 
-This course is using the :sparkles: open source project [reveal.js](https://github.com/hakimel/reveal.js/). In some cases we’ve made changes to the history so it would behave during class, so head to the original project repo to learn more about the cool people behind this project.
+## Локальный просмотр
+
+```bash
+python3 -m http.server 8080
+```
+
+Откройте http://localhost:8080
+
+## GitHub Pages
+
+Сайт публикуется как статический `index.html` из корня репозитория (файл `.nojekyll` отключает Jekyll).

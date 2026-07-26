@@ -1,13 +1,427 @@
----
-layout: presentation
----
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Род Матюхиных и Скибиных — семейный архив</title>
+<style>@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@300;400;500;600;700&display=swap');
+:root{
+  --bg:#13060D; --bg2:#2A0C1E; --card:#3A1028; --card-soft:rgba(58,16,40,.72);
+  --ivory:#F3EDE7; --pearl:#DDD3CB; --taupe:#B9AAA2; --tech:#907983;
+  --champ:#D2B48C; --champ2:#B99A72;
+  --green:#0E8F4B; --green-h:#0A6E3A; --mint:#39C270;
+  --line:#4A2A39; --border:#5B3446; --orange:#D2622F; --orange-t:#E08A5E;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--pearl);font-family:'Manrope',system-ui,sans-serif;font-size:17px;line-height:1.55;overflow-x:hidden}
+h1,h2,h3,h4{font-family:'Cormorant Garamond',Georgia,serif;color:var(--ivory);font-weight:500}
+.wrap{max-width:1180px;margin:0 auto;padding:0 32px}
+.label{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--champ);font-weight:600}
+section{padding:80px 0}
+.sect-head{margin-bottom:46px}
+.sect-head h2{font-size:clamp(30px,4vw,50px);margin-top:12px}
+.sect-head p{color:var(--taupe);max-width:780px;margin-top:12px}
+.hr{height:1px;background:linear-gradient(90deg,var(--champ2),transparent);width:120px;margin-top:20px;opacity:.6}
+.numtab{font-variant-numeric:tabular-nums}
 
-{% for post in site.posts reversed %}
-	{% include slide.html %}
-	<div class="page-break"></div>
-{% endfor %}
-{% unless site.simple-slideshow %}
-{% if site.overview %}
-<section id="overview" class="step" {% for attr in site.overview-data %} data-{{attr[0]}}="{{attr[1]}}"{% endfor %}></section>
-{% endif %}
-{% endunless %}
+/* NAV */
+nav{position:sticky;top:0;z-index:50;background:rgba(19,6,13,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:10px;padding-top:14px;padding-bottom:14px}
+nav .brand{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--ivory);margin-right:auto;font-weight:600}
+.navbtn{background:none;border:1px solid transparent;color:var(--taupe);font-family:'Manrope';font-size:14px;font-weight:600;padding:10px 20px;border-radius:12px;cursor:pointer;transition:.2s}
+.navbtn:hover{color:var(--ivory)}
+.navbtn.active{background:var(--green);color:var(--ivory)}
+.page{display:none}
+.page.visible{display:block}
+
+/* HERO */
+.hero{padding:90px 0 66px;background:radial-gradient(circle at 20% 30%, #3A1028 0%, #2A0C1E 35%, #13060D 80%);position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;right:-140px;top:-140px;width:520px;height:520px;border:1px solid rgba(185,154,114,.18);border-radius:50%}
+.hero::after{content:"";position:absolute;right:80px;top:160px;width:240px;height:240px;border:1px solid rgba(185,154,114,.12);border-radius:50%}
+.hero h1{font-size:clamp(42px,6vw,80px);line-height:1.02;margin:18px 0 16px}
+.hero .sub{font-size:19px;color:var(--taupe);max-width:660px;margin-bottom:30px}
+.btn{display:inline-block;background:var(--green);color:var(--ivory);text-decoration:none;font-weight:600;font-size:16px;padding:16px 32px;border-radius:16px;box-shadow:0 8px 24px rgba(14,143,75,.18);transition:.2s;border:none;cursor:pointer;font-family:'Manrope'}
+.btn:hover{background:var(--green-h)}
+.stats{display:flex;gap:40px;margin-top:42px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.stats b{display:block;font-family:'Cormorant Garamond',serif;font-size:36px;color:var(--ivory);font-weight:600}
+.stats .oax{color:var(--orange)}
+.stats span{font-size:12.5px;color:var(--tech);letter-spacing:.06em}
+
+/* TIMELINE */
+.tl{position:relative;margin-left:12px}
+.tl::before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:1px;background:linear-gradient(var(--champ2),var(--line))}
+.tl-item{position:relative;padding:0 0 32px 42px}
+.tl-item::before{content:"";position:absolute;left:0;top:8px;width:15px;height:15px;border-radius:50%;background:var(--bg);border:2px solid var(--champ)}
+.tl-item.me::before{background:var(--green);border-color:var(--mint)}
+.tl-gen{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--tech);font-weight:600}
+.tl-item h3{font-size:26px;margin:4px 0 2px}
+.tl-item .yrs{color:var(--champ);font-size:15px;font-weight:500}
+.tl-item p{color:var(--taupe);font-size:15px;max-width:660px;margin-top:6px}
+
+/* GRID/CARDS */
+.grid{display:grid;gap:22px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.card{background:var(--card-soft);border:1px solid var(--border);border-radius:22px;padding:28px;transition:.25s}
+.card:hover{border-color:var(--champ2);background:var(--card)}
+.card h3{font-size:25px;margin-bottom:4px}
+.card h4{font-size:21px;margin-bottom:4px}
+.card .tag{font-size:12px;color:var(--champ);letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.card p{font-size:15px;color:var(--taupe);margin-top:8px}
+.card p b{color:var(--pearl);font-weight:600}
+.card .mini{font-size:13px;color:var(--tech);margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.gip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--champ2);border:1px solid var(--line);border-radius:7px;padding:1px 8px;margin-left:6px;vertical-align:2px}
+
+/* WAR */
+.wcard{display:flex;gap:20px;background:var(--card-soft);border:1px solid var(--border);border-radius:22px;padding:20px;transition:.25s}
+.wcard:hover{border-color:var(--champ2)}
+.wcard img{width:112px;height:112px;object-fit:cover;border-radius:14px;border:1px solid var(--champ2);flex-shrink:0;filter:sepia(.14)}
+.wcard h3{font-size:21px;line-height:1.12}
+.wcard .yrs{color:var(--champ);font-size:14px}
+.wcard p{font-size:13.5px;color:var(--taupe);margin-top:6px}
+.orange{color:var(--orange-t);font-weight:600}
+
+/* ROUTES */
+.route{display:flex;align-items:flex-start;gap:16px;padding:20px 0;border-bottom:1px solid var(--line)}
+.route:last-child{border-bottom:none}
+.route .from{min-width:230px}
+.route .arrow{color:var(--champ);font-size:20px;padding-top:2px}
+.route b{color:var(--ivory);font-weight:600;font-size:16px}
+.route span{display:block;font-size:13.5px;color:var(--tech);margin-top:3px}
+
+/* PHOTO STRIP */
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.ph{background:var(--card-soft);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.ph img{width:100%;height:240px;object-fit:cover;display:block;filter:sepia(.12)}
+.ph figcaption{padding:13px 17px;font-size:13.5px;color:var(--taupe)}
+
+/* SOURCES (light) */
+.src{background:#F5F0EA}
+.src h2,.src h3{color:var(--bg2)}
+.src .label{color:#C0501C}
+.src p,.src li{color:#5a4450;font-size:15px}
+.src .scard{background:#EFE7DE;border:1px solid #d9cabc;border-radius:20px;padding:26px}
+.src .scard h3{font-size:22px;margin-bottom:10px}
+.src ul{list-style:none}
+.src li{padding:7px 0;border-bottom:1px solid #e2d5c8}
+.src li:last-child{border:none}
+.src b{color:#2A0C1E}
+.leg{display:inline-block;background:#EFE7DE;border:1px solid #B99A72;color:#4A1733;font-weight:700;border-radius:8px;padding:2px 10px;font-size:13px;margin-right:8px}
+
+/* ДРЕВО — SVG-родословная */
+.pedigree{width:100%;height:auto;display:block;font-family:'Manrope',sans-serif}
+.pedigree .colhead{font-size:9px;letter-spacing:.14em;fill:var(--champ);font-weight:700}
+.pedigree .ln{stroke:#5B3446;stroke-width:1.2;fill:none}
+.pedigree .bx rect{fill:rgba(58,16,40,.9);stroke:#5B3446;stroke-width:1}
+.pedigree .bx:hover rect{fill:#3A1028;stroke:var(--champ2)}
+.pedigree .bx.q rect{fill:rgba(19,6,13,.35);stroke:#4A2A39;stroke-dasharray:4 3}
+.pedigree .bx.me rect{fill:rgba(14,143,75,.12);stroke:var(--green);stroke-width:1.4}
+.pedigree .bx.deep rect{stroke:var(--champ);stroke-width:1.2}
+.pedigree .t1{font-size:11.5px;font-weight:700;fill:var(--ivory)}
+.pedigree .t2{font-size:10.5px;fill:var(--pearl)}
+.pedigree .t3{font-size:9.5px;fill:var(--champ)}
+.pedigree .t3.or{fill:var(--orange);font-weight:700}
+.pedigree .bx.q .t1,.pedigree .bx.q .t2{fill:var(--tech)}
+.pedigree .bx.q .t3{fill:var(--orange-t);font-weight:600}
+.pedigree .bx.me .t1{fill:var(--ivory)}
+.legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:18px;font-size:13px;color:var(--taupe)}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+
+/* SEARCH MAP */
+.goalrow{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--line)}
+.goalrow:last-child{border-bottom:none}
+.goalrow .n{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--champ);min-width:34px;font-weight:600}
+.goalrow b{color:var(--ivory);font-weight:600}
+.goalrow p{font-size:14px;color:var(--taupe);margin-top:3px}
+.goalrow .st{font-size:12px;margin-top:4px;color:var(--mint);font-weight:600}
+
+footer{padding:48px 0;border-top:1px solid var(--line);color:var(--tech);font-size:13.5px}
+footer b{color:var(--champ)}
+@media(max-width:900px){.g2,.g3,.strip{grid-template-columns:1fr}section{padding:56px 0}.route .from{min-width:150px}}
+
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <div class="brand">Род Матюхиных и Скибиных</div>
+    <button class="navbtn active" id="nb1" onclick="showPage(1)">Летопись рода</button>
+    <button class="navbtn" id="nb2" onclick="showPage(2)">Древо</button>
+  </div>
+</nav>
+
+<div class="page visible" id="page1">
+<div class="hero">
+  <div class="wrap">
+    <div class="label">Семейный архив · MyHeritage · экспорт 17 JUL 2026</div>
+    <h1>Летопись рода Матюхиных и Скибиных</h1>
+    <p class="sub">Две главные линии — <b>Матюхины</b> с татарского села Мокрое и <b>Скибы</b> из Астрахани — сошлись в семье Сергея и Надежды. Подмосковье и Поволжье, уральские и астраханские ветви; 233 человек в базе, 62 фамилий, 6 поколений прослежено.</p>
+    <p class="sub" style="font-size:15px;margin-top:-14px">Сайт собран автоматически из GEDCOM-файла, экспортированного из MyHeritage (Exported by MyHeritage.com from SKIBA in Скиба Web Site on Fri, 17 Jul 2026).</p>
+    <button class="btn" onclick="showPage(2)">Открыть древо</button>
+    <div class="stats">
+      <div><b>6</b><span>ПОКОЛЕНИЙ ПРОСЛЕЖЕНО</span></div>
+      <div><b>233</b><span>ЧЕЛОВЕК В БАЗЕ</span></div>
+      <div><b>62</b><span>РОДОВЫХ ФАМИЛИЙ</span></div>
+      <div><b>1 JUL 1884</b><span>САМАЯ РАННЯЯ ДАТА</span></div>
+    </div>
+  </div>
+</div>
+
+<section id="line">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Четыре линии · ветви одного рода</div>
+      <h2>Кем мы приходимся друг другу</h2>
+      <p>У Сергея и Надежды — четыре родительские линии. Ниже цепочки так, как они записаны в семейном древе.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2" style="margin-bottom:44px">
+      <div class="card">
+        <div class="tag">Линия отца · Матюхины</div>
+        <h3>Матюхины</h3>
+        <p><b>Матюхин Сергей</b> (р. 17 APR 1971) → <b>Матюхин Андрей</b> (1 OCT 1931 – 10 MAY 1996) → <b>Матюхин Иван(1)</b> (NOV 1892 – 1971) → <b>Матюхин Андрей</b> (р. 1870) → <b>Матюхин Федот</b> (р. BEF 1852)</p>
+        <p>Корни в селе <b>Мокрое</b> (Татарстан). Прапрадед <b>Федот Матюхин</b> — самая ранняя подтверждённая точка линии в экспорте.</p>
+        <div class="mini">Вглубь: метрики и ревизии по с. Мокрое, Новошешминск</div>
+      </div>
+      <div class="card">
+        <div class="tag">Линия отца · Астафьевы</div>
+        <h3>Астафьевы</h3>
+        <p><b>Матюхин Сергей</b> (р. 17 APR 1971) → <b>Астафьева Надежда</b> (22 AUG 1931 – 4 DEC 1997) → <b> Мария</b> (ум. зима 1961)</p>
+        <p>Линия бабушки <b>Надежды Астафьевой</b>. Прадед <b>Алексей Астафьев</b>; прабабушка <b>Мария Архиповна</b> — пока без полной фамилии в базе.</p>
+        <div class="mini">Цель: поднять метрики по Астрахани и Толкишу</div>
+      </div>
+      <div class="card">
+        <div class="tag">Линия матери · Скибы</div>
+        <h3>Скибы</h3>
+        <p><b>Скиба Надежда</b> (р. 21 JUL 1969) → <b>Скиба Эдуард</b> (19 FEB 1937 – 25 MAY 2015) → <b>Скиба Алексей</b> (10 APR 1907 – 13 OCT 1955) → <b>Скиба Григорий</b> (1879 – AFT 7 JAN 1956) → <b>Скиба Андрей</b> (ум. 1891)</p>
+        <p>Астраханская ветвь. Дед <b>Алексей Скиба</b> (1907–1955), прадед <b>Григорий</b>, прапрадед <b>Андрей Скиба</b>.</p>
+        <div class="mini">Вглубь: метрики Астрахани, семейные фотографии</div>
+      </div>
+      <div class="card">
+        <div class="tag">Линия матери · Поташкины и Алексеевы</div>
+        <h3>Поташкины и Алексеевы</h3>
+        <p><b>Скиба Надежда</b> (р. 21 JUL 1969) → <b>Поташкина Нина</b> (11 JUN 1938 – 23 APR 2000) → <b>Алексеева Серафима</b> (11 AUG 1912 – 26 JUL 1988) → <b>Елисеева Зинаида</b> (8 NOV 1888 – 25 FEB 1973)</p>
+        <p>Бабушка <b>Нина Поташкина</b> и прабабушка <b>Серафима Алексеева</b>. Через Алексеевых уходят линии <b>Захаровых</b> и <b>Елисеевых</b>.</p>
+        <div class="mini">Вглубь: астраханские метрики, исповедные росписи</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--bg2)">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Самая длинная прослеженная линия</div>
+      <h2>Матюхины: цепочка поколений</h2>
+      <p>От Сергея Андреевича вглубь по отцовской линии — так записано в GEDCOM.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="tl">
+      <div class="tl-item me">
+        <div class="tl-gen">Поколение 5 · линия Матюхиных</div>
+        <h3>Матюхин Сергей Андреевич</h3>
+        <div class="yrs">р. 17 APR 1971</div>
+        <p>Дмитров</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-gen">Поколение 4 · линия Матюхиных</div>
+        <h3>Матюхин Андрей Иванович</h3>
+        <div class="yrs">1 OCT 1931 – 10 MAY 1996</div>
+        <p>село Мокрое Тульской области</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-gen">Поколение 3 · линия Матюхиных</div>
+        <h3>Матюхин Иван(1) Андреевич</h3>
+        <div class="yrs">NOV 1892 – 1971</div>
+        <p>село Мокрое</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-gen">Поколение 2 · линия Матюхиных</div>
+        <h3>Матюхин Андрей Федотович</h3>
+        <div class="yrs">р. 1870</div>
+        <p>с.Мокрое</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-gen">Поколение 1 · линия Матюхиных</div>
+        <h3>Матюхин Федот</h3>
+        <div class="yrs">р. BEF 1852</div>
+        <p>Место уточняется по метрикам и семейным записям.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Ономастика</div>
+      <h2>Фамилии рода</h2>
+      <p>Десять самых частых фамилий в семейной базе.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2"><div class="card"><h4>Матюхин</h4><p>Русская фамилия; в деревне Мокрое (Татарстан) прослеживается с XIX века.</p><div class="mini">27 носителей в базе</div></div><div class="card"><h4>Захаров</h4><p>Прозвищная фамилия; линия через Алексеевых и Елисеевых.</p><div class="mini">15 носителей в базе</div></div><div class="card"><h4>Скиба</h4><p>Польско-белорусского происхождения; ветвь из Астрахани и Химок.</p><div class="mini">14 носителей в базе</div></div><div class="card"><h4>Матюхина</h4><p>Фамилия встречается в семейном древе; происхождение уточняется.</p><div class="mini">14 носителей в базе</div></div><div class="card"><h4>Алексеев</h4><p>Широкая русская фамилия; здесь — астраханская ветвь через Поташкиных.</p><div class="mini">11 носителей в базе</div></div><div class="card"><h4>Сахаров</h4><p>По браку и соседству в документах; требует уточнения связей.</p><div class="mini">9 носителей в базе</div></div><div class="card"><h4>Никитин</h4><p>Родственники по браку; встречаются в астраханских записях.</p><div class="mini">7 носителей в базе</div></div><div class="card"><h4>Поташкина</h4><p>Фамилия встречается в семейном древе; происхождение уточняется.</p><div class="mini">6 носителей в базе</div></div><div class="card"><h4>Алексеева</h4><p>Фамилия встречается в семейном древе; происхождение уточняется.</p><div class="mini">6 носителей в базе</div></div><div class="card"><h4>Поташкин</h4><p>От прозвища «поташник»; корни в Астраханской губернии.</p><div class="mini">6 носителей в базе</div></div></div>
+  </div>
+</section>
+
+<section style="background:var(--bg2)">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">География</div>
+      <h2>Гнёзда рода на карте слов</h2>
+      <p>Места, чаще всего встречающиеся в записях о рождении и смерти.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g3"><div class="card"><div class="tag">География</div><h4>Химки</h4><p>Упоминается в 8 записях о рождении и смерти.</p></div><div class="card"><div class="tag">География</div><h4>Астрахань</h4><p>Упоминается в 6 записях о рождении и смерти.</p></div><div class="card"><div class="tag">География</div><h4>с.Мокрое</h4><p>Упоминается в 4 записях о рождении и смерти.</p></div><div class="card"><div class="tag">География</div><h4>Химки, Московская область, Россия</h4><p>Упоминается в 3 записях о рождении и смерти.</p></div><div class="card"><div class="tag">География</div><h4>Россия</h4><p>Упоминается в 3 записях о рождении и смерти.</p></div><div class="card"><div class="tag">География</div><h4>Толкиш, Татария</h4><p>Упоминается в 2 записях о рождении и смерти.</p></div><div class="card"><div class="tag">География</div><h4>Новошешминск</h4><p>Упоминается в 2 записях о рождении и смерти.</p></div><div class="card"><div class="tag">География</div><h4>гХимки</h4><p>Упоминается в 2 записях о рождении и смерти.</p></div><div class="card"><div class="tag">География</div><h4>Россия Москва</h4><p>Упоминается в 2 записях о рождении и смерти.</p></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Точка встречи</div>
+      <h2>Химки · 25 ноября 2000</h2>
+      <p><b>Матюхин Сергей Андреевич</b> (р. 17 APR 1971, Дмитров) и <b>Скиба Надежда Эдуардовна</b> (р. 21 JUL 1969, Химки) поженились в Химках. Дочь <b>Матюхина Анна Сергеевна</b> (р. 3 NOV 2002) — продолжение рода.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="tag">Ныне живущие</div>
+        <h3>Сергей и Анна и Надежда</h3>
+        <p>Семейный архив ведётся в MyHeritage. Этот сайт — публичная витрина экспортированных данных.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Источник</div>
+        <h3>MyHeritage · SKIBA</h3>
+        <p>Экспорт GEDCOM 5.5.1 от 17 JUL 2026. 151 дат рождения, 50 дат смерти, 90 семейных пар.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="src">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Достоверность</div>
+      <h2>Источники</h2>
+      <p>Данные взяты из семейного древа MyHeritage без ручных дополнений.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2">
+      <div class="scard">
+        <h3>Электронная база</h3>
+        <ul>
+          <li><b>MyHeritage</b> — проект SKIBA, экспорт GEDCOM</li>
+          <li><b>Smart Matches</b> — совпадения по Скиба, Матюхиным</li>
+          <li><b>Семейные фотографии</b> — альбомы в MyHeritage</li>
+        </ul>
+      </div>
+      <div class="scard">
+        <h3>Архивные направления</h3>
+        <ul>
+          <li>Метрики по <b>с. Мокрое</b>, Новошешминск</li>
+          <li>ЗАГС и метрики <b>Астрахани</b></li>
+          <li>Записи по <b>Химкам</b> и Московской области</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<div class="page" id="page2">
+<section class="hero" style="padding:60px 0 40px">
+  <div class="wrap">
+    <div class="label">Страница 2 · визуальное древо · прямые предки</div>
+    <h1 style="font-size:clamp(34px,4vw,56px)">Древо прямых предков</h1>
+    <p class="sub">Читается слева направо: семья Сергея и Надежды → родители → деды → прадеды. Верхняя половина — линия Матюхиных, нижняя — Скибиных.</p>
+    <div class="stats" style="margin-top:24px">
+      <div><b>170</b><span>С УКАЗАННЫМИ РОДИТЕЛЯМИ</span></div>
+      <div><b>9</b><span>ЦЕЛЕЙ ПОИСКА</span></div>
+    </div>
+  </div>
+</section>
+
+<section style="overflow-x:auto;padding-top:20px">
+  <div class="wrap" style="max-width:none"><svg class="pedigree" viewBox="0 0 1068 886.0" xmlns="http://www.w3.org/2000/svg" style="min-width:1068px"><text x="12" y="18" class="colhead">СЕМЬЯ</text><text x="188" y="18" class="colhead">РОДИТЕЛИ</text><text x="364" y="18" class="colhead">ДЕДЫ</text><text x="540" y="18" class="colhead">ПРАДЕДЫ</text><text x="716" y="18" class="colhead">ПРАПРАДЕДЫ</text><text x="892" y="18" class="colhead">ГЛУБЖЕ</text><g class="bx me"><rect x="12" y="269" width="160" height="52" rx="8"/><text x="21" y="284" class="t1">Семья Матюхиных</text><text x="21" y="296" class="t2">Сергей · Надежда · Анна</text><text x="21" y="308" class="t3">ныне живущие</text></g><g class="bx me"><rect x="12" y="129" width="160" height="42" rx="8"/><text x="21" y="144" class="t1">Матюхин</text><text x="21" y="156" class="t2">Сергей Андреевич</text><text x="21" y="167" class="t3">17 APR 1971</text></g><g class="bx"><rect x="188" y="85.0" width="160" height="42" rx="8"/><text x="197" y="100.0" class="t1">Матюхин</text><text x="197" y="112.0" class="t2">Андрей Иванович</text><text x="197" y="123.0" class="t3">1 OCT 1931 – 10 MAY 1996</text></g><g class="bx"><rect x="364" y="41.0" width="160" height="42" rx="8"/><text x="373" y="56.0" class="t1">Матюхин</text><text x="373" y="68.0" class="t2">Иван(1) Андреевич</text><text x="373" y="79.0" class="t3">NOV 1892 – 1971</text></g><g class="bx"><rect x="540" y="-3.0" width="160" height="42" rx="8"/><text x="549" y="12.0" class="t1">Матюхин</text><text x="549" y="24.0" class="t2">Андрей Федотович</text><text x="549" y="35.0" class="t3">1870</text></g><g class="bx deep"><rect x="716" y="-47.0" width="160" height="42" rx="8"/><text x="725" y="-32.0" class="t1">Матюхин</text><text x="725" y="-20.0" class="t2">Федот</text><text x="725" y="-9.0" class="t3">BEF 1852</text></g><g class="bx"><rect x="540" y="173.0" width="160" height="42" rx="8"/><text x="549" y="188.0" class="t1">Горелова</text><text x="549" y="200.0" class="t2">Мария Федоровна</text><text x="549" y="211.0" class="t3">1871</text></g><g class="bx q"><rect x="716" y="129.0" width="160" height="42" rx="8"/><text x="725" y="144.0" class="t1">Горелов</text><text x="725" y="156.0" class="t2">Федор</text><text x="725" y="167.0" class="t3">? – ?</text></g><g class="bx"><rect x="364" y="217.0" width="160" height="42" rx="8"/><text x="373" y="232.0" class="t1">Алексанова</text><text x="373" y="244.0" class="t2">Прасковья Власовна</text><text x="373" y="255.0" class="t3">1892 – 1969</text></g><g class="bx q"><rect x="540" y="173.0" width="160" height="42" rx="8"/><text x="549" y="188.0" class="t1">Алексанов</text><text x="549" y="200.0" class="t2">Влас</text><text x="549" y="211.0" class="t3">BEF 1874</text></g><g class="bx"><rect x="188" y="261.0" width="160" height="42" rx="8"/><text x="197" y="276.0" class="t1">Астафьева</text><text x="197" y="288.0" class="t2">Надежда Алексеевна</text><text x="197" y="299.0" class="t3">22 AUG 1931 – 4 DEC 1997</text></g><g class="bx"><rect x="364" y="217.0" width="160" height="42" rx="8"/><text x="373" y="232.0" class="t1">Астафьев</text><text x="373" y="244.0" class="t2">Алексей Петрович</text><text x="373" y="255.0" class="t3">BEF 1898 – 22 AUG 1972</text></g><g class="bx q"><rect x="540" y="173.0" width="160" height="42" rx="8"/><text x="549" y="188.0" class="t1">Астафьев</text><text x="549" y="200.0" class="t2">Петр</text><text x="549" y="211.0" class="t3">? – ?</text></g><g class="bx"><rect x="364" y="393.0" width="160" height="42" rx="8"/><text x="373" y="408.0" class="t1"></text><text x="373" y="420.0" class="t2">Мария Архиповна</text><text x="373" y="431.0" class="t3">зима 1961</text></g><g class="bx q"><rect x="540" y="349.0" width="160" height="42" rx="8"/><text x="549" y="364.0" class="t1"></text><text x="549" y="376.0" class="t2">Архип</text><text x="549" y="387.0" class="t3">? – ?</text></g><g class="bx me"><rect x="12" y="409" width="160" height="42" rx="8"/><text x="21" y="424" class="t1">Скиба</text><text x="21" y="436" class="t2">Надежда Эдуардовна</text><text x="21" y="447" class="t3">21 JUL 1969</text></g><g class="bx"><rect x="188" y="365.0" width="160" height="42" rx="8"/><text x="197" y="380.0" class="t1">Скиба</text><text x="197" y="392.0" class="t2">Эдуард Алексеевич</text><text x="197" y="403.0" class="t3">19 FEB 1937 – 25 MAY 2015</text></g><g class="bx"><rect x="364" y="321.0" width="160" height="42" rx="8"/><text x="373" y="336.0" class="t1">Скиба</text><text x="373" y="348.0" class="t2">Алексей Григорьевич</text><text x="373" y="359.0" class="t3">10 APR 1907 – 13 OCT 1955</text></g><g class="bx"><rect x="540" y="277.0" width="160" height="42" rx="8"/><text x="549" y="292.0" class="t1">Скиба</text><text x="549" y="304.0" class="t2">Григорий Андреевич</text><text x="549" y="315.0" class="t3">1879 – AFT 7 JAN 1956</text></g><g class="bx q"><rect x="716" y="233.0" width="160" height="42" rx="8"/><text x="725" y="248.0" class="t1">Скиба</text><text x="725" y="260.0" class="t2">Андрей Степанович</text><text x="725" y="271.0" class="t3">1891</text></g><g class="bx q"><rect x="716" y="409.0" width="160" height="42" rx="8"/><text x="725" y="424.0" class="t1"></text><text x="725" y="436.0" class="t2">Пелагея Васильевна</text><text x="725" y="447.0" class="t3">1937</text></g><g class="bx"><rect x="540" y="453.0" width="160" height="42" rx="8"/><text x="549" y="468.0" class="t1">Захарченкова(Захарченко?)</text><text x="549" y="480.0" class="t2">Зинаида Агеевна</text><text x="549" y="491.0" class="t3">? – ?</text></g><g class="bx q"><rect x="716" y="409.0" width="160" height="42" rx="8"/><text x="725" y="424.0" class="t1">Захарченко</text><text x="725" y="436.0" class="t2">Агей Никифорович</text><text x="725" y="447.0" class="t3">1921</text></g><g class="bx q"><rect x="716" y="585.0" width="160" height="42" rx="8"/><text x="725" y="600.0" class="t1"></text><text x="725" y="612.0" class="t2">Ульяна Васильевна</text><text x="725" y="623.0" class="t3">1947</text></g><g class="bx"><rect x="364" y="497.0" width="160" height="42" rx="8"/><text x="373" y="512.0" class="t1">Алексеева</text><text x="373" y="524.0" class="t2">Маргарита Васильевна</text><text x="373" y="535.0" class="t3">8 SEP 1909 – 19 JUL 1987</text></g><g class="bx"><rect x="540" y="453.0" width="160" height="42" rx="8"/><text x="549" y="468.0" class="t1">Алексеев</text><text x="549" y="480.0" class="t2">Василий Васильевич</text><text x="549" y="491.0" class="t3">1875 – 1935</text></g><g class="bx q"><rect x="716" y="409.0" width="160" height="42" rx="8"/><text x="725" y="424.0" class="t1">Алексеев</text><text x="725" y="436.0" class="t2">Василий</text><text x="725" y="447.0" class="t3">? – ?</text></g><g class="bx q"><rect x="540" y="629.0" width="160" height="42" rx="8"/><text x="549" y="644.0" class="t1"></text><text x="549" y="656.0" class="t2">Агафья Андреевна</text><text x="549" y="667.0" class="t3">1880 – 1944</text></g><g class="bx"><rect x="188" y="541.0" width="160" height="42" rx="8"/><text x="197" y="556.0" class="t1">Поташкина</text><text x="197" y="568.0" class="t2">Нина Федоровна</text><text x="197" y="579.0" class="t3">11 JUN 1938 – 23 APR 2000</text></g><g class="bx"><rect x="364" y="497.0" width="160" height="42" rx="8"/><text x="373" y="512.0" class="t1">Поташкин</text><text x="373" y="524.0" class="t2">Федор Георгиевич</text><text x="373" y="535.0" class="t3">23 FEB 1904 – 11 JAN 1970</text></g><g class="bx q"><rect x="540" y="453.0" width="160" height="42" rx="8"/><text x="549" y="468.0" class="t1">Поташкин</text><text x="549" y="480.0" class="t2">Георгий</text><text x="549" y="491.0" class="t3">MAR 1919</text></g><g class="bx q"><rect x="540" y="629.0" width="160" height="42" rx="8"/><text x="549" y="644.0" class="t1"></text><text x="549" y="656.0" class="t2">Дарья</text><text x="549" y="667.0" class="t3">? – ?</text></g><g class="bx"><rect x="364" y="673.0" width="160" height="42" rx="8"/><text x="373" y="688.0" class="t1">Алексеева</text><text x="373" y="700.0" class="t2">Серафима Григорьевна</text><text x="373" y="711.0" class="t3">11 AUG 1912 – 26 JUL 1988</text></g><g class="bx"><rect x="540" y="629.0" width="160" height="42" rx="8"/><text x="549" y="644.0" class="t1">Захаров/Алексеев</text><text x="549" y="656.0" class="t2">Григорий Спиридонович</text><text x="549" y="667.0" class="t3">23 JAN 1887 – 16 NOV 1966</text></g><g class="bx deep"><rect x="716" y="585.0" width="160" height="42" rx="8"/><text x="725" y="600.0" class="t1">Захаров</text><text x="725" y="612.0" class="t2">Спиридон Ермилович(Ермолаевич)</text><text x="725" y="623.0" class="t3">1861</text></g><g class="bx q"><rect x="716" y="761.0" width="160" height="42" rx="8"/><text x="725" y="776.0" class="t1"></text><text x="725" y="788.0" class="t2">Елизавета Николаевна</text><text x="725" y="799.0" class="t3">1864</text></g><g class="bx"><rect x="540" y="805.0" width="160" height="42" rx="8"/><text x="549" y="820.0" class="t1">Елисеева</text><text x="549" y="832.0" class="t2">Зинаида Петровна</text><text x="549" y="843.0" class="t3">8 NOV 1888 – 25 FEB 1973</text></g><g class="bx q"><rect x="716" y="761.0" width="160" height="42" rx="8"/><text x="725" y="776.0" class="t1">Елисеев</text><text x="725" y="788.0" class="t2">Петр</text><text x="725" y="799.0" class="t3">? – ?</text></g></svg>
+    <div class="legend">
+      <span><i style="background:rgba(58,16,40,.9);border:1px solid var(--border)"></i>установленный предок</span>
+      <span><i style="border:1px dashed var(--line)"></i>связь не замкнута</span>
+      <span><i style="background:rgba(14,143,75,.25);border:1px solid var(--green)"></i>ныне живущая семья</span>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--bg2)">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Что ищем дальше</div>
+      <h2>Карта поиска: белые пятна</h2>
+      <p>Приоритеты — по GEDCOM-записям, где родители ещё не указаны.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2">
+        <div class="goalrow"><div class="n">1</div><div>
+          <b>Родители — Цыганов Александр Павлович (10 SEP 1925 – 15 DEC 2013)</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div>
+        <div class="goalrow"><div class="n">2</div><div>
+          <b>Родители — Карачкова Мария Михайловна (12 AUG 1923 – 2014)</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div>
+        <div class="goalrow"><div class="n">3</div><div>
+          <b>Родители — Чернова (Перова, Кузнецова) Марта Николаевна (13 MAR 1935 – 1 AUG 1993)</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div>
+        <div class="goalrow"><div class="n">4</div><div>
+          <b>Родители — Успенский Евгений Андреевич (18 SEP 1949 – 7 JUL 2005)</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div>
+        <div class="goalrow"><div class="n">5</div><div>
+          <b>Родители — Сахаров Николай (1837 – 1 FEB 1916)</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div>
+        <div class="goalrow"><div class="n">6</div><div>
+          <b>Родители — Елизавета Николаевна (р. 1864)</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div>
+        <div class="goalrow"><div class="n">7</div><div>
+          <b>Родители — Марфа Павловна (р. 1866)</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div>
+        <div class="goalrow"><div class="n">8</div><div>
+          <b>Родители — Александра Ивановна (р. 1877)</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div>
+        <div class="goalrow"><div class="n">9</div><div>
+          <b>Родители — Александра Ивановна (р. 1877)</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div></div>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="wrap"><b>Род Матюхиных и Скибиных</b> · семейный архив · данные MyHeritage SKIBA · экспорт 17 JUL 2026 · сайт сгенерирован из GEDCOM</div>
+</footer>
+
+<script>
+function showPage(n) {
+  document.getElementById('page1').classList.toggle('visible', n===1);
+  document.getElementById('page2').classList.toggle('visible', n===2);
+  document.getElementById('nb1').classList.toggle('active', n===1);
+  document.getElementById('nb2').classList.toggle('active', n===2);
+  window.scrollTo({top:0});
+}
+</script>
+</body>
+</html>
