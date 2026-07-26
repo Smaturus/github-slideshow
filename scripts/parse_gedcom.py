@@ -7,8 +7,14 @@ import json
 import re
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Any
+
+
+# People born more than this many years ago are treated as deceased when GEDCOM
+# has no explicit death record (common for 19th-century ancestors).
+PRESUMED_DECEASED_AGE = 110
 
 
 MONTHS_RU = {
@@ -73,6 +79,7 @@ class Person:
     birt_plac: str = ""
     deat: str = ""
     deat_plac: str = ""
+    deceased: bool = False
     occu: str = ""
     note: str = ""
     fams: list[str] = field(default_factory=list)
@@ -115,7 +122,13 @@ class Person:
 
     @property
     def is_living(self) -> bool:
-        return not self.deat
+        """True only for people without a death record who could plausibly be alive."""
+        if self.deat or self.deceased:
+            return False
+        birth_year = year_only(self.birt)
+        if birth_year:
+            return int(birth_year) > date.today().year - PRESUMED_DECEASED_AGE
+        return False
 
     @property
     def public_years(self) -> str:
@@ -237,8 +250,11 @@ def parse_gedcom(path: Path) -> tuple[dict[str, Person], dict[str, Family], dict
                     person.birt = value
                 elif path == ("BIRT", "PLAC"):
                     person.birt_plac = value
+                elif path == ("DEAT",):
+                    person.deceased = True
                 elif path == ("DEAT", "DATE"):
                     person.deat = value
+                    person.deceased = True
                 elif path == ("DEAT", "PLAC"):
                     person.deat_plac = value
                 elif path == ("OCCU",):
