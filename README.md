@@ -1,13 +1,20 @@
-# Your GitHub Learning Lab Repository for Introducing GitHub
+# Род Баталовых — семейный архив и древо
 
-Welcome to **your** repository for your GitHub Learning Lab course. This repository will be used during the different activities that I will be guiding you through. See a word you don't understand? We've included an emoji 📖 next to some key terms. Click on it to see its definition.
+Статический сайт семейного архива: летопись рода, визуальное древо прямых предков, карта поиска и источники.
 
-Oh! I haven't introduced myself...
+## Просмотр локально
 
-I'm the GitHub Learning Lab bot and I'm here to help guide you in your journey to learn and master the various topics covered in this course. I will be using Issue and Pull Request comments to communicate with you. In fact, I already added an issue for you to check out.
+```bash
+python3 -m http.server 8080
+```
 
-![issue tab](https://lab.github.com/public/images/issue_tab.png)
+Откройте http://localhost:8080
 
-I'll meet you over there, can't wait to get started!
+## GitHub Pages
 
-This course is using the :sparkles: open source project [reveal.js](https://github.com/hakimel/reveal.js/). In some cases we’ve made changes to the history so it would behave during class, so head to the original project repo to learn more about the cool people behind this project.
+Сайт публикуется как статический `index.html` из корня репозитория (файл `.nojekyll` отключает обработку Jekyll).
+
+## Структура
+
+- `index.html` — полный сайт (две страницы: «Летопись рода» и «Древо»)
+- Старые файлы Jekyll/reveal.js оставлены в репозитории, но не используются для публикации
