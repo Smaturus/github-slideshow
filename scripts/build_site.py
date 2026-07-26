@@ -308,13 +308,13 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Род Матюхиных и Скибиных — семейный архив</title>
+<title>Род Матюхиных и Скиба — семейный архив</title>
 <style>{css}</style>
 </head>
 <body>
 <nav>
   <div class="wrap">
-    <div class="brand">Род Матюхиных и Скибиных</div>
+    <div class="brand">Род Матюхиных и Скиба</div>
     <button class="navbtn active" id="nb1" onclick="showPage(1)">Летопись рода</button>
     <button class="navbtn" id="nb2" onclick="showPage(2)">Древо</button>
   </div>
@@ -324,7 +324,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <div class="hero">
   <div class="wrap">
     <div class="label">Семейный архив · MyHeritage · экспорт {esc(export_date)}</div>
-    <h1>Летопись рода Матюхиных и Скибиных</h1>
+    <h1>Летопись рода Матюхиных и Скиба</h1>
     <p class="sub">Две главные линии — <b>Матюхины</b> с татарского села Мокрое и <b>Скибы</b> из Астрахани — сошлись в семье Сергея и Надежды. Подмосковье и Поволжье, уральские и астраханские ветви; {st['people']} человек в базе, {st['surnames']} фамилий, {documented_gens} поколений прослежено.</p>
     <p class="sub" style="font-size:15px;margin-top:-14px">Сайт собран автоматически из GEDCOM-файла, экспортированного из MyHeritage ({esc(meta.get('file', 'SKIBA'))}).</p>
     <button class="btn" onclick="showPage(2)">Открыть древо</button>
@@ -473,7 +473,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
   <div class="wrap">
     <div class="label">Страница 2 · визуальное древо · прямые предки</div>
     <h1 style="font-size:clamp(34px,4vw,56px)">Древо прямых предков</h1>
-    <p class="sub">Читается слева направо: семья Сергея и Надежды → родители → деды → прадеды. Верхняя половина — линия Матюхиных, нижняя — Скибиных.</p>
+    <p class="sub">Читается слева направо: семья Сергея и Надежды → родители → деды → прадеды. Верхняя половина — линия Матюхиных, нижняя — Скиба.</p>
     <div class="stats" style="margin-top:24px">
       <div><b>{len([p for p in people.values() if p.famc])}</b><span>С УКАЗАННЫМИ РОДИТЕЛЯМИ</span></div>
       <div><b>{len(goals)}</b><span>ЦЕЛЕЙ ПОИСКА</span></div>
@@ -505,7 +505,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 </div>
 
 <footer>
-  <div class="wrap"><b>Род Матюхиных и Скибиных</b> · семейный архив · данные MyHeritage SKIBA · экспорт {esc(export_date)} · сайт сгенерирован из GEDCOM</div>
+  <div class="wrap"><b>Род Матюхиных и Скиба</b> · семейный архив · данные MyHeritage SKIBA · экспорт {esc(export_date)} · сайт сгенерирован из GEDCOM</div>
 </footer>
 
 <script>
