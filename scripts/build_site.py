@@ -26,7 +26,7 @@ OUTPUT_PATH = Path(__file__).resolve().parents[1] / "index.html"
 CSS = Path(__file__).resolve().parents[1] / "assets" / "site.css"
 
 SURNAME_NOTES = {
-    "Матюхин": "Русская фамилия; в селе Мокрое Белевского уезда Тульской губернии прослеживается с середины XIX века (Федот Матюхин).",
+    "Матюхин": "Русская фамилия от уменьшительной формы имени Матвей. В селе Мокрое Белевского уезда достоверно прослеживается с Андрея Федотовича (р. 1870); принадлежность его отца Федота к Матюхиным ещё требует подтверждения.",
     "Скиба": "Украинская фамилия (скиба — «ломоть хлеба»); род из села Лозовая Павловка на Донбассе, затем Тула и Химки.",
     "Захаров": "Род из Толкиша (Татария): Ермил → Спиридон → Григорий Спиридонович, который писался и Захаровым, и Алексеевым.",
     "Алексеев": "Внимание: в древе две несвязанные ветви Алексеевых — татарская (из Захаровых) и донбасская. Обе сходятся в бабушках Надежды Скиба.",
@@ -285,12 +285,16 @@ def render_box(node: TreeNode, max_gen: int) -> str:
     classes = ["bx"]
     if node.gen == 0:
         classes.append("me")
+    elif person.is_reconstructed:
+        classes.append("hyp")
     elif not node.children and person.birt:
         classes.append("deep")
 
     surname = person.surname or person.name
     given = person.name if person.surname else ""
     years = person.public_years.replace("р. ", "").replace("ум. ", "† ")
+    if person.is_reconstructed and not person.is_living:
+        years = f"{years} · гипотеза" if years != "? – ?" else "гипотеза"
 
     return (
         f'<g class="{" ".join(classes)}"><rect x="{x}" y="{y:.1f}" width="{BOX_W}" height="{BOX_H}" rx="8"/>'
@@ -488,8 +492,9 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
         <div class="tag">Линия Сергея · по отцу</div>
         <h3>Матюхины</h3>
         <p>{chain_text(father_line[:5])}</p>
-        <p>Корни в селе <b>Мокрое</b> Белевского уезда Тульской губернии. Прапрадед <b>Федот Матюхин</b> — самая ранняя подтверждённая точка линии в экспорте.</p>
-        <div class="mini">Вглубь: метрики и ревизии Белевского уезда (ГАТО, Тула)</div>
+        <p>Корни в селе <b>Мокрое</b> Белевского уезда Тульской губернии. По архивным документам подтверждены родители Андрея — <b>Федот Григорьев</b> и <b>Параскева Петрова</b>.</p>
+        <p>В базе он записан как «Федот Матюхин, р. до 1852», но <b>фамилия, дата рождения и отождествление с Федотом 1818/1819 года — пока гипотеза</b><span class="gip">гипотеза</span>: карточка не имеет источника, дата вычислена от года рождения сына.</p>
+        <div class="mini">Проверить: ревизские сказки и метрики Белевского уезда (ГАТО, Тула)</div>
       </div>
       <div class="card">
         <div class="tag">Линия Сергея · по матери</div>
@@ -607,19 +612,28 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 
 <section class="src">
   <div class="wrap">
-    <div class="sect-head">
+      <div class="sect-head">
       <div class="label">Достоверность</div>
-      <h2>Источники</h2>
-      <p>Данные взяты из семейного древа MyHeritage без ручных дополнений.</p>
+      <h2>Источники и оговорки</h2>
+      <p>Персональные данные импортированы из GEDCOM-экспорта MyHeritage. Описания, этимология фамилий, географические комментарии и направления поиска <b>сформированы автоматически и требуют проверки</b>.</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2">
       <div class="scard">
-        <h3>Электронная база</h3>
+        <h3>Что откуда взято</h3>
         <ul>
-          <li><b>MyHeritage</b> — проект SKIBA, экспорт GEDCOM</li>
-          <li><b>Smart Matches</b> — совпадения по Скиба, Матюхиным</li>
-          <li><b>Семейные фотографии</b> — альбомы в MyHeritage</li>
+          <li><b>Имена, даты, родственные связи</b> — GEDCOM MyHeritage, проект SKIBA</li>
+          <li><b>Записи с источником</b> — {st['sourced']} из {st['people']}: метрики, Smart Matches, семейные документы</li>
+          <li><b>Записи без источника</b> — {st['unsourced']}: внесены по воспоминаниям или реконструированы</li>
+          <li><b>Тексты разделов</b> — сгенерированы автоматически, не проверены архивно</li>
+        </ul>
+      </div>
+      <div class="scard">
+        <h3>Как читать пометки</h3>
+        <ul>
+          <li><span class="leg">гипотеза</span> запись без источника с вычисленной датой</li>
+          <li><b>«до 1852», «ок. 1870»</b> — дата выведена от родственников, а не из документа</li>
+          <li><b>Пунктирная карточка в древе</b> — предок не найден, это цель поиска</li>
         </ul>
       </div>
       <div class="scard">
@@ -653,9 +667,10 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section style="overflow-x:auto;padding-top:20px">
   <div class="wrap" style="max-width:none">{pedigree_svg}
     <div class="legend">
-      <span><i style="background:rgba(58,16,40,.9);border:1px solid var(--border)"></i>установленный предок</span>
-      <span><i style="border:1px dashed var(--line)"></i>связь не замкнута</span>
-      <span><i style="background:rgba(14,143,75,.25);border:1px solid var(--green)"></i>ныне живущая семья</span>
+      <span><i style="background:rgba(58,16,40,.9);border:1px solid var(--border)"></i>предок с записью в базе</span>
+      <span><i style="border:1px dashed var(--champ2);background:rgba(58,16,40,.55)"></i>гипотеза — нет источника, дата вычислена</span>
+      <span><i style="border:1px dashed var(--line)"></i>предок не найден — цель поиска</span>
+      <span><i style="background:rgba(14,143,75,.25);border:1px solid var(--green)"></i>ныне живущие</span>
     </div>
   </div>
 </section>
