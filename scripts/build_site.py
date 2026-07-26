@@ -142,12 +142,22 @@ GENERATION_NAMES = {
     6: "шестое поколение",
 }
 
-BOX_W = 158
-BOX_H = 44
-COL_W = 186
-ROW_H = 58
-TOP_PAD = 42
-LEFT_PAD = 12
+BOX_W = 214
+BOX_H = 78
+COL_W = 242
+ROW_H = 92
+TOP_PAD = 56
+LEFT_PAD = 18
+
+STATUS_LABELS = {
+    "ok": "Подтверждено",
+    "hyp": "Гипотеза",
+    "q": "Нет данных",
+}
+# SVG не переносит и не измеряет текст, поэтому ширина плашки задаётся
+# вручную под длину подписи.
+STATUS_BADGE_W = {"ok": 100, "hyp": 74, "q": 86}
+BADGE_H = 16
 
 COLUMN_TITLES = [
     "СЕМЬЯ",
@@ -243,39 +253,57 @@ def render_connectors(node: TreeNode, max_gen: int) -> list[str]:
     return out
 
 
-def render_box(node: TreeNode, max_gen: int) -> str:
+def render_badge(x: float, cy: float, status: str) -> str:
+    """Status pill in the lower-left corner of a tree card."""
+    width = STATUS_BADGE_W[status]
+    return (
+        f'<rect class="bg" x="{x + 12}" y="{cy + 18:.1f}" width="{width}" '
+        f'height="{BADGE_H}" rx="{BADGE_H / 2}"/>'
+        f'<text class="bdg" x="{x + 12 + width / 2:.1f}" y="{cy + 29.4:.1f}" '
+        f'text-anchor="middle">{esc(STATUS_LABELS[status])}</text>'
+    )
+
+
+def render_person_box(x: float, cy: float, person: Person, extra: list[str]) -> str:
+    status = "hyp" if person.is_reconstructed else "ok"
+    surname = person.surname or person.name
+    given = person.name if person.surname else ""
+    years = person.public_years.replace("р. ", "").replace("ум. ", "† ")
+    if years == "? – ?":
+        years = ""
+
+    return (
+        f'<g class="{" ".join(["bx", status, *extra])}">'
+        f'<rect class="fr" x="{x}" y="{cy - BOX_H / 2:.1f}" width="{BOX_W}" height="{BOX_H}" rx="10"/>'
+        f'<text class="t1" x="{x + 12}" y="{cy - 22:.1f}">{esc(surname)}</text>'
+        f'<text class="t2" x="{x + 12}" y="{cy - 5:.1f}">{esc(given)}</text>'
+        f'<text class="t3" x="{x + 12}" y="{cy + 13:.1f}">{esc(years)}</text>'
+        f'{render_badge(x, cy, status)}</g>'
+    )
+
+
+def render_box(node: TreeNode) -> str:
     x = LEFT_PAD + node.gen * COL_W
-    y = node.y - BOX_H / 2
 
     if node.is_missing:
         return (
-            f'<g class="bx q"><rect x="{x}" y="{y:.1f}" width="{BOX_W}" height="{BOX_H}" rx="8"/>'
-            f'<text x="{x + 10}" y="{node.y - 6:.1f}" class="t1">—</text>'
-            f'<text x="{x + 10}" y="{node.y + 12:.1f}" class="t3">{esc(node.placeholder)}</text></g>'
+            f'<g class="bx q">'
+            f'<rect class="fr" x="{x}" y="{node.y - BOX_H / 2:.1f}" '
+            f'width="{BOX_W}" height="{BOX_H}" rx="10"/>'
+            f'<text class="t1" x="{x + 12}" y="{node.y - 22:.1f}">—</text>'
+            f'<text class="t2" x="{x + 12}" y="{node.y - 5:.1f}">{esc(node.placeholder)}</text>'
+            f'{render_badge(x, node.y, "q")}</g>'
         )
 
     person = node.person
     assert person is not None
-    classes = ["bx"]
+    extra: list[str] = []
     if node.gen == 0:
-        classes.append("me")
-    elif person.is_reconstructed:
-        classes.append("hyp")
-    elif not node.children and person.birt:
-        classes.append("deep")
+        extra.append("me")
+    elif not node.children and person.birt and not person.is_reconstructed:
+        extra.append("deep")
 
-    surname = person.surname or person.name
-    given = person.name if person.surname else ""
-    years = person.public_years.replace("р. ", "").replace("ум. ", "† ")
-    if person.is_reconstructed and not person.is_living:
-        years = f"{years} · гипотеза" if years != "? – ?" else "гипотеза"
-
-    return (
-        f'<g class="{" ".join(classes)}"><rect x="{x}" y="{y:.1f}" width="{BOX_W}" height="{BOX_H}" rx="8"/>'
-        f'<text x="{x + 10}" y="{node.y - 9:.1f}" class="t1">{esc(surname)}</text>'
-        f'<text x="{x + 10}" y="{node.y + 3:.1f}" class="t2">{esc(given)}</text>'
-        f'<text x="{x + 10}" y="{node.y + 15:.1f}" class="t3">{esc(years)}</text></g>'
-    )
+    return render_person_box(x, node.y, person, extra)
 
 
 def render_pedigree_svg(
@@ -290,7 +318,7 @@ def render_pedigree_svg(
     father_tree = build_ancestor_tree(root.id, people, families, max_gen)
     mother_tree = build_ancestor_tree(spouse.id, people, families, max_gen)
 
-    cursor = [TOP_PAD + ROW_H]
+    cursor = [TOP_PAD + BOX_H / 2]
     assign_positions(father_tree, cursor)
     cursor[0] += ROW_H * 1.5
     assign_positions(mother_tree, cursor)
@@ -301,7 +329,7 @@ def render_pedigree_svg(
 
     parts: list[str] = []
     for index, title in enumerate(COLUMN_TITLES[: max_gen + 1]):
-        parts.append(f'<text x="{LEFT_PAD + index * COL_W}" y="20" class="colhead">{esc(title)}</text>')
+        parts.append(f'<text x="{LEFT_PAD + index * COL_W}" y="26" class="colhead">{esc(title)}</text>')
 
     parts.extend(render_connectors(father_tree, max_gen))
     parts.extend(render_connectors(mother_tree, max_gen))
@@ -316,17 +344,10 @@ def render_pedigree_svg(
     if child:
         y_child = (father_tree.y + mother_tree.y) / 2
         parts.append(f'<path class="ln" d="M{x_mid} {y_child:.1f} H{LEFT_PAD}"/>')
-        parts.append(
-            f'<g class="bx me"><rect x="{LEFT_PAD}" y="{y_child - BOX_H / 2:.1f}" '
-            f'width="{BOX_W}" height="{BOX_H}" rx="8"/>'
-            f'<text x="{LEFT_PAD + 10}" y="{y_child - 9:.1f}" class="t1">{esc(child.surname)}</text>'
-            f'<text x="{LEFT_PAD + 10}" y="{y_child + 3:.1f}" class="t2">{esc(child.name)}</text>'
-            f'<text x="{LEFT_PAD + 10}" y="{y_child + 15:.1f}" class="t3">'
-            f'{esc(child.public_years.replace("р. ", ""))}</text></g>'
-        )
+        parts.append(render_person_box(LEFT_PAD, y_child, child, ["me"]))
 
     for node in nodes:
-        parts.append(render_box(node, max_gen))
+        parts.append(render_box(node))
 
     width = LEFT_PAD * 2 + (max_gen + 1) * COL_W
     height = max(node.y for node in nodes) + ROW_H
@@ -445,13 +466,13 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
     <div class="label">Семейный архив · MyHeritage · экспорт {esc(export_date)}</div>
     <h1>Летопись рода Матюхиных и Скиба</h1>
     <p class="sub">Две главные линии — <b>Матюхины</b> из села Мокрое Тульской губернии и <b>Скибы</b> с донбасской Лозовой Павловки — сошлись в семье Сергея и Надежды. Тульская земля и Донбасс, Валдай и Татария, Подмосковье; {counted(st['people'], ('человек', 'человека', 'человек'))} в базе, {counted(st['surnames'], ('фамилия', 'фамилии', 'фамилий'))}, {counted(documented_gens, ('поколение', 'поколения', 'поколений'))} прослежено.</p>
-    <p class="sub" style="font-size:15px;margin-top:-14px">Страница собрана автоматически из семейного древа MyHeritage. Точные даты, места рождения и контактные данные ныне живущих не публикуются; указаны только имена и годы рождения.</p>
+    <p class="sub note">Страница собрана автоматически из семейного древа MyHeritage. Точные даты, места рождения и контактные данные ныне живущих не публикуются; указаны только имена и годы рождения.</p>
     <button class="btn" onclick="showPage(2)">Открыть древо</button>
     <div class="stats">
       <div><b>{documented_gens}</b><span>{plural(documented_gens, ('ПОКОЛЕНИЕ', 'ПОКОЛЕНИЯ', 'ПОКОЛЕНИЙ'))} ПРОСЛЕЖЕНО</span></div>
       <div><b>{st['people']}</b><span>{plural(st['people'], ('ЧЕЛОВЕК', 'ЧЕЛОВЕКА', 'ЧЕЛОВЕК'))} В БАЗЕ</span></div>
       <div><b>{st['surnames']}</b><span>РОДОВЫХ ФАМИЛИЙ</span></div>
-      <div><b>{st['earliest_year'] or 'XIX в.'}</b><span>ГОД РОЖДЕНИЯ САМОГО РАННЕГО ПРЕДКА</span></div>
+      <div><b>{st['earliest_year'] or 'XIX в.'}</b><span>САМОЕ РАННЕЕ РОЖДЕНИЕ</span></div>
     </div>
   </div>
 </div>
@@ -527,7 +548,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
   </div>
 </section>
 
-<section style="background:var(--bg2)">
+<section class="alt">
   <div class="wrap">
     <div class="sect-head">
       <div class="label">Самая длинная прослеженная линия</div>
@@ -552,7 +573,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
   </div>
 </section>
 
-<section style="background:var(--bg2)">
+<section class="alt">
   <div class="wrap">
     <div class="sect-head">
       <div class="label">География</div>
@@ -643,10 +664,10 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 </div>
 
 <div class="page" id="page2">
-<section class="hero" style="padding:60px 0 40px">
+<section class="hero hero-compact">
   <div class="wrap">
     <div class="label">Страница 2 · визуальное древо · прямые предки</div>
-    <h1 style="font-size:clamp(34px,4vw,56px)">Древо прямых предков</h1>
+    <h1>Древо прямых предков</h1>
     <p class="sub">Читается слева направо: семья Сергея и Надежды → родители → деды → прадеды. Верхняя половина — линия Матюхиных, нижняя — Скиба.</p>
     <div class="stats" style="margin-top:24px">
       <div><b>{len([p for p in people.values() if p.famc])}</b><span>С УКАЗАННЫМИ РОДИТЕЛЯМИ</span></div>
@@ -655,18 +676,18 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
   </div>
 </section>
 
-<section style="overflow-x:auto;padding-top:20px">
+<section class="treewrap">
   <div class="wrap" style="max-width:none">{pedigree_svg}
     <div class="legend">
-      <span><i style="background:rgba(58,16,40,.9);border:1px solid var(--border)"></i>предок с записью в базе</span>
-      <span><i style="border:1px dashed var(--champ2);background:rgba(58,16,40,.55)"></i>гипотеза — нет источника, дата вычислена или отсутствует</span>
-      <span><i style="border:1px dashed var(--line)"></i>предок не найден — цель поиска</span>
-      <span><i style="background:rgba(14,143,75,.25);border:1px solid var(--green)"></i>ныне живущие</span>
+      <span><i class="ok"></i>Подтверждено — предок с записью в базе</span>
+      <span><i class="hyp"></i>Гипотеза — нет источника, дата вычислена или отсутствует</span>
+      <span><i class="q"></i>Нет данных — предок не найден, цель поиска</span>
+      <span><i class="anchor"></i>Семья, от которой ведётся отсчёт</span>
     </div>
   </div>
 </section>
 
-<section style="background:var(--bg2)">
+<section class="alt">
   <div class="wrap">
     <div class="sect-head">
       <div class="label">Что ищем дальше</div>
