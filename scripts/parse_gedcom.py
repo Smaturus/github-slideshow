@@ -78,6 +78,7 @@ class Person:
     fams: list[str] = field(default_factory=list)
     famc: str = ""
     email: str = ""
+    sources: list[str] = field(default_factory=list)
 
     @property
     def name(self) -> str:
@@ -128,6 +129,23 @@ class Person:
     def public_place(self) -> str:
         """Birthplace is hidden for living people."""
         return "" if self.is_living else (self.birt_plac or self.deat_plac)
+
+    @property
+    def has_source(self) -> bool:
+        return bool(self.sources)
+
+    @property
+    def has_derived_date(self) -> bool:
+        """Date was computed from relatives rather than read from a record."""
+        head = (self.birt or "").split(" ", 1)[0].upper()
+        return head in {"BEF", "AFT", "ABT", "EST", "CAL", "BET"}
+
+    @property
+    def is_reconstructed(self) -> bool:
+        """No source and no exact date: the entry is a research hypothesis."""
+        if self.has_source:
+            return False
+        return self.has_derived_date or not self.birt
 
 
 def year_only(date: str) -> str:
@@ -230,6 +248,8 @@ def parse_gedcom(path: Path) -> tuple[dict[str, Person], dict[str, Family], dict
                     person.famc = value
                 elif path == ("RESI", "EMAIL"):
                     person.email = value  # kept in memory only, never rendered
+                elif path == ("SOUR",):
+                    person.sources.append(value)
             people[person.id] = person
         elif record["tag"] == "FAM":
             family = Family(id=record["xref"] or "")
@@ -347,6 +367,9 @@ def stats(people: dict[str, Person], families: dict[str, Family]) -> dict[str, A
         "top_places": places.most_common(12),
         "with_birth": sum(1 for p in people.values() if p.birt),
         "with_death": sum(1 for p in people.values() if p.deat),
+        "sourced": sum(1 for p in people.values() if p.has_source),
+        "unsourced": sum(1 for p in people.values() if not p.has_source),
+        "reconstructed": sum(1 for p in people.values() if p.is_reconstructed),
         "earliest_year": min(birth_years, default=0),
     }
 
