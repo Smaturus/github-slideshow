@@ -133,6 +133,49 @@ def clean_name(value: str) -> str:
     return value.strip()
 
 
+def plural(count: int, forms: tuple[str, str, str]) -> str:
+    """Pick the Russian form for a count: forms are (1, 2-4, 5+)."""
+    tail = abs(int(count)) % 100
+    if 11 <= tail <= 14:
+        return forms[2]
+    tail %= 10
+    if tail == 1:
+        return forms[0]
+    if 2 <= tail <= 4:
+        return forms[1]
+    return forms[2]
+
+
+def counted(count: int, forms: tuple[str, str, str]) -> str:
+    """Render a number with the correctly declined noun: '3 записи'."""
+    return f"{count} {plural(count, forms)}"
+
+
+# After these consonants a feminine genitive takes -и instead of -ы (Ольга → Ольги).
+_HUSHING = set("жчшщгкх")
+
+
+def genitive_given_name(name: str, sex: str = "") -> str:
+    """Decline a Russian given name into the genitive: 'Анна' -> 'Анны'."""
+    first = (name or "").split()
+    if not first:
+        return ""
+    word = first[0]
+    stem, last = word[:-1], word[-1].lower()
+
+    if last == "я":
+        return stem + "и"
+    if last == "а":
+        return stem + ("и" if stem and stem[-1].lower() in _HUSHING else "ы")
+    if last == "й":
+        return stem + "я"
+    if last == "ь":
+        return stem + ("и" if sex == "F" else "я")
+    if last in "оеуюыиэ":
+        return word
+    return word + "а"
+
+
 @dataclass
 class Person:
     id: str
@@ -163,6 +206,13 @@ class Person:
     def label(self) -> str:
         if self.surname and self.name:
             return f"{self.surname} {self.name}"
+        return self.name or self.surname or "неизвестный"
+
+    @property
+    def display_name(self) -> str:
+        """Name in natural reading order: 'Алексей Петрович Астафьев'."""
+        if self.surname and self.name:
+            return f"{self.name} {self.surname}"
         return self.name or self.surname or "неизвестный"
 
     @property
@@ -219,6 +269,22 @@ class Person:
         """Date was computed from relatives rather than read from a record."""
         head = (self.birt or "").split(" ", 1)[0].upper()
         return head in {"BEF", "AFT", "ABT", "EST", "CAL", "BET"}
+
+    @property
+    def birth_precision(self) -> str:
+        """How exactly the birth date is known: missing/qualified/full/month/year."""
+        value = (self.birt or "").strip()
+        if not value:
+            return "missing"
+        if self.has_derived_date:
+            return "qualified"
+        if re.fullmatch(r"\d{1,2}\s+[A-Za-z]{3}\s+\d{4}", value):
+            return "full"
+        if re.fullmatch(r"[A-Za-z]{3}\s+\d{4}", value):
+            return "month_year"
+        if re.fullmatch(r"\d{4}", value):
+            return "year"
+        return "other"
 
     @property
     def is_reconstructed(self) -> bool:
@@ -444,6 +510,7 @@ def stats(people: dict[str, Person], families: dict[str, Family]) -> dict[str, A
                 places[place.strip()] += 1
 
     birth_years = [int(y) for y in (year_only(p.birt) for p in people.values()) if y]
+    precision = Counter(p.birth_precision for p in people.values())
     return {
         "people": len(people),
         "families": len(families),
@@ -453,10 +520,12 @@ def stats(people: dict[str, Person], families: dict[str, Family]) -> dict[str, A
         "with_birth": sum(1 for p in people.values() if p.birt),
         "with_death": sum(1 for p in people.values() if p.deat),
         "matched": sum(1 for p in people.values() if p.has_match),
-        "exact_dated": sum(
-            1 for p in people.values() if p.birt and not p.has_derived_date
-        ),
-        "reconstructed": sum(1 for p in people.values() if p.is_reconstructed),
+        # Birth-date precision: these five buckets add up to the whole database.
+        "birth_full": precision["full"],
+        "birth_year_only": precision["year"],
+        "birth_month_year": precision["month_year"] + precision["other"],
+        "birth_qualified": precision["qualified"],
+        "birth_missing": precision["missing"],
         "earliest_year": min(birth_years, default=0),
     }
 
