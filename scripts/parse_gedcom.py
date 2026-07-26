@@ -11,6 +11,58 @@ from pathlib import Path
 from typing import Any
 
 
+MONTHS_RU = {
+    "JAN": "января", "FEB": "февраля", "MAR": "марта", "APR": "апреля",
+    "MAY": "мая", "JUN": "июня", "JUL": "июля", "AUG": "августа",
+    "SEP": "сентября", "OCT": "октября", "NOV": "ноября", "DEC": "декабря",
+}
+MONTHS_RU_SHORT = {
+    "JAN": "янв.", "FEB": "фев.", "MAR": "мар.", "APR": "апр.",
+    "MAY": "мая", "JUN": "июн.", "JUL": "июл.", "AUG": "авг.",
+    "SEP": "сен.", "OCT": "окт.", "NOV": "ноя.", "DEC": "дек.",
+}
+DATE_QUALIFIERS = {
+    "ABT": "ок.", "BEF": "до", "AFT": "после", "EST": "ок.", "CAL": "ок.",
+}
+
+
+def format_date(value: str) -> str:
+    """Render a GEDCOM date in Russian: '17 APR 1971' -> '17 апреля 1971'."""
+    value = (value or "").strip()
+    if not value:
+        return ""
+
+    range_match = re.match(r"^BET\s+(.+?)\s+AND\s+(.+)$", value, re.IGNORECASE)
+    if range_match:
+        return f"между {format_date(range_match.group(1))} и {format_date(range_match.group(2))}"
+
+    prefix = ""
+    head = value.split(" ", 1)[0].upper()
+    if head in DATE_QUALIFIERS:
+        prefix = DATE_QUALIFIERS[head] + " "
+        value = value[len(head):].strip()
+
+    full = re.match(r"^(\d{1,2})\s+([A-Z]{3})\s+(\d{4})$", value, re.IGNORECASE)
+    if full:
+        day, month, year = full.groups()
+        return f"{prefix}{int(day)} {MONTHS_RU.get(month.upper(), month)} {year}"
+
+    month_year = re.match(r"^([A-Z]{3})\s+(\d{4})$", value, re.IGNORECASE)
+    if month_year:
+        month, year = month_year.groups()
+        return f"{prefix}{MONTHS_RU_SHORT.get(month.upper(), month)} {year}"
+
+    return f"{prefix}{value}"
+
+
+def clean_name(value: str) -> str:
+    """Strip research artefacts from names: 'Иван(1)', '??????', trailing '?'."""
+    value = re.sub(r"\(\d+\)", "", value or "")
+    value = re.sub(r"\?{2,}", "", value)
+    value = re.sub(r"\s{2,}", " ", value)
+    return value.strip()
+
+
 @dataclass
 class Person:
     id: str
@@ -28,26 +80,36 @@ class Person:
     email: str = ""
 
     @property
+    def name(self) -> str:
+        return clean_name(self.givn)
+
+    @property
+    def surname(self) -> str:
+        return clean_name(self.surn)
+
+    @property
     def label(self) -> str:
-        if self.surn and self.givn:
-            return f"{self.surn} {self.givn}"
-        return self.givn or self.surn or self.id
+        if self.surname and self.name:
+            return f"{self.surname} {self.name}"
+        return self.name or self.surname or "неизвестный"
 
     @property
     def short(self) -> str:
-        parts = self.givn.split()
-        if parts and self.surn:
-            return f"{self.surn} {parts[0]}"
+        parts = self.name.split()
+        if parts and self.surname:
+            return f"{self.surname} {parts[0]}"
         return self.label
 
     @property
     def years(self) -> str:
-        if self.birt and self.deat:
-            return f"{self.birt} – {self.deat}"
-        if self.birt:
-            return f"р. {self.birt}"
-        if self.deat:
-            return f"ум. {self.deat}"
+        birth = format_date(self.birt)
+        death = format_date(self.deat)
+        if birth and death:
+            return f"{birth} – {death}"
+        if birth:
+            return f"р. {birth}"
+        if death:
+            return f"ум. {death}"
         return "? – ?"
 
     @property
@@ -266,9 +328,9 @@ def canonical_surname(surname: str, known: set[str]) -> str:
 
 
 def stats(people: dict[str, Person], families: dict[str, Family]) -> dict[str, Any]:
-    raw_surnames = {p.surn for p in people.values() if p.surn}
+    raw_surnames = {p.surname for p in people.values() if p.surname}
     surnames = Counter(
-        canonical_surname(p.surn, raw_surnames) for p in people.values() if p.surn
+        canonical_surname(p.surname, raw_surnames) for p in people.values() if p.surname
     )
     places = Counter()
     for person in people.values():
@@ -276,7 +338,7 @@ def stats(people: dict[str, Person], families: dict[str, Family]) -> dict[str, A
             if place.strip():
                 places[place.strip()] += 1
 
-    dated_births = [p.birt for p in people.values() if p.birt]
+    birth_years = [int(y) for y in (year_only(p.birt) for p in people.values()) if y]
     return {
         "people": len(people),
         "families": len(families),
@@ -285,7 +347,7 @@ def stats(people: dict[str, Person], families: dict[str, Family]) -> dict[str, A
         "top_places": places.most_common(12),
         "with_birth": sum(1 for p in people.values() if p.birt),
         "with_death": sum(1 for p in people.values() if p.deat),
-        "earliest": min(dated_births, default=""),
+        "earliest_year": min(birth_years, default=0),
     }
 
 
