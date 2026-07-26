@@ -1,0 +1,531 @@
+#!/usr/bin/env python3
+"""Generate family archive website from GEDCOM export."""
+
+from __future__ import annotations
+
+import html
+import math
+from pathlib import Path
+
+from parse_gedcom import Family, Person, ancestors, direct_lines, parse_gedcom, stats
+
+ROOT_ID = "@I1@"
+GEDCOM_PATH = Path(__file__).resolve().parents[1] / "data" / "skiba.ged"
+OUTPUT_PATH = Path(__file__).resolve().parents[1] / "index.html"
+
+CSS = Path(__file__).resolve().parents[1] / "assets" / "site.css"
+
+SURNAME_NOTES = {
+    "Матюхин": "Русская фамилия; в деревне Мокрое (Татарстан) прослеживается с XIX века.",
+    "Скиба": "Польско-белорусского происхождения; ветвь из Астрахани и Химок.",
+    "Захаров": "Прозвищная фамилия; линия через Алексеевых и Елисеевых.",
+    "Алексеев": "Широкая русская фамилия; здесь — астраханская ветвь через Поташкиных.",
+    "Поташкин": "От прозвища «поташник»; корни в Астраханской губернии.",
+    "Астафьев": "От имени Астафий; линия матери Сергея Матюхина.",
+    "Никитин": "Родственники по браку; встречаются в астраханских записях.",
+    "Сахаров": "По браку и соседству в документах; требует уточнения связей.",
+    "Горелов": "Воронежско-татарская линия; прабабушка Ивана Матюхина.",
+    "Алексанов": "Прапрабабушка по линии Матюхиных — Прасковья Алексанова.",
+    "Елисеева": "Уральско-поволжская линия; прапрапрабабушка Надежды Скиба.",
+    "Васильев": "Встречается в ветви Алексеевых через брак.",
+}
+
+
+def esc(text: str) -> str:
+    return html.escape(text or "", quote=True)
+
+
+def chain_text(people: list[Person]) -> str:
+    return " → ".join(f"<b>{esc(p.surn)} {esc(p.givn.split()[0] if p.givn else '')}</b> ({esc(p.years)})" for p in people)
+
+
+def count_generations(pid: str, people: dict[str, Person], families: dict[str, Family]) -> int:
+    depth = 0
+    current = pid
+    while current in people and people[current].famc in families:
+        depth += 1
+        family = families[people[current].famc]
+        parent = family.husb or family.wife
+        if not parent:
+            break
+        current = parent
+    return depth
+
+
+def missing_parent_goals(people: dict[str, Person], families: dict[str, Family], limit: int = 9) -> list[tuple[Person, str]]:
+    goals: list[tuple[Person, str]] = []
+    for person in people.values():
+        if person.famc and person.famc in families:
+            family = families[person.famc]
+            if not family.husb:
+                goals.append((person, "отец"))
+            if not family.wife:
+                goals.append((person, "мать"))
+        elif person.birt and person.id not in {"@I1@", "@I2@", "@I3@"}:
+            goals.append((person, "родители"))
+    goals.sort(key=lambda item: (0 if item[1] == "родители" else 1, item[0].birt or "ZZZ"))
+    return goals[:limit]
+
+
+class TreeNode:
+    def __init__(self, person: Person | None, gen: int, branch: str, slot: int):
+        self.person = person
+        self.gen = gen
+        self.branch = branch  # father / mother
+        self.slot = slot
+        self.children: list[TreeNode] = []
+
+    @property
+    def missing(self) -> bool:
+        return self.person is None
+
+
+def build_branch(
+    pid: str | None,
+    gen: int,
+    branch: str,
+    slot: int,
+    people: dict[str, Person],
+    families: dict[str, Family],
+    max_gen: int,
+) -> TreeNode | None:
+    if gen > max_gen:
+        return None
+    person = people.get(pid) if pid else None
+    node = TreeNode(person, gen, branch, slot)
+    if not person or not person.famc or person.famc not in families:
+        return node
+    family = families[person.famc]
+    father = build_branch(family.husb, gen + 1, branch, slot * 2, people, families, max_gen)
+    mother = build_branch(family.wife, gen + 1, branch, slot * 2 + 1, people, families, max_gen)
+    if father:
+        node.children.append(father)
+    if mother:
+        node.children.append(mother)
+    return node
+
+
+def layout_tree(
+    father_root: TreeNode | None,
+    mother_root: TreeNode | None,
+    max_gen: int,
+) -> tuple[list[dict], float]:
+    """Assign y positions for pedigree boxes."""
+    boxes: list[dict] = []
+    row_h = 96
+    top_base = 80
+    bottom_base = 80 + row_h * (2 ** max_gen) / 2
+
+    def place(node: TreeNode | None, gen: int, y: float, x_col: int, branch: str) -> None:
+        if node is None:
+            return
+        x = 10 + gen * 184
+        person = node.person
+        if person:
+            cls = "me" if gen == 0 else ("q" if not person.famc else "")
+            if gen == max_gen and person.birt:
+                cls = (cls + " deep").strip()
+            boxes.append(
+                {
+                    "x": x,
+                    "y": y,
+                    "person": person,
+                    "cls": cls,
+                    "gen": gen,
+                    "branch": branch,
+                }
+            )
+        if node.children:
+            span = row_h * (2 ** (max_gen - gen - 1))
+            start_y = y - span / 2 + row_h / 4
+            for i, child in enumerate(node.children):
+                place(child, gen + 1, start_y + i * span, x_col, branch)
+
+    if father_root:
+        place(father_root, 0, top_base + row_h * 1.5, 0, "father")
+    if mother_root:
+        place(mother_root, 0, bottom_base + row_h * 3, 0, "mother")
+
+  # family box at generation -1 equivalent
+    height = max(b["y"] for b in boxes) + 80 if boxes else 600
+    return boxes, height
+
+
+def render_pedigree_svg(
+    root: Person,
+    spouse: Person,
+    child: Person | None,
+    people: dict[str, Person],
+    families: dict[str, Family],
+    max_gen: int = 4,
+) -> str:
+    father_root = build_branch(root.id, 0, "father", 0, people, families, max_gen)
+    mother_root = build_branch(spouse.id, 0, "mother", 0, people, families, max_gen)
+
+    boxes: list[dict] = []
+    row_h = 88
+    cols = ["СЕМЬЯ", "РОДИТЕЛИ", "ДЕДЫ", "ПРАДЕДЫ", "ПРАПРАДЕДЫ", "ГЛУБЖЕ"]
+
+    def walk(node: TreeNode | None, gen: int, y_center: float, branch: str) -> float:
+        if node is None:
+            return y_center
+        x = 12 + gen * 176
+        p = node.person
+        if p:
+            boxes.append({"x": x, "y": y_center, "p": p, "gen": gen, "branch": branch, "missing": not p.famc})
+        if not node.children:
+            return y_center
+        span = row_h * max(1, 2 ** (len(node.children) - 1))
+        start = y_center - span / 2 + row_h / 2
+        ys = []
+        for i, child_node in enumerate(node.children):
+            cy = start + i * (span / max(1, len(node.children) - 1)) if len(node.children) > 1 else y_center
+            ys.append(walk(child_node, gen + 1, cy, branch))
+        return y_center
+
+    walk(father_root, 0, 150, "father")
+    walk(mother_root, 0, 430, "mother")
+
+    # family card
+    fam_y = 290
+    boxes.insert(
+        0,
+        {
+            "x": 12,
+            "y": fam_y,
+            "p": None,
+            "gen": -1,
+            "branch": "family",
+            "missing": False,
+            "custom": [root, spouse, child] if child else [root, spouse],
+        },
+    )
+
+    max_y = max(b["y"] for b in boxes) + 60
+    width = 12 + (max_gen + 2) * 176
+
+    lines: list[str] = []
+    for i, title in enumerate(cols[: max_gen + 2]):
+        lines.append(f'<text x="{12 + i * 176}" y="18" class="colhead">{esc(title)}</text>')
+
+    for box in boxes:
+        x, y = box["x"], box["y"]
+        if box.get("custom"):
+            people_line = box["custom"]
+            lines.append(f'<g class="bx me"><rect x="{x}" y="{y - 21}" width="160" height="52" rx="8"/>')
+            lines.append(f'<text x="{x + 9}" y="{y - 6}" class="t1">Семья Матюхиных</text>')
+            names = " · ".join(esc(p.givn.split()[0] if p.givn else p.surn) for p in people_line)
+            lines.append(f'<text x="{x + 9}" y="{y + 6}" class="t2">{names}</text>')
+            lines.append(f'<text x="{x + 9}" y="{y + 18}" class="t3">ныне живущие</text></g>')
+            continue
+        p: Person = box["p"]
+        cls = "bx"
+        if box["gen"] == 0:
+            cls += " me"
+        elif box["missing"] and box["gen"] > 0:
+            cls += " q"
+        elif box["gen"] == max_gen:
+            cls += " deep"
+        givn = p.givn.split()[0] if p.givn else ""
+        lines.append(f'<g class="{cls}"><rect x="{x}" y="{y - 21}" width="160" height="42" rx="8"/>')
+        lines.append(f'<text x="{x + 9}" y="{y - 6}" class="t1">{esc(p.surn)}</text>')
+        lines.append(f'<text x="{x + 9}" y="{y + 6}" class="t2">{esc(p.givn)}</text>')
+        yrs = p.years.replace("р. ", "").replace("ум. ", "")
+        lines.append(f'<text x="{x + 9}" y="{y + 17}" class="t3">{esc(yrs)}</text></g>')
+
+    svg = (
+        f'<svg class="pedigree" viewBox="0 0 {width} {max_y}" xmlns="http://www.w3.org/2000/svg" style="min-width:{width}px">'
+        + "".join(lines)
+        + "</svg>"
+    )
+    return svg
+
+
+def build_html(people: dict[str, Person], families: dict[str, Family], meta: dict[str, str]) -> str:
+    root = people[ROOT_ID]
+    spouse_fam = families[root.fams[0]]
+    spouse_id = spouse_fam.wife if spouse_fam.husb == ROOT_ID else spouse_fam.husb
+    spouse = people[spouse_id]
+    children = [people[c] for c in spouse_fam.chil if c in people]
+    child = children[0] if children else None
+
+    st = stats(people, families)
+    father_line = direct_lines(ROOT_ID, people, families)["father"]
+    mother_line = direct_lines(ROOT_ID, people, families)["mother"]
+    skiba_father = direct_lines(spouse_id, people, families)["father"]
+    skiba_mother = direct_lines(spouse_id, people, families)["mother"]
+
+    gens_father = count_generations(ROOT_ID, people, families)
+    gens_skiba = count_generations(spouse_id, people, families)
+    documented_gens = max(gens_father, gens_skiba) + 1
+    goals = missing_parent_goals(people, families)
+
+    timeline_people = father_line[:6]
+    if len(timeline_people) < 4:
+        timeline_people = skiba_father[:6]
+
+    places_html = "".join(
+        f'<div class="card"><div class="tag">География</div><h4>{esc(place)}</h4>'
+        f'<p>Упоминается в {count} записях о рождении и смерти.</p></div>'
+        for place, count in st["top_places"][:9]
+    )
+
+    surnames_html = "".join(
+        f'<div class="card"><h4>{esc(name)}</h4>'
+        f'<p>{esc(SURNAME_NOTES.get(name, "Фамилия встречается в семейном древе; происхождение уточняется."))}</p>'
+        f'<div class="mini">{count} носителей в базе</div></div>'
+        for name, count in st["top_surnames"][:10]
+    )
+
+    timeline_html = ""
+    for i, person in enumerate(timeline_people):
+        me = " me" if person.id == ROOT_ID else ""
+        timeline_html += f"""
+      <div class="tl-item{me}">
+        <div class="tl-gen">Поколение {len(timeline_people) - i} · линия Матюхиных</div>
+        <h3>{esc(person.surn)} {esc(person.givn)}</h3>
+        <div class="yrs">{esc(person.years)}</div>
+        <p>{esc(person.birt_plac or person.deat_plac or 'Место уточняется по метрикам и семейным записям.')}</p>
+      </div>"""
+
+    goals_html = ""
+    for i, (person, kind) in enumerate(goals, 1):
+        goals_html += f"""
+        <div class="goalrow"><div class="n">{i}</div><div>
+          <b>{kind.capitalize()} — {esc(person.label)} ({esc(person.years)})</b>
+          <p>Запись о рождении есть, родственная связь вверх пока не замкнута в GEDCOM-экспорте.</p>
+          <div class="st">MyHeritage · метрики · архивные запросы</div>
+        </div></div>"""
+
+    pedigree_svg = render_pedigree_svg(root, spouse, child, people, families, max_gen=4)
+    export_date = meta.get("date", "2026")
+    child_line = f" и {esc(child.givn.split()[0])}" if child else ""
+
+    css = CSS.read_text(encoding="utf-8") if CSS.exists() else ""
+
+    return f"""<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Род Матюхиных и Скибиных — семейный архив</title>
+<style>{css}</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <div class="brand">Род Матюхиных и Скибиных</div>
+    <button class="navbtn active" id="nb1" onclick="showPage(1)">Летопись рода</button>
+    <button class="navbtn" id="nb2" onclick="showPage(2)">Древо</button>
+  </div>
+</nav>
+
+<div class="page visible" id="page1">
+<div class="hero">
+  <div class="wrap">
+    <div class="label">Семейный архив · MyHeritage · экспорт {esc(export_date)}</div>
+    <h1>Летопись рода Матюхиных и Скибиных</h1>
+    <p class="sub">Две главные линии — <b>Матюхины</b> с татарского села Мокрое и <b>Скибы</b> из Астрахани — сошлись в семье Сергея и Надежды. Подмосковье и Поволжье, уральские и астраханские ветви; {st['people']} человек в базе, {st['surnames']} фамилий, {documented_gens} поколений прослежено.</p>
+    <p class="sub" style="font-size:15px;margin-top:-14px">Сайт собран автоматически из GEDCOM-файла, экспортированного из MyHeritage ({esc(meta.get('file', 'SKIBA'))}).</p>
+    <button class="btn" onclick="showPage(2)">Открыть древо</button>
+    <div class="stats">
+      <div><b>{documented_gens}</b><span>ПОКОЛЕНИЙ ПРОСЛЕЖЕНО</span></div>
+      <div><b>{st['people']}</b><span>ЧЕЛОВЕК В БАЗЕ</span></div>
+      <div><b>{st['surnames']}</b><span>РОДОВЫХ ФАМИЛИЙ</span></div>
+      <div><b>{esc(st['earliest'] or 'XIX в.')}</b><span>САМАЯ РАННЯЯ ДАТА</span></div>
+    </div>
+  </div>
+</div>
+
+<section id="line">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Четыре линии · ветви одного рода</div>
+      <h2>Кем мы приходимся друг другу</h2>
+      <p>У Сергея и Надежды — четыре родительские линии. Ниже цепочки так, как они записаны в семейном древе.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2" style="margin-bottom:44px">
+      <div class="card">
+        <div class="tag">Линия отца · Матюхины</div>
+        <h3>Матюхины</h3>
+        <p>{chain_text(father_line[:5])}</p>
+        <p>Корни в селе <b>Мокрое</b> (Татарстан). Прапрадед <b>Федот Матюхин</b> — самая ранняя подтверждённая точка линии в экспорте.</p>
+        <div class="mini">Вглубь: метрики и ревизии по с. Мокрое, Новошешминск</div>
+      </div>
+      <div class="card">
+        <div class="tag">Линия отца · Астафьевы</div>
+        <h3>Астафьевы</h3>
+        <p>{chain_text(mother_line[:4])}</p>
+        <p>Линия бабушки <b>Надежды Астафьевой</b>. Прадед <b>Алексей Астафьев</b>; прабабушка <b>Мария Архиповна</b> — пока без полной фамилии в базе.</p>
+        <div class="mini">Цель: поднять метрики по Астрахани и Толкишу</div>
+      </div>
+      <div class="card">
+        <div class="tag">Линия матери · Скибы</div>
+        <h3>Скибы</h3>
+        <p>{chain_text(skiba_father[:5])}</p>
+        <p>Астраханская ветвь. Дед <b>Алексей Скиба</b> (1907–1955), прадед <b>Григорий</b>, прапрадед <b>Андрей Скиба</b>.</p>
+        <div class="mini">Вглубь: метрики Астрахани, семейные фотографии</div>
+      </div>
+      <div class="card">
+        <div class="tag">Линия матери · Поташкины и Алексеевы</div>
+        <h3>Поташкины и Алексеевы</h3>
+        <p>{chain_text(skiba_mother[:5])}</p>
+        <p>Бабушка <b>Нина Поташкина</b> и прабабушка <b>Серафима Алексеева</b>. Через Алексеевых уходят линии <b>Захаровых</b> и <b>Елисеевых</b>.</p>
+        <div class="mini">Вглубь: астраханские метрики, исповедные росписи</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--bg2)">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Самая длинная прослеженная линия</div>
+      <h2>Матюхины: цепочка поколений</h2>
+      <p>От Сергея Андреевича вглубь по отцовской линии — так записано в GEDCOM.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="tl">{timeline_html}
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Ономастика</div>
+      <h2>Фамилии рода</h2>
+      <p>Десять самых частых фамилий в семейной базе.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2">{surnames_html}</div>
+  </div>
+</section>
+
+<section style="background:var(--bg2)">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">География</div>
+      <h2>Гнёзда рода на карте слов</h2>
+      <p>Места, чаще всего встречающиеся в записях о рождении и смерти.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g3">{places_html}</div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Точка встречи</div>
+      <h2>Химки · 25 ноября 2000</h2>
+      <p><b>{esc(root.label)}</b> ({esc(root.years)}, {esc(root.birt_plac)}) и <b>{esc(spouse.label)}</b> ({esc(spouse.years)}, {esc(spouse.birt_plac)}) поженились в Химках. Дочь <b>{esc(child.label) if child else '—'}</b>{' (' + esc(child.years) + ')' if child else ''} — продолжение рода.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="tag">Ныне живущие</div>
+        <h3>Сергей{child_line} и Надежда</h3>
+        <p>Семейный архив ведётся в MyHeritage. Этот сайт — публичная витрина экспортированных данных.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Источник</div>
+        <h3>MyHeritage · SKIBA</h3>
+        <p>Экспорт GEDCOM 5.5.1 от {esc(export_date)}. {st['with_birth']} дат рождения, {st['with_death']} дат смерти, {st['families']} семейных пар.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="src">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Достоверность</div>
+      <h2>Источники</h2>
+      <p>Данные взяты из семейного древа MyHeritage без ручных дополнений.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2">
+      <div class="scard">
+        <h3>Электронная база</h3>
+        <ul>
+          <li><b>MyHeritage</b> — проект SKIBA, экспорт GEDCOM</li>
+          <li><b>Smart Matches</b> — совпадения по Скиба, Матюхиным</li>
+          <li><b>Семейные фотографии</b> — альбомы в MyHeritage</li>
+        </ul>
+      </div>
+      <div class="scard">
+        <h3>Архивные направления</h3>
+        <ul>
+          <li>Метрики по <b>с. Мокрое</b>, Новошешминск</li>
+          <li>ЗАГС и метрики <b>Астрахани</b></li>
+          <li>Записи по <b>Химкам</b> и Московской области</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<div class="page" id="page2">
+<section class="hero" style="padding:60px 0 40px">
+  <div class="wrap">
+    <div class="label">Страница 2 · визуальное древо · прямые предки</div>
+    <h1 style="font-size:clamp(34px,4vw,56px)">Древо прямых предков</h1>
+    <p class="sub">Читается слева направо: семья Сергея и Надежды → родители → деды → прадеды. Верхняя половина — линия Матюхиных, нижняя — Скибиных.</p>
+    <div class="stats" style="margin-top:24px">
+      <div><b>{len([p for p in people.values() if p.famc])}</b><span>С УКАЗАННЫМИ РОДИТЕЛЯМИ</span></div>
+      <div><b>{len(goals)}</b><span>ЦЕЛЕЙ ПОИСКА</span></div>
+    </div>
+  </div>
+</section>
+
+<section style="overflow-x:auto;padding-top:20px">
+  <div class="wrap" style="max-width:none">{pedigree_svg}
+    <div class="legend">
+      <span><i style="background:rgba(58,16,40,.9);border:1px solid var(--border)"></i>установленный предок</span>
+      <span><i style="border:1px dashed var(--line)"></i>связь не замкнута</span>
+      <span><i style="background:rgba(14,143,75,.25);border:1px solid var(--green)"></i>ныне живущая семья</span>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--bg2)">
+  <div class="wrap">
+    <div class="sect-head">
+      <div class="label">Что ищем дальше</div>
+      <h2>Карта поиска: белые пятна</h2>
+      <p>Приоритеты — по GEDCOM-записям, где родители ещё не указаны.</p>
+      <div class="hr"></div>
+    </div>
+    <div class="grid g2">{goals_html}</div>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="wrap"><b>Род Матюхиных и Скибиных</b> · семейный архив · данные MyHeritage SKIBA · экспорт {esc(export_date)} · сайт сгенерирован из GEDCOM</div>
+</footer>
+
+<script>
+function showPage(n) {{
+  document.getElementById('page1').classList.toggle('visible', n===1);
+  document.getElementById('page2').classList.toggle('visible', n===2);
+  document.getElementById('nb1').classList.toggle('active', n===1);
+  document.getElementById('nb2').classList.toggle('active', n===2);
+  window.scrollTo({{top:0}});
+}}
+</script>
+</body>
+</html>"""
+
+
+def main() -> None:
+    people, families, meta = parse_gedcom(GEDCOM_PATH)
+    OUTPUT_PATH.write_text(build_html(people, families, meta), encoding="utf-8")
+    print(f"Wrote {OUTPUT_PATH} ({OUTPUT_PATH.stat().st_size} bytes)")
+
+
+if __name__ == "__main__":
+    main()
