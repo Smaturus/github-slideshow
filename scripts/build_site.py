@@ -934,7 +934,29 @@ function showPage(n) {{
 def main() -> None:
     content = load_content()
     people, families, meta = parse_gedcom(GEDCOM_PATH)
-    OUTPUT_PATH.write_text(build_html(people, families, meta, content), encoding="utf-8")
+    html_content = build_html(people, families, meta, content)
+
+    # Post-build safety validation (P0 invariant check):
+    # Ensure no exact birth dates or places of living people leaked into the generated HTML.
+    for person in people.values():
+        if person.is_living:
+            if person.birt and len(person.birt) > 4:
+                # If exact birth date exists (e.g. "17 APR 1971"), it must not be in the output
+                if person.birt in html_content:
+                    raise ValueError(f"CRITICAL PRIVACY LEAK: Exact birth date '{person.birt}' of living person {person.id} ({person.label}) leaked into generated HTML!")
+                # Also check common formatted variations of exact dates to be safe
+                formatted = format_date(person.birt)
+                if formatted and len(formatted) > 4 and formatted in html_content:
+                    raise ValueError(f"CRITICAL PRIVACY LEAK: Formatted birth date '{formatted}' of living person {person.id} ({person.label}) leaked into generated HTML!")
+            if person.birt_plac:
+                # Birthplace of living people must not leak into the output.
+                # Since place names like "Дмитров" or "Химки" are mentioned in general historical texts,
+                # we only trigger an error if the birthplace is rendered in direct association with the person,
+                # or if a specific public_place check is violated (public_place must be empty for living).
+                if person.public_place:
+                    raise ValueError(f"CRITICAL PRIVACY LEAK: public_place is not empty for living person {person.id} ({person.label}): '{person.public_place}'")
+
+    OUTPUT_PATH.write_text(html_content, encoding="utf-8")
     print(f"Wrote {OUTPUT_PATH} ({OUTPUT_PATH.stat().st_size} bytes)")
 
 

@@ -193,6 +193,8 @@ class Person:
     famc: str = ""
     email: str = ""
     sources: list[str] = field(default_factory=list)
+    # Anchor year for age-based privacy checks, defaults to date.today().year
+    reference_year: int = field(default_factory=lambda: date.today().year)
 
     @property
     def name(self) -> str:
@@ -241,8 +243,10 @@ class Person:
             return False
         birth_year = year_only(self.birt)
         if birth_year:
-            return int(birth_year) > date.today().year - PRESUMED_DECEASED_AGE
-        return False
+            return int(birth_year) > self.reference_year - PRESUMED_DECEASED_AGE
+        # Fail-safe: if birth year is unknown and there is no death record,
+        # treat them as living to avoid accidental disclosure of details.
+        return True
 
     @property
     def public_years(self) -> str:
@@ -366,11 +370,20 @@ def parse_gedcom(path: Path) -> tuple[dict[str, Person], dict[str, Family], dict
         if record["tag"] == "HEAD":
             for path, tag, value in _walk_items(record["items"]):
                 if path == ("FILE",):
-                    meta["file"] = value
+                     meta["file"] = value
                 elif path == ("DATE",):
-                    meta["date"] = value
-        elif record["tag"] == "INDI":
-            person = Person(id=record["xref"] or "")
+                     meta["date"] = value
+
+    # Extract reference year from export metadata if available, e.g. "17 JUL 2026"
+    ref_year = date.today().year
+    if "date" in meta:
+        match = re.search(r"\b(\d{4})\b", meta["date"])
+        if match:
+            ref_year = int(match.group(1))
+
+    for record in records:
+        if record["tag"] == "INDI":
+            person = Person(id=record["xref"] or "", reference_year=ref_year)
             for path, tag, value in _walk_items(record["items"]):
                 if path == ("NAME", "GIVN"):
                     person.givn = value
