@@ -134,11 +134,13 @@ nav .brand{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--i
 .leg{display:inline-block;background:var(--plum-tint);color:var(--plum);font-weight:600;border-radius:6px;padding:2px 9px;font-size:12px;letter-spacing:.07em;text-transform:uppercase;margin-right:8px;vertical-align:1px}
 
 /* ДРЕВО — статус данных кодируется цветом рамки и бейджем.
-   Восемь поколений не умещаются в экран (ширина вёрстки ~1972 px), поэтому
-   .treewrap — горизонтальный скроллпорт: страница по горизонтали не едет,
-   а древо прокручивается внутри секции. */
-.treewrap{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;padding-top:26px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--line-strong) var(--paper-deep)}
-.treewrap::-webkit-scrollbar{height:10px}
+   Восемь поколений не умещаются в экран (ширина вёрстки ~1972 px, высота SVG
+   ~2700 px), поэтому .treewrap — двухосевой скроллпорт внутри viewport:
+   страница по горизонтали не едет (body overflow-x:hidden), а древо
+   прокручивается внутри секции. max-height держит горизонтальный скроллбар
+   в видимой области, а не внизу высокого SVG. */
+.treewrap{overflow:auto;overscroll-behavior:contain;max-height:min(85vh,920px);padding-top:26px;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--line-strong) var(--paper-deep)}
+.treewrap::-webkit-scrollbar{height:10px;width:10px}
 .treewrap::-webkit-scrollbar-track{background:var(--paper-deep);border-radius:5px}
 .treewrap::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:5px}
 /* width:auto вместо 100%: иначе SVG сжимается по ширине контейнера и вместо
