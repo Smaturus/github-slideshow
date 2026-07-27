@@ -1,43 +1,57 @@
-name: Publish site
+name: Publish static site to gh-pages
 
 on:
   push:
     branches: [master]
-  workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: gh-pages-sync
+  cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout master
         uses: actions/checkout@v4
-
-      - name: Prepare site files
-        run: |
-          mkdir site
-          cp index.html .nojekyll site/
-          cp -r assets site/
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          fetch-depth: 0
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Force-publish allowlisted files to gh-pages
+        run: |
+          set -euo pipefail
+
+          test -f index.html
+          test -d assets
+
+          PUBLISH_DIR="$(mktemp -d)"
+          cp index.html "$PUBLISH_DIR/index.html"
+          cp -R assets "$PUBLISH_DIR/assets"
+          touch "$PUBLISH_DIR/.nojekyll"
+
+          git checkout --orphan gh-pages-tmp
+          git rm -rf .
+          git clean -fdx
+
+          cp -R "$PUBLISH_DIR/." .
+
+          git add index.html .nojekyll assets
+          while IFS= read -r file; do
+            case "$file" in
+              index.html|.nojekyll|assets/*) ;;
+              *)
+                echo "Unexpected file staged for gh-pages publish: $file"
+                exit 1
+                ;;
+            esac
+          done < <(git ls-files)
+          git commit -m "Publish static site from ${GITHUB_SHA}"
+          git push --force origin HEAD:gh-pages

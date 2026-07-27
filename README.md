@@ -37,4 +37,25 @@ python3 -m http.server 8080
 
 ## GitHub Pages
 
-Сайт публикуется как статический `index.html` из корня репозитория (файл `.nojekyll` отключает Jekyll).
+Сайт публикуется из ветки `gh-pages`, а её содержимое автоматически обновляется после merge в `master` через GitHub Actions (`.github/workflows/pages.yml`).
+
+### Предварительные настройки репозитория
+
+1. Включите права записи для workflow:
+   - `Settings` → `Actions` → `General` → `Workflow permissions`
+   - выберите `Read and write permissions`
+2. Проверьте правила для ветки `gh-pages`:
+   - workflow делает `git push --force` в `gh-pages`
+   - если включены branch protection/rulesets, они должны разрешать этот push для GitHub Actions (иначе публикация будет блокироваться)
+
+### Рабочий процесс публикации
+
+1. Правите `content/content.yaml` (или другие исходники сайта)
+2. Локально пересобираете `index.html`
+3. Коммитите изменения в `master` (обычно через PR и merge)
+4. После merge workflow публикует в `gh-pages` **только**:
+   - `index.html`
+   - `.nojekyll`
+   - `assets/`
+
+Важно: GitHub Actions в этом репозитории **не пересобирает** сайт из GEDCOM, потому что GEDCOM не хранится в репозитории. Поэтому перед merge обновлённый `index.html` должен быть уже закоммичен.
