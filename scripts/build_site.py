@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Generate family archive website from GEDCOM export."""
+"""Generate family archive website from GEDCOM export and content/content.yaml."""
 
 from __future__ import annotations
 
 import html
-import math
 from pathlib import Path
+from typing import Any
 
+import yaml
 from collections import Counter
 
 from parse_gedcom import (
     Family,
     Person,
-    ancestors,
     canonical_place,
     counted,
     direct_lines,
@@ -24,54 +24,261 @@ from parse_gedcom import (
 )
 
 ROOT_ID = "@I1@"
-GEDCOM_PATH = Path(__file__).resolve().parents[1] / "data" / "skiba.ged"
-OUTPUT_PATH = Path(__file__).resolve().parents[1] / "index.html"
+ROOT = Path(__file__).resolve().parents[1]
+GEDCOM_PATH = ROOT / "data" / "skiba.ged"
+CONTENT_PATH = ROOT / "content" / "content.yaml"
+OUTPUT_PATH = ROOT / "index.html"
+CSS = ROOT / "assets" / "site.css"
 
-CSS = Path(__file__).resolve().parents[1] / "assets" / "site.css"
+STATUS_BADGE_W = {"ok": 100, "hyp": 74, "q": 86}
+BADGE_H = 16
 
-SURNAME_NOTES = {
-    "Матюхин": "Русская фамилия от уменьшительной формы имени Матвей. В селе Мокрое Белевского уезда достоверно прослеживается с Андрея Федотовича (р. 1870); принадлежность его отца Федота к Матюхиным ещё требует подтверждения.",
-    "Скиба": "Украинская фамилия (скиба — «ломоть хлеба»); род из села Лозовая Павловка на Донбассе, затем Тула и Химки.",
-    "Захаров": "Род из Толкиша (Татария): Ермил → Спиридон → Григорий Спиридонович, который писался и Захаровым, и Алексеевым.",
-    "Алексеев": "Внимание: в древе две несвязанные ветви Алексеевых — татарская (из Захаровых) и донбасская. Обе сходятся в бабушках Надежды Скиба.",
-    "Поташкин": "От прозвища «поташник»; корни в деревне Серганиха Валдайского уезда Новгородской губернии.",
-    "Астафьев": "От имени Астафий; линия матери Сергея Матюхина — Дмитров и Долгопрудный.",
-    "Никитин": "Родня по браку; связи в подмосковных записях базы.",
-    "Сахаров": "Родня по браку; связи требуют уточнения по документам.",
-    "Цыганов": "Родня по браку в ветви Поташкиных.",
-    "Игнатьев": "Родня по браку; встречается в ветви Алексеевых.",
-    "Чернов": "Астраханская родня по браку: Черновы жили в Астрахани с конца XIX века.",
-    "Горелов": "Линия прабабушки Марии Гореловой по ветви Матюхиных.",
-    "Алексанов": "Прапрабабушка по линии Матюхиных — Прасковья Алексанова.",
-    "Елисеев": "Зинаида Елисеева из Толкиша — прапрабабушка Надежды по линии Алексеевых.",
-    "Васильев": "Встречается в ветви Алексеевых через брак.",
-    "Букин": "Родня по браку в ветви Алексеевых.",
-    "Успенский": "Родня по браку; ветвь уточняется.",
-    "Яковлев": "Родня по браку в ветви Скиба.",
-}
+BOX_W = 214
+BOX_H = 78
+COL_W = 242
+ROW_H = 92
+TOP_PAD = 56
+LEFT_PAD = 18
 
-PLACE_NOTES = {
-    "город Химки, Московская область": "Главное гнездо рода с середины XX века: здесь жили Скибы, здесь поженились Сергей и Надежда.",
-    "село Мокрое Тульской области": "Село Белевского уезда Тульской губернии — родовое гнездо Матюхиных с XIX века.",
-    "село Лозовая Павловка, Донбасс": "Село на Луганщине — точка выхода рода Скиба: здесь родились Григорий (1879) и Алексей (1907).",
-    "село Толкиш, Татария": "Село под Чистополем — родина Захаровых-Алексеевых и Елисеевых.",
-    "город Чистополь, Татария": "Уездный город на Каме; здесь родилась Серафима Алексеева (1912).",
-    "село Новошешминск, Татария": "Село Чистопольского уезда; родина братьев Алексеевых.",
-    "деревня Серганиха, Валдайский уезд, Новгородская губерния": "Новгородская губерния — корень Поташкиных: здесь родился Федор (1904).",
-    "город Валдай, Новгородская губерния": "Новгородская губерния; связанные записи рода Поташкиных.",
-    "город Дмитров, Московская область": "Подмосковье; родина Надежды Астафьевой (1931) и Сергея Матюхина (1971).",
-    "Астрахань": "Город Черновых — родни по браку; жили здесь с конца XIX века.",
-    "Москва": "Столица; сюда сходятся поздние ветви рода.",
-    "город Солнечногорск, Московская область": "Подмосковье; последний адрес Федора Поташкина и Серафимы Алексеевой.",
-    "город Долгопрудный, Московская область": "Подмосковье; последний адрес Надежды Астафьевой.",
-    "город Борисоглебск": "Город на Воронежщине; встречается в записях рода.",
-    "Донецкая область": "Донбасс; родина Маргариты Алексеевой (1909).",
-    "город Константиновка, Донецкая область": "Город на Донбассе; встречается в записях рода.",
-}
+
+def load_content() -> dict[str, Any]:
+    """Load editorial texts from content/content.yaml."""
+    with CONTENT_PATH.open(encoding="utf-8") as handle:
+        content = yaml.safe_load(handle)
+    validate_content(content)
+    return content
+
+
+def require_keys(data: dict[str, Any], path: str, keys: list[str]) -> None:
+    """Fail fast with a clear error when editable YAML misses required keys."""
+    missing = [key for key in keys if key not in data]
+    if missing:
+        missing_list = ", ".join(missing)
+        raise ValueError(f"Missing required key(s) in content/content.yaml at {path}: {missing_list}")
+
+
+def require_mapping(data: Any, path: str) -> dict[str, Any]:
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected mapping in content/content.yaml at {path}")
+    return data
+
+
+def require_list(data: Any, path: str, min_len: int = 0) -> list[Any]:
+    if not isinstance(data, list):
+        raise ValueError(f"Expected list in content/content.yaml at {path}")
+    if len(data) < min_len:
+        raise ValueError(
+            f"Expected at least {min_len} item(s) in content/content.yaml at {path}, got {len(data)}"
+        )
+    return data
+
+
+def require_str(data: Any, path: str) -> str:
+    if not isinstance(data, str):
+        raise ValueError(f"Expected string in content/content.yaml at {path}")
+    return data
+
+
+def validate_branch(branch: Any, path: str) -> None:
+    branch = require_mapping(branch, path)
+    require_keys(branch, path, ["tag", "title", "paragraphs", "mini"])
+    require_list(branch["paragraphs"], f"{path}.paragraphs", min_len=1)
+    require_str(branch["tag"], f"{path}.tag")
+    require_str(branch["title"], f"{path}.title")
+    require_str(branch["mini"], f"{path}.mini")
+
+
+def validate_content(content: Any) -> None:
+    """Schema checks for editor-facing YAML used by the generator."""
+    content = require_mapping(content, "root")
+    require_keys(
+        content,
+        "root",
+        [
+            "meta",
+            "hero",
+            "lines",
+            "alekseevs",
+            "timeline",
+            "surnames",
+            "places",
+            "meeting",
+            "sources",
+            "tree",
+            "footer",
+        ],
+    )
+
+    meta = require_mapping(content["meta"], "meta")
+    require_keys(meta, "meta", ["title", "brand", "nav_chronicle", "nav_tree"])
+
+    hero = require_mapping(content["hero"], "hero")
+    require_keys(
+        hero,
+        "hero",
+        [
+            "label_prefix",
+            "h1",
+            "sub_lead",
+            "sub_scope_prefix",
+            "sub_stats_people_suffix",
+            "sub_stats_gens_suffix",
+            "privacy_note",
+            "cta",
+            "stats",
+        ],
+    )
+    hero_stats = require_mapping(hero["stats"], "hero.stats")
+    require_keys(
+        hero_stats,
+        "hero.stats",
+        ["generations", "people", "surnames", "earliest_birth", "earliest_fallback"],
+    )
+
+    lines = require_mapping(content["lines"], "lines")
+    require_keys(lines, "lines", ["label", "title", "lead", "branches"])
+    branches = require_mapping(lines["branches"], "lines.branches")
+    for key in ("matyukhin_father", "astafyev_mother", "skiba_father", "potashkin_mother"):
+        validate_branch(branches.get(key), f"lines.branches.{key}")
+
+    alekseevs = require_mapping(content["alekseevs"], "alekseevs")
+    require_keys(alekseevs, "alekseevs", ["label", "title", "lead", "tatar", "donbass"])
+    validate_branch(alekseevs["tatar"], "alekseevs.tatar")
+    validate_branch(alekseevs["donbass"], "alekseevs.donbass")
+
+    timeline = require_mapping(content["timeline"], "timeline")
+    require_keys(
+        timeline,
+        "timeline",
+        ["label", "title", "lead", "generation_prefix", "generation_suffix", "place_fallback"],
+    )
+
+    surnames = require_mapping(content["surnames"], "surnames")
+    require_keys(surnames, "surnames", ["label", "title", "lead", "count_suffix", "default_note", "notes"])
+    require_mapping(surnames["notes"], "surnames.notes")
+
+    places = require_mapping(content["places"], "places")
+    require_keys(
+        places,
+        "places",
+        ["label", "title", "lead", "card_tag_prefix", "default_note", "notes"],
+    )
+    require_mapping(places["notes"], "places.notes")
+
+    meeting = require_mapping(content["meeting"], "meeting")
+    require_keys(
+        meeting,
+        "meeting",
+        ["label", "title", "lead_prefix", "lead_suffix", "child_fallback", "living", "source"],
+    )
+    require_keys(require_mapping(meeting["living"], "meeting.living"), "meeting.living", ["tag", "title", "body"])
+    require_keys(
+        require_mapping(meeting["source"], "meeting.source"),
+        "meeting.source",
+        ["tag", "title", "intro_prefix", "intro_suffix"],
+    )
+
+    sources = require_mapping(content["sources"], "sources")
+    require_keys(sources, "sources", ["label", "title", "lead", "provenance", "missing", "legend", "archives"])
+
+    provenance = require_mapping(sources["provenance"], "sources.provenance")
+    require_keys(
+        provenance,
+        "sources.provenance",
+        [
+            "title",
+            "gedcom_item",
+            "copy_item",
+            "birth_intro_prefix",
+            "birth_intro_middle",
+            "birth_intro_suffix",
+            "birth_buckets",
+        ],
+    )
+    require_keys(
+        require_mapping(provenance["birth_buckets"], "sources.provenance.birth_buckets"),
+        "sources.provenance.birth_buckets",
+        ["full", "year_only", "month_year", "qualified", "qualified_note", "missing"],
+    )
+
+    missing = require_mapping(sources["missing"], "sources.missing")
+    require_keys(
+        missing,
+        "sources.missing",
+        ["title", "intro", "smart_match_suffix", "smart_match_caveat", "no_archives"],
+    )
+
+    legend = require_mapping(sources["legend"], "sources.legend")
+    require_keys(legend, "sources.legend", ["title", "hypothesis", "calculated_dates", "dashed_card"])
+
+    archives = require_mapping(sources["archives"], "sources.archives")
+    require_keys(
+        archives,
+        "sources.archives",
+        ["title", "mokroe", "valday", "chistopol", "slavyanoserbsk", "khimki"],
+    )
+
+    tree = require_mapping(content["tree"], "tree")
+    require_keys(
+        tree,
+        "tree",
+        [
+            "label",
+            "h1",
+            "lead",
+            "stats",
+            "column_titles",
+            "status",
+            "missing_father",
+            "missing_mother",
+            "legend",
+            "goals",
+            "generation_names",
+            "generation_fallback_suffix",
+        ],
+    )
+    require_keys(require_mapping(tree["stats"], "tree.stats"), "tree.stats", ["with_parents", "search_goals"])
+    require_list(tree["column_titles"], "tree.column_titles", min_len=6)
+    require_keys(require_mapping(tree["status"], "tree.status"), "tree.status", ["ok", "hyp", "q"])
+    require_keys(
+        require_mapping(tree["legend"], "tree.legend"),
+        "tree.legend",
+        ["ok", "hyp", "q", "anchor"],
+    )
+    goals = require_mapping(tree["goals"], "tree.goals")
+    require_keys(
+        goals,
+        "tree.goals",
+        [
+            "label",
+            "title",
+            "lead",
+            "title_prefix",
+            "line_suffix",
+            "hint_known_place_prefix",
+            "hint_known_place_suffix",
+            "hint_unknown_place",
+            "status_suffix",
+        ],
+    )
+    require_mapping(tree["generation_names"], "tree.generation_names")
+    require_str(tree["generation_fallback_suffix"], "tree.generation_fallback_suffix")
+
+    footer = require_mapping(content["footer"], "footer")
+    require_keys(footer, "footer", ["brand", "middle", "suffix"])
 
 
 def esc(text: str) -> str:
-    return html.escape(text or "", quote=True)
+    return html.escape((text or "").rstrip(), quote=True)
+
+
+def rich(text: str) -> str:
+    """Trusted HTML from content.yaml (bold tags, spans)."""
+    return (text or "").strip()
+
+
+def paragraphs_html(paragraphs: list[str]) -> str:
+    return "".join(f"<p>{rich(paragraph)}</p>" for paragraph in paragraphs)
 
 
 def chain_text(people: list[Person]) -> str:
@@ -133,40 +340,17 @@ def missing_parent_goals(
     return goals[:limit]
 
 
-GENERATION_NAMES = {
-    1: "родители",
-    2: "деды и бабушки",
-    3: "прадеды",
-    4: "прапрадеды",
-    5: "прапрапрадеды",
-    6: "шестое поколение",
-}
+def generation_names(content: dict[str, Any]) -> dict[int, str]:
+    raw = content["tree"]["generation_names"]
+    return {int(key): value for key, value in raw.items()}
 
-BOX_W = 214
-BOX_H = 78
-COL_W = 242
-ROW_H = 92
-TOP_PAD = 56
-LEFT_PAD = 18
 
-STATUS_LABELS = {
-    "ok": "Подтверждено",
-    "hyp": "Гипотеза",
-    "q": "Нет данных",
-}
-# SVG не переносит и не измеряет текст, поэтому ширина плашки задаётся
-# вручную под длину подписи.
-STATUS_BADGE_W = {"ok": 100, "hyp": 74, "q": 86}
-BADGE_H = 16
+def status_labels(content: dict[str, Any]) -> dict[str, str]:
+    return content["tree"]["status"]
 
-COLUMN_TITLES = [
-    "СЕМЬЯ",
-    "РОДИТЕЛИ",
-    "ДЕДЫ И БАБУШКИ",
-    "ПРАДЕДЫ",
-    "ПРАПРАДЕДЫ",
-    "ПРАПРАПРАДЕДЫ",
-]
+
+def column_titles(content: dict[str, Any]) -> list[str]:
+    return content["tree"]["column_titles"]
 
 
 class TreeNode:
@@ -188,6 +372,7 @@ def build_ancestor_tree(
     pid: str | None,
     people: dict[str, Person],
     families: dict[str, Family],
+    content: dict[str, Any],
     max_gen: int,
     gen: int = 0,
     placeholder: str = "",
@@ -208,10 +393,14 @@ def build_ancestor_tree(
         return node
 
     node.children.append(
-        build_ancestor_tree(family.husb, people, families, max_gen, gen + 1, "отец не найден")
+        build_ancestor_tree(
+            family.husb, people, families, content, max_gen, gen + 1, content["tree"]["missing_father"]
+        )
     )
     node.children.append(
-        build_ancestor_tree(family.wife, people, families, max_gen, gen + 1, "мать не найдена")
+        build_ancestor_tree(
+            family.wife, people, families, content, max_gen, gen + 1, content["tree"]["missing_mother"]
+        )
     )
     return node
 
@@ -253,18 +442,18 @@ def render_connectors(node: TreeNode, max_gen: int) -> list[str]:
     return out
 
 
-def render_badge(x: float, cy: float, status: str) -> str:
+def render_badge(x: float, cy: float, status: str, labels: dict[str, str]) -> str:
     """Status pill in the lower-left corner of a tree card."""
     width = STATUS_BADGE_W[status]
     return (
         f'<rect class="bg" x="{x + 12}" y="{cy + 18:.1f}" width="{width}" '
         f'height="{BADGE_H}" rx="{BADGE_H / 2}"/>'
         f'<text class="bdg" x="{x + 12 + width / 2:.1f}" y="{cy + 29.4:.1f}" '
-        f'text-anchor="middle">{esc(STATUS_LABELS[status])}</text>'
+        f'text-anchor="middle">{esc(labels[status])}</text>'
     )
 
 
-def render_person_box(x: float, cy: float, person: Person, extra: list[str]) -> str:
+def render_person_box(x: float, cy: float, person: Person, extra: list[str], labels: dict[str, str]) -> str:
     status = "hyp" if person.is_reconstructed else "ok"
     surname = person.surname or person.name
     given = person.name if person.surname else ""
@@ -278,11 +467,11 @@ def render_person_box(x: float, cy: float, person: Person, extra: list[str]) -> 
         f'<text class="t1" x="{x + 12}" y="{cy - 22:.1f}">{esc(surname)}</text>'
         f'<text class="t2" x="{x + 12}" y="{cy - 5:.1f}">{esc(given)}</text>'
         f'<text class="t3" x="{x + 12}" y="{cy + 13:.1f}">{esc(years)}</text>'
-        f'{render_badge(x, cy, status)}</g>'
+        f'{render_badge(x, cy, status, labels)}</g>'
     )
 
 
-def render_box(node: TreeNode) -> str:
+def render_box(node: TreeNode, labels: dict[str, str]) -> str:
     x = LEFT_PAD + node.gen * COL_W
 
     if node.is_missing:
@@ -292,7 +481,7 @@ def render_box(node: TreeNode) -> str:
             f'width="{BOX_W}" height="{BOX_H}" rx="10"/>'
             f'<text class="t1" x="{x + 12}" y="{node.y - 22:.1f}">—</text>'
             f'<text class="t2" x="{x + 12}" y="{node.y - 5:.1f}">{esc(node.placeholder)}</text>'
-            f'{render_badge(x, node.y, "q")}</g>'
+            f'{render_badge(x, node.y, "q", labels)}</g>'
         )
 
     person = node.person
@@ -303,7 +492,7 @@ def render_box(node: TreeNode) -> str:
     elif not node.children and person.birt and not person.is_reconstructed:
         extra.append("deep")
 
-    return render_person_box(x, node.y, person, extra)
+    return render_person_box(x, node.y, person, extra, labels)
 
 
 def render_pedigree_svg(
@@ -312,11 +501,14 @@ def render_pedigree_svg(
     child: Person | None,
     people: dict[str, Person],
     families: dict[str, Family],
+    content: dict[str, Any],
     max_gen: int = 4,
 ) -> str:
     """Two stacked ancestor charts: the husband's line above, the wife's below."""
-    father_tree = build_ancestor_tree(root.id, people, families, max_gen)
-    mother_tree = build_ancestor_tree(spouse.id, people, families, max_gen)
+    labels = status_labels(content)
+    titles = column_titles(content)
+    father_tree = build_ancestor_tree(root.id, people, families, content, max_gen)
+    mother_tree = build_ancestor_tree(spouse.id, people, families, content, max_gen)
 
     cursor = [TOP_PAD + BOX_H / 2]
     assign_positions(father_tree, cursor)
@@ -328,7 +520,7 @@ def render_pedigree_svg(
     collect_nodes(mother_tree, nodes)
 
     parts: list[str] = []
-    for index, title in enumerate(COLUMN_TITLES[: max_gen + 1]):
+    for index, title in enumerate(titles[: max_gen + 1]):
         parts.append(f'<text x="{LEFT_PAD + index * COL_W}" y="26" class="colhead">{esc(title)}</text>')
 
     parts.extend(render_connectors(father_tree, max_gen))
@@ -344,10 +536,10 @@ def render_pedigree_svg(
     if child:
         y_child = (father_tree.y + mother_tree.y) / 2
         parts.append(f'<path class="ln" d="M{x_mid} {y_child:.1f} H{LEFT_PAD}"/>')
-        parts.append(render_person_box(LEFT_PAD, y_child, child, ["me"]))
+        parts.append(render_person_box(LEFT_PAD, y_child, child, ["me"], labels))
 
     for node in nodes:
-        parts.append(render_box(node))
+        parts.append(render_box(node, labels))
 
     width = LEFT_PAD * 2 + (max_gen + 1) * COL_W
     height = max(node.y for node in nodes) + ROW_H
@@ -360,7 +552,31 @@ def render_pedigree_svg(
     )
 
 
-def build_html(people: dict[str, Person], families: dict[str, Family], meta: dict[str, str]) -> str:
+def line_branch_card(branch: dict[str, Any], chain: str) -> str:
+    body = paragraphs_html(branch["paragraphs"])
+    return (
+        f'<div class="card"><div class="tag">{esc(branch["tag"])}</div>'
+        f'<h3>{esc(branch["title"])}</h3>'
+        f'<p>{chain}</p>{body}'
+        f'<div class="mini">{esc(branch["mini"])}</div></div>\n      '
+    )
+
+
+def alekseev_card(branch: dict[str, Any]) -> str:
+    body = paragraphs_html(branch["paragraphs"])
+    return (
+        f'<div class="card"><div class="tag">{esc(branch["tag"])}</div>'
+        f'<h3>{esc(branch["title"])}</h3>{body}'
+        f'<div class="mini">{esc(branch["mini"])}</div></div>'
+    )
+
+
+def build_html(
+    people: dict[str, Person],
+    families: dict[str, Family],
+    meta: dict[str, str],
+    content: dict[str, Any],
+) -> str:
     root = people[ROOT_ID]
     spouse_fam = families[root.fams[0]]
     spouse_id = spouse_fam.wife if spouse_fam.husb == ROOT_ID else spouse_fam.husb
@@ -378,10 +594,18 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
     gens_skiba = count_generations(spouse_id, people, families)
     documented_gens = max(gens_father, gens_skiba) + 1
     goals = missing_parent_goals([ROOT_ID, spouse_id], people, families)
+    gen_names = generation_names(content)
+    tree = content["tree"]
+    goals_text = tree["goals"]
 
     timeline_people = father_line[:6]
     if len(timeline_people) < 4:
         timeline_people = skiba_father[:6]
+
+    place_notes = content["places"]["notes"]
+    place_default = content["places"]["default_note"]
+    surname_notes = content["surnames"]["notes"]
+    surname_default = content["surnames"]["default_note"]
 
     merged_places: Counter[str] = Counter()
     for person in people.values():
@@ -393,16 +617,16 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
                 merged_places[canonical_place(raw_place)] += 1
 
     places_html = "".join(
-        f'<div class="card"><div class="tag">География · '
+        f'<div class="card"><div class="tag">{esc(content["places"]["card_tag_prefix"])} '
         f'{counted(count, ("запись", "записи", "записей"))}</div><h4>{esc(place)}</h4>'
-        f'<p>{esc(PLACE_NOTES.get(place, "Место из записей о рождении и смерти в семейной базе."))}</p></div>'
+        f'<p>{esc(place_notes.get(place, place_default))}</p></div>'
         for place, count in merged_places.most_common(9)
     )
 
     surnames_html = "".join(
         f'<div class="card"><h4>{esc(name)}</h4>'
-        f'<p>{esc(SURNAME_NOTES.get(name, "Фамилия встречается в семейном древе; происхождение уточняется."))}</p>'
-        f'<div class="mini">{counted(count, ("носитель", "носителя", "носителей"))} в базе</div></div>'
+        f'<p>{esc(surname_notes.get(name, surname_default))}</p>'
+        f'<div class="mini">{counted(count, ("носитель", "носителя", "носителей"))} {esc(content["surnames"]["count_suffix"])}</div></div>'
         for name, count in st["top_surnames"][:10]
     )
 
@@ -411,35 +635,67 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
         me = " me" if person.id == ROOT_ID else ""
         timeline_html += f"""
       <div class="tl-item{me}">
-        <div class="tl-gen">Поколение {len(timeline_people) - i} · линия Матюхиных</div>
+        <div class="tl-gen">{esc(content["timeline"]["generation_prefix"])} {len(timeline_people) - i} {esc(content["timeline"]["generation_suffix"])}</div>
         <h3>{esc(person.label)}</h3>
         <div class="yrs">{esc(person.public_years)}</div>
-        <p>{esc(person.public_place or 'Место уточняется по метрикам и семейным записям.')}</p>
+        <p>{esc(person.public_place or content["timeline"]["place_fallback"])}</p>
       </div>"""
 
     goals_html = ""
     for i, (person, depth) in enumerate(goals, 1):
-        generation = GENERATION_NAMES.get(depth, f"{depth}-е поколение")
-        place = person.public_place
-        hint = (
-            f"Известное место — {place}: искать метрики этого прихода."
-            if place
-            else "Место рождения в базе не указано — сначала нужно установить приход."
+        generation = gen_names.get(
+            depth, f"{depth}{tree['generation_fallback_suffix']}"
         )
+        place = person.public_place
+        if place:
+            hint = (
+                f'{goals_text["hint_known_place_prefix"]} {place}: '
+                f'{goals_text["hint_known_place_suffix"]}'
+            )
+        else:
+            hint = goals_text["hint_unknown_place"]
         goals_html += f"""
         <div class="goalrow"><div class="n">{i}</div><div>
-          <b>Не найдены родители: {esc(person.display_name)}</b>
-          <p>{esc(person.public_years)} · {esc(generation)} по прямой линии. {esc(hint)}</p>
-          <div class="st">{esc(generation.capitalize())} · пробел в прямой линии</div>
+          <b>{esc(goals_text["title_prefix"])} {esc(person.display_name)}</b>
+          <p>{esc(person.public_years)} · {esc(generation)} {esc(goals_text["line_suffix"])} {esc(hint)}</p>
+          <div class="st">{esc(generation.capitalize())} {esc(goals_text["status_suffix"])}</div>
         </div></div>"""
 
-    pedigree_svg = render_pedigree_svg(root, spouse, child, people, families, max_gen=5)
+    pedigree_svg = render_pedigree_svg(root, spouse, child, people, families, content, max_gen=5)
     export_date = format_date(meta.get("date", "")) or "2026"
     child_line_text = (
         f" {esc(genitive_given_name(child.name, child.sex))} ({esc(child.public_years)})"
         if child
-        else " следующего поколения"
+        else content["meeting"]["child_fallback"]
     )
+
+    hero = content["hero"]
+    hero_stats = (
+        f'{counted(st["people"], ("человек", "человека", "человек"))} {esc(hero["sub_stats_people_suffix"])} '
+        f'{counted(st["surnames"], ("фамилия", "фамилии", "фамилий"))}, '
+        f'{counted(documented_gens, ("поколение", "поколения", "поколений"))} {esc(hero["sub_stats_gens_suffix"])}'
+    )
+
+    lines = content["lines"]
+    line_cards = "".join(
+        line_branch_card(lines["branches"][key], chain_text(chain))
+        for key, chain in (
+            ("matyukhin_father", father_line[:5]),
+            ("astafyev_mother", mother_line[:4]),
+            ("skiba_father", skiba_father[:5]),
+            ("potashkin_mother", skiba_mother[:5]),
+        )
+    )
+
+    alekseevs = content["alekseevs"]
+    meeting = content["meeting"]
+    sources = content["sources"]
+    provenance = sources["provenance"]
+    missing = sources["missing"]
+    legend = sources["legend"]
+    archives = sources["archives"]
+    meta_content = content["meta"]
+    footer = content["footer"]
 
     css = CSS.read_text(encoding="utf-8") if CSS.exists() else ""
 
@@ -448,31 +704,31 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Род Матюхиных и Скиба — семейный архив</title>
+<title>{esc(meta_content["title"])}</title>
 <style>{css}</style>
 </head>
 <body>
 <nav>
   <div class="wrap">
-    <div class="brand">Род Матюхиных и Скиба</div>
-    <button class="navbtn active" id="nb1" onclick="showPage(1)">Летопись рода</button>
-    <button class="navbtn" id="nb2" onclick="showPage(2)">Древо</button>
+    <div class="brand">{esc(meta_content["brand"])}</div>
+    <button class="navbtn active" id="nb1" onclick="showPage(1)">{esc(meta_content["nav_chronicle"])}</button>
+    <button class="navbtn" id="nb2" onclick="showPage(2)">{esc(meta_content["nav_tree"])}</button>
   </div>
 </nav>
 
 <div class="page visible" id="page1">
 <div class="hero">
   <div class="wrap">
-    <div class="label">Семейный архив · MyHeritage · экспорт {esc(export_date)}</div>
-    <h1>Летопись рода Матюхиных и Скиба</h1>
-    <p class="sub">Две главные линии — <b>Матюхины</b> из села Мокрое Тульской губернии и <b>Скибы</b> с донбасской Лозовой Павловки — сошлись в семье Сергея и Надежды. Тульская земля и Донбасс, Валдай и Татария, Подмосковье; {counted(st['people'], ('человек', 'человека', 'человек'))} в базе, {counted(st['surnames'], ('фамилия', 'фамилии', 'фамилий'))}, {counted(documented_gens, ('поколение', 'поколения', 'поколений'))} прослежено.</p>
-    <p class="sub note">Страница собрана автоматически из семейного древа MyHeritage. Точные даты, места рождения и контактные данные ныне живущих не публикуются; указаны только имена и годы рождения.</p>
-    <button class="btn" onclick="showPage(2)">Открыть древо</button>
+    <div class="label">{esc(hero["label_prefix"])} {esc(export_date)}</div>
+    <h1>{esc(hero["h1"])}</h1>
+    <p class="sub">{rich(hero["sub_lead"])} {esc(hero["sub_scope_prefix"])} {hero_stats}</p>
+    <p class="sub note">{rich(hero["privacy_note"])}</p>
+    <button class="btn" onclick="showPage(2)">{esc(hero["cta"])}</button>
     <div class="stats">
-      <div><b>{documented_gens}</b><span>{plural(documented_gens, ('ПОКОЛЕНИЕ', 'ПОКОЛЕНИЯ', 'ПОКОЛЕНИЙ'))} ПРОСЛЕЖЕНО</span></div>
-      <div><b>{st['people']}</b><span>{plural(st['people'], ('ЧЕЛОВЕК', 'ЧЕЛОВЕКА', 'ЧЕЛОВЕК'))} В БАЗЕ</span></div>
-      <div><b>{st['surnames']}</b><span>РОДОВЫХ ФАМИЛИЙ</span></div>
-      <div><b>{st['earliest_year'] or 'XIX в.'}</b><span>САМОЕ РАННЕЕ РОЖДЕНИЕ</span></div>
+      <div><b>{documented_gens}</b><span>{plural(documented_gens, ('ПОКОЛЕНИЕ', 'ПОКОЛЕНИЯ', 'ПОКОЛЕНИЙ'))} {esc(hero["stats"]["generations"])}</span></div>
+      <div><b>{st['people']}</b><span>{plural(st['people'], ('ЧЕЛОВЕК', 'ЧЕЛОВЕКА', 'ЧЕЛОВЕК'))} {esc(hero["stats"]["people"])}</span></div>
+      <div><b>{st['surnames']}</b><span>{esc(hero["stats"]["surnames"])}</span></div>
+      <div><b>{st['earliest_year'] or esc(hero["stats"]["earliest_fallback"])}</b><span>{esc(hero["stats"]["earliest_birth"])}</span></div>
     </div>
   </div>
 </div>
@@ -480,41 +736,13 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section id="line">
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">Четыре линии · ветви одного рода</div>
-      <h2>Кем мы приходимся друг другу</h2>
-      <p>У Сергея и Надежды — четыре родительские линии. Ниже цепочки так, как они записаны в семейном древе.</p>
+      <div class="label">{esc(lines["label"])}</div>
+      <h2>{esc(lines["title"])}</h2>
+      <p>{esc(lines["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2" style="margin-bottom:44px">
-      <div class="card">
-        <div class="tag">Линия Сергея · по отцу</div>
-        <h3>Матюхины</h3>
-        <p>{chain_text(father_line[:5])}</p>
-        <p>Корни в селе <b>Мокрое</b> Белевского уезда Тульской губернии. По архивным документам подтверждены родители Андрея — <b>Федот Григорьев</b> и <b>Параскева Петрова</b>.</p>
-        <p>В базе он записан как «Федот Матюхин, р. до 1852», но <b>фамилия, дата рождения и отождествление с Федотом 1818/1819 года — пока гипотеза</b>: карточка не имеет источника, дата вычислена от года рождения сына.</p>
-        <div class="mini">Проверить: ревизские сказки и метрики Белевского уезда (ГАТО, Тула)</div>
-      </div>
-      <div class="card">
-        <div class="tag">Линия Сергея · по матери</div>
-        <h3>Астафьевы</h3>
-        <p>{chain_text(mother_line[:4])}</p>
-        <p>Линия матери Сергея — <b>Надежды Астафьевой</b> (1931, Дмитров — 1997, Долгопрудный). Дед <b>Алексей Астафьев</b>; бабушка <b>Мария Архиповна</b> — пока без девичьей фамилии в базе.</p>
-        <div class="mini">Цель: девичья фамилия Марии Архиповны и предки Петра Астафьева</div>
-      </div>
-      <div class="card">
-        <div class="tag">Линия Надежды · по отцу</div>
-        <h3>Скибы</h3>
-        <p>{chain_text(skiba_father[:5])}</p>
-        <p>Донбасская ветвь: род из села <b>Лозовая Павловка</b> (ныне Луганщина). Дед <b>Алексей Скиба</b> (1907, Лозовая Павловка — 1955, Химки), прадед <b>Григорий</b> (р. 1879), прапрадед <b>Андрей Скиба</b>. Жена Алексея — <b>Маргарита Алексеева</b> (1909, Донецкая обл.) из донбасской ветви Алексеевых.</p>
-        <div class="mini">Вглубь: метрики Славяносербского уезда Екатеринославской губернии</div>
-      </div>
-      <div class="card">
-        <div class="tag">Линия Надежды · по матери</div>
-        <h3>Поташкины и Захаровы</h3>
-        <p>{chain_text(skiba_mother[:5])}</p>
-        <p>Бабушка <b>Нина Поташкина</b> (1938, Торопец): отец — <b>Федор Поташкин</b> с Валдая, мать — <b>Серафима Алексеева</b> из Чистополя, дочь <b>Григория Захарова-Алексеева</b> и <b>Зинаиды Елисеевой</b> из Толкиша.</p>
-        <div class="mini">Вглубь: метрики Валдайского уезда (Поташкины) и Чистопольского уезда (Захаровы)</div>
-      </div>
+      {line_cards}
     </div>
   </div>
 </section>
@@ -522,28 +750,14 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section>
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">Совпадение фамилий · не путать</div>
-      <h2>Две ветви Алексеевых</h2>
-      <p>В древе две семьи Алексеевых, между собой не родственные. Обе сходятся в бабушках <b>Надежды Скиба</b> — по отцу и по матери.</p>
+      <div class="label">{esc(alekseevs["label"])}</div>
+      <h2>{esc(alekseevs["title"])}</h2>
+      <p>{rich(alekseevs["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2">
-      <div class="card">
-        <div class="tag">Ветвь I · Татария · из Захаровых</div>
-        <h3>Захаровы-Алексеевы</h3>
-        <p><b>Ермил Захаров</b> → <b>Спиридон Ермилович</b> → <b>Григорий Спиридонович</b> (1887–1966), записанный как «Захаров/Алексеев».</p>
-        <p>Его дети от <b>Зинаиды Елисеевой</b> (Толкиш) разошлись по фамилиям: старший <b>Василий</b> остался Захаровым, младшие — <b>Александр</b>, <b>Серафима</b>, <b>Иван</b>, <b>Константин</b> — стали Алексеевыми.</p>
-        <p><b>Серафима</b> (1912, Чистополь) вышла за Федора Поташкина — она бабушка Надежды <b>по матери</b>.</p>
-        <div class="mini">Толкиш · Новошешминск · Чистополь (Татария)</div>
-      </div>
-      <div class="card">
-        <div class="tag">Ветвь II · Донбасс · самостоятельный род</div>
-        <h3>Алексеевы донбасские</h3>
-        <p><b>Василий Алексеев</b> → <b>Василий Васильевич</b> (1875–1935) и <b>Агафья Андреевна</b>; в семье восемь детей.</p>
-        <p>Дочь <b>Маргарита</b> (1909, Донецкая обл. — 1987, Химки) вышла за <b>Алексея Скиба</b> — она бабушка Надежды <b>по отцу</b>.</p>
-        <p>С татарскими Алексеевыми родство в документах не прослеживается: разные губернии, разные корни, совпадение распространённой фамилии.</p>
-        <div class="mini">Донецкая область · Лозовая Павловка · Химки</div>
-      </div>
+      {alekseev_card(alekseevs["tatar"])}
+      {alekseev_card(alekseevs["donbass"])}
     </div>
   </div>
 </section>
@@ -551,9 +765,9 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section class="alt">
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">Самая длинная прослеженная линия</div>
-      <h2>Матюхины: цепочка поколений</h2>
-      <p>От Сергея Андреевича вглубь по отцовской линии — так записано в GEDCOM.</p>
+      <div class="label">{esc(content["timeline"]["label"])}</div>
+      <h2>{esc(content["timeline"]["title"])}</h2>
+      <p>{esc(content["timeline"]["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="tl">{timeline_html}
@@ -564,9 +778,9 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section>
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">Ономастика</div>
-      <h2>Фамилии рода</h2>
-      <p>Десять самых частых фамилий в базе; женские формы посчитаны вместе с мужскими.</p>
+      <div class="label">{esc(content["surnames"]["label"])}</div>
+      <h2>{esc(content["surnames"]["title"])}</h2>
+      <p>{esc(content["surnames"]["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2">{surnames_html}</div>
@@ -576,9 +790,9 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section class="alt">
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">География</div>
-      <h2>Гнёзда рода на карте слов</h2>
-      <p>Места, чаще всего встречающиеся в записях о рождении и смерти.</p>
+      <div class="label">{esc(content["places"]["label"])}</div>
+      <h2>{esc(content["places"]["title"])}</h2>
+      <p>{esc(content["places"]["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="grid g3">{places_html}</div>
@@ -588,21 +802,21 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section>
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">Точка встречи</div>
-      <h2>Где сходятся две линии</h2>
-      <p>Тульская линия Матюхиных и донбасско-валдайская линия Скиба сошлись в подмосковных Химках: <b>{esc(root.short)}</b> ({esc(root.public_years)}) и <b>{esc(spouse.short)}</b> ({esc(spouse.public_years)}) — родители{child_line_text}.</p>
+      <div class="label">{esc(meeting["label"])}</div>
+      <h2>{esc(meeting["title"])}</h2>
+      <p>{rich(meeting["lead_prefix"])} <b>{esc(root.short)}</b> ({esc(root.public_years)}) и <b>{esc(spouse.short)}</b> ({esc(spouse.public_years)}) {esc(meeting["lead_suffix"])}{child_line_text}.</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2">
       <div class="card">
-        <div class="tag">Ныне живущие</div>
-        <h3>Сегодняшнее поколение</h3>
-        <p>Для ныне живущих родственников указаны только имена и годы рождения. Точные даты, места рождения и контактные данные не публикуются.</p>
+        <div class="tag">{esc(meeting["living"]["tag"])}</div>
+        <h3>{esc(meeting["living"]["title"])}</h3>
+        <p>{rich(meeting["living"]["body"])}</p>
       </div>
       <div class="card">
-        <div class="tag">Источник</div>
-        <h3>MyHeritage · SKIBA</h3>
-        <p>Экспорт GEDCOM 5.5.1 от {esc(export_date)}: {counted(st['people'], ('человек', 'человека', 'человек'))}, {counted(st['families'], ('семейная запись', 'семейные записи', 'семейных записей'))}, {counted(st['with_death'], ('дата', 'даты', 'дат'))} смерти. У ныне живущих опубликованы только имена и годы рождения.</p>
+        <div class="tag">{esc(meeting["source"]["tag"])}</div>
+        <h3>{esc(meeting["source"]["title"])}</h3>
+        <p>{esc(meeting["source"]["intro_prefix"])} {esc(export_date)}: {counted(st['people'], ('человек', 'человека', 'человек'))}, {counted(st['families'], ('семейная запись', 'семейные записи', 'семейных записей'))}, {counted(st['with_death'], ('дата', 'даты', 'дат'))} {esc(meeting["source"]["intro_suffix"])}</p>
       </div>
     </div>
   </div>
@@ -611,51 +825,51 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section class="src">
   <div class="wrap">
       <div class="sect-head">
-      <div class="label">Достоверность</div>
-      <h2>Источники и оговорки</h2>
-      <p>Персональные данные импортированы из GEDCOM-экспорта MyHeritage. Описания, этимология фамилий, географические комментарии и направления поиска <b>сформированы автоматически и требуют проверки</b>.</p>
+      <div class="label">{esc(sources["label"])}</div>
+      <h2>{esc(sources["title"])}</h2>
+      <p>{rich(sources["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2">
       <div class="scard">
-        <h3>Что откуда взято</h3>
+        <h3>{esc(provenance["title"])}</h3>
         <ul>
-          <li><b>Имена, даты, связи</b> — GEDCOM MyHeritage, проект SKIBA</li>
-          <li><b>Тексты разделов</b> — сгенерированы автоматически, архивно не проверены</li>
+          <li>{rich(provenance["gedcom_item"])}</li>
+          <li>{rich(provenance["copy_item"])}</li>
         </ul>
-        <p style="margin:10px 0">Из {counted(st['people'], ('человека', 'человек', 'человек'))} в базе запись о рождении есть у {st['with_birth']}. Насколько точно известна дата:</p>
+        <p style="margin:10px 0">{esc(provenance["birth_intro_prefix"])} {counted(st['people'], ('человека', 'человек', 'человек'))} {esc(provenance["birth_intro_middle"])} {st['with_birth']}. {esc(provenance["birth_intro_suffix"])}</p>
         <ul>
-          <li><b>День, месяц и год</b> — {counted(st['birth_full'], ('запись', 'записи', 'записей'))}</li>
-          <li><b>Только год</b> — {st['birth_year_only']}; месяц и год — {st['birth_month_year']}</li>
-          <li><b>С пометой «до», «около», «между»</b> — {st['birth_qualified']}: такая дата выведена от родственников, а не прочитана в документе</li>
-          <li><b>Дата рождения отсутствует</b> — {st['birth_missing']} {plural(st['birth_missing'], ('человек', 'человека', 'человек'))}</li>
-        </ul>
-      </div>
-      <div class="scard">
-        <h3>Чего в файле нет</h3>
-        <p style="margin-bottom:10px">Ссылки на источники в экспорте есть, но за ними стоят <b>не архивные документы</b>:</p>
-        <ul>
-          <li><b>{counted(st['matched'], ('запись', 'записи', 'записей'))}</b> связаны со Smart Match — совпадением с деревом другого пользователя MyHeritage</li>
-          <li>Такое совпадение — <b>зацепка, а не доказательство</b>: чужое дерево может содержать ту же ошибку</li>
-          <li>Ссылок на метрические книги, ревизские сказки и записи ЗАГС в файле нет ни одной</li>
+          <li>{rich(provenance["birth_buckets"]["full"])} — {counted(st['birth_full'], ('запись', 'записи', 'записей'))}</li>
+          <li>{rich(provenance["birth_buckets"]["year_only"])} — {st['birth_year_only']}; {esc(provenance["birth_buckets"]["month_year"])} — {st['birth_month_year']}</li>
+          <li>{rich(provenance["birth_buckets"]["qualified"])} — {st['birth_qualified']}: {esc(provenance["birth_buckets"]["qualified_note"])}</li>
+          <li>{rich(provenance["birth_buckets"]["missing"])} — {st['birth_missing']} {plural(st['birth_missing'], ('человек', 'человека', 'человек'))}</li>
         </ul>
       </div>
       <div class="scard">
-        <h3>Как читать пометки</h3>
+        <h3>{esc(missing["title"])}</h3>
+        <p style="margin-bottom:10px">{rich(missing["intro"])}</p>
         <ul>
-          <li><span class="leg">гипотеза</span> запись без источника: дата вычислена от родственников или отсутствует</li>
-          <li><b>«до 1852», «ок. 1870»</b> — дата выведена от родственников, а не из документа</li>
-          <li><b>Пунктирная карточка в древе</b> — предок не найден, это цель поиска</li>
+          <li><b>{counted(st['matched'], ('запись', 'записи', 'записей'))}</b> {esc(missing["smart_match_suffix"])}</li>
+          <li>{rich(missing["smart_match_caveat"])}</li>
+          <li>{esc(missing["no_archives"])}</li>
         </ul>
       </div>
       <div class="scard">
-        <h3>Архивные направления</h3>
+        <h3>{esc(legend["title"])}</h3>
         <ul>
-          <li>Метрики по <b>селу Мокрое</b> Белевского уезда (ГАТО, Тула)</li>
-          <li>Метрики <b>Валдайского уезда</b> — Поташкины (ГАНО)</li>
-          <li>Метрики <b>Чистопольского уезда</b> — Захаровы-Алексеевы (ГА РТ)</li>
-          <li>Метрики <b>Славяносербского уезда</b> — Скибы (Лозовая Павловка)</li>
-          <li>Записи ЗАГС по <b>Химкам</b> и Московской области</li>
+          <li>{rich(legend["hypothesis"])}</li>
+          <li>{rich(legend["calculated_dates"])}</li>
+          <li>{rich(legend["dashed_card"])}</li>
+        </ul>
+      </div>
+      <div class="scard">
+        <h3>{esc(archives["title"])}</h3>
+        <ul>
+          <li>{rich(archives["mokroe"])}</li>
+          <li>{rich(archives["valday"])}</li>
+          <li>{rich(archives["chistopol"])}</li>
+          <li>{rich(archives["slavyanoserbsk"])}</li>
+          <li>{rich(archives["khimki"])}</li>
         </ul>
       </div>
     </div>
@@ -666,12 +880,12 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <div class="page" id="page2">
 <section class="hero hero-compact">
   <div class="wrap">
-    <div class="label">Страница 2 · визуальное древо · прямые предки</div>
-    <h1>Древо прямых предков</h1>
-    <p class="sub">Читается слева направо: семья Сергея и Надежды → родители → деды → прадеды. Верхняя половина — линия Матюхиных, нижняя — Скиба.</p>
+    <div class="label">{esc(tree["label"])}</div>
+    <h1>{esc(tree["h1"])}</h1>
+    <p class="sub">{rich(tree["lead"])}</p>
     <div class="stats" style="margin-top:24px">
-      <div><b>{len([p for p in people.values() if p.famc])}</b><span>С УКАЗАННЫМИ РОДИТЕЛЯМИ</span></div>
-      <div><b>{len(goals)}</b><span>ЦЕЛЕЙ ПОИСКА</span></div>
+      <div><b>{len([p for p in people.values() if p.famc])}</b><span>{esc(tree["stats"]["with_parents"])}</span></div>
+      <div><b>{len(goals)}</b><span>{esc(tree["stats"]["search_goals"])}</span></div>
     </div>
   </div>
 </section>
@@ -679,10 +893,10 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section class="treewrap">
   <div class="wrap" style="max-width:none">{pedigree_svg}
     <div class="legend">
-      <span><i class="ok"></i>Подтверждено — предок с записью в базе</span>
-      <span><i class="hyp"></i>Гипотеза — нет источника, дата вычислена или отсутствует</span>
-      <span><i class="q"></i>Нет данных — предок не найден, цель поиска</span>
-      <span><i class="anchor"></i>Семья, от которой ведётся отсчёт</span>
+      <span><i class="ok"></i>{esc(tree["legend"]["ok"])}</span>
+      <span><i class="hyp"></i>{esc(tree["legend"]["hyp"])}</span>
+      <span><i class="q"></i>{esc(tree["legend"]["q"])}</span>
+      <span><i class="anchor"></i>{esc(tree["legend"]["anchor"])}</span>
     </div>
   </div>
 </section>
@@ -690,9 +904,9 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 <section class="alt">
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">Что ищем дальше</div>
-      <h2>Карта поиска: белые пятна</h2>
-      <p>Приоритеты — по GEDCOM-записям, где родители ещё не указаны.</p>
+      <div class="label">{esc(goals_text["label"])}</div>
+      <h2>{esc(goals_text["title"])}</h2>
+      <p>{esc(goals_text["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2">{goals_html}</div>
@@ -701,7 +915,7 @@ def build_html(people: dict[str, Person], families: dict[str, Family], meta: dic
 </div>
 
 <footer>
-  <div class="wrap"><b>Род Матюхиных и Скиба</b> · семейный архив · данные MyHeritage SKIBA · экспорт {esc(export_date)} · сайт сгенерирован из GEDCOM</div>
+  <div class="wrap"><b>{esc(footer["brand"])}</b>{esc(footer["middle"])} {esc(export_date)}{esc(footer["suffix"])}</div>
 </footer>
 
 <script>
@@ -718,8 +932,9 @@ function showPage(n) {{
 
 
 def main() -> None:
+    content = load_content()
     people, families, meta = parse_gedcom(GEDCOM_PATH)
-    OUTPUT_PATH.write_text(build_html(people, families, meta), encoding="utf-8")
+    OUTPUT_PATH.write_text(build_html(people, families, meta, content), encoding="utf-8")
     print(f"Wrote {OUTPUT_PATH} ({OUTPUT_PATH.stat().st_size} bytes)")
 
 

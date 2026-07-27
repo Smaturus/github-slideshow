@@ -11,14 +11,19 @@ GEDCOM содержит точные даты рождения, места и к
 ## Структура
 
 - `data/skiba.ged` — исходный GEDCOM, локально, не коммитится
+- `content/content.yaml` — тексты сайта (заголовки, абзацы, подписи; без GEDCOM-данных)
+- `requirements.txt` — минимальные Python-зависимости для сборки
 - `scripts/parse_gedcom.py` — парсер GEDCOM
-- `scripts/build_site.py` — генератор `index.html`
+- `scripts/build_site.py` — генератор `index.html` (читает GEDCOM и `content/content.yaml`)
 - `assets/site.css` — стили (по образцу [баталовы.древо.рус](https://баталовы.древо.рус/))
 - `index.html` — готовый сайт (летопись + SVG-древо)
 
-## Пересборка сайта
+## Редактирование текстов и пересборка
+
+Статические тексты (заголовки, абзацы летописи, подписи к разделам, легенда древа) лежат в `content/content.yaml`. Имена, даты, цепочки предков и статистика по-прежнему берутся из GEDCOM в Python — в абзацах YAML нет плейсхолдеров.
 
 ```bash
+python3 -m pip install -r requirements.txt
 python3 scripts/build_site.py
 ```
 
