@@ -57,31 +57,215 @@ def require_keys(data: dict[str, Any], path: str, keys: list[str]) -> None:
         raise ValueError(f"Missing required key(s) in content/content.yaml at {path}: {missing_list}")
 
 
+def require_mapping(data: Any, path: str) -> dict[str, Any]:
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected mapping in content/content.yaml at {path}")
+    return data
+
+
+def require_list(data: Any, path: str, min_len: int = 0) -> list[Any]:
+    if not isinstance(data, list):
+        raise ValueError(f"Expected list in content/content.yaml at {path}")
+    if len(data) < min_len:
+        raise ValueError(
+            f"Expected at least {min_len} item(s) in content/content.yaml at {path}, got {len(data)}"
+        )
+    return data
+
+
+def require_str(data: Any, path: str) -> str:
+    if not isinstance(data, str):
+        raise ValueError(f"Expected string in content/content.yaml at {path}")
+    return data
+
+
+def validate_branch(branch: Any, path: str) -> None:
+    branch = require_mapping(branch, path)
+    require_keys(branch, path, ["tag", "title", "paragraphs", "mini"])
+    require_list(branch["paragraphs"], f"{path}.paragraphs", min_len=1)
+    require_str(branch["tag"], f"{path}.tag")
+    require_str(branch["title"], f"{path}.title")
+    require_str(branch["mini"], f"{path}.mini")
+
+
 def validate_content(content: Any) -> None:
-    """Minimal schema checks for editor-facing YAML."""
-    if not isinstance(content, dict):
-        raise ValueError("content/content.yaml must contain a top-level mapping")
+    """Schema checks for editor-facing YAML used by the generator."""
+    content = require_mapping(content, "root")
+    require_keys(
+        content,
+        "root",
+        [
+            "meta",
+            "hero",
+            "lines",
+            "alekseevs",
+            "timeline",
+            "surnames",
+            "places",
+            "meeting",
+            "sources",
+            "tree",
+            "footer",
+        ],
+    )
 
-    require_keys(content, "root", ["meta", "hero", "timeline", "places", "sources", "tree"])
-    require_keys(content["timeline"], "timeline", ["generation_prefix", "generation_suffix", "place_fallback"])
-    require_keys(content["places"], "places", ["card_tag_prefix", "notes", "default_note"])
+    meta = require_mapping(content["meta"], "meta")
+    require_keys(meta, "meta", ["title", "brand", "nav_chronicle", "nav_tree"])
 
-    sources = content["sources"]
-    require_keys(sources, "sources", ["provenance", "archives"])
+    hero = require_mapping(content["hero"], "hero")
+    require_keys(
+        hero,
+        "hero",
+        [
+            "label_prefix",
+            "h1",
+            "sub_lead",
+            "sub_scope_prefix",
+            "sub_stats_people_suffix",
+            "sub_stats_gens_suffix",
+            "privacy_note",
+            "cta",
+            "stats",
+        ],
+    )
+    hero_stats = require_mapping(hero["stats"], "hero.stats")
+    require_keys(
+        hero_stats,
+        "hero.stats",
+        ["generations", "people", "surnames", "earliest_birth", "earliest_fallback"],
+    )
 
-    provenance = sources["provenance"]
+    lines = require_mapping(content["lines"], "lines")
+    require_keys(lines, "lines", ["label", "title", "lead", "branches"])
+    branches = require_mapping(lines["branches"], "lines.branches")
+    for key in ("matyukhin_father", "astafyev_mother", "skiba_father", "potashkin_mother"):
+        validate_branch(branches.get(key), f"lines.branches.{key}")
+
+    alekseevs = require_mapping(content["alekseevs"], "alekseevs")
+    require_keys(alekseevs, "alekseevs", ["label", "title", "lead", "tatar", "donbass"])
+    validate_branch(alekseevs["tatar"], "alekseevs.tatar")
+    validate_branch(alekseevs["donbass"], "alekseevs.donbass")
+
+    timeline = require_mapping(content["timeline"], "timeline")
+    require_keys(
+        timeline,
+        "timeline",
+        ["label", "title", "lead", "generation_prefix", "generation_suffix", "place_fallback"],
+    )
+
+    surnames = require_mapping(content["surnames"], "surnames")
+    require_keys(surnames, "surnames", ["label", "title", "lead", "count_suffix", "default_note", "notes"])
+    require_mapping(surnames["notes"], "surnames.notes")
+
+    places = require_mapping(content["places"], "places")
+    require_keys(
+        places,
+        "places",
+        ["label", "title", "lead", "card_tag_prefix", "default_note", "notes"],
+    )
+    require_mapping(places["notes"], "places.notes")
+
+    meeting = require_mapping(content["meeting"], "meeting")
+    require_keys(
+        meeting,
+        "meeting",
+        ["label", "title", "lead_prefix", "lead_suffix", "child_fallback", "living", "source"],
+    )
+    require_keys(require_mapping(meeting["living"], "meeting.living"), "meeting.living", ["tag", "title", "body"])
+    require_keys(
+        require_mapping(meeting["source"], "meeting.source"),
+        "meeting.source",
+        ["tag", "title", "intro_prefix", "intro_suffix"],
+    )
+
+    sources = require_mapping(content["sources"], "sources")
+    require_keys(sources, "sources", ["label", "title", "lead", "provenance", "missing", "legend", "archives"])
+
+    provenance = require_mapping(sources["provenance"], "sources.provenance")
     require_keys(
         provenance,
         "sources.provenance",
-        ["gedcom_item", "copy_item", "birth_intro_prefix", "birth_intro_middle", "birth_intro_suffix", "birth_buckets"],
+        [
+            "title",
+            "gedcom_item",
+            "copy_item",
+            "birth_intro_prefix",
+            "birth_intro_middle",
+            "birth_intro_suffix",
+            "birth_buckets",
+        ],
+    )
+    require_keys(
+        require_mapping(provenance["birth_buckets"], "sources.provenance.birth_buckets"),
+        "sources.provenance.birth_buckets",
+        ["full", "year_only", "month_year", "qualified", "qualified_note", "missing"],
     )
 
-    archives = sources["archives"]
+    missing = require_mapping(sources["missing"], "sources.missing")
+    require_keys(
+        missing,
+        "sources.missing",
+        ["title", "intro", "smart_match_suffix", "smart_match_caveat", "no_archives"],
+    )
+
+    legend = require_mapping(sources["legend"], "sources.legend")
+    require_keys(legend, "sources.legend", ["title", "hypothesis", "calculated_dates", "dashed_card"])
+
+    archives = require_mapping(sources["archives"], "sources.archives")
     require_keys(
         archives,
         "sources.archives",
-        ["mokroe", "valday", "chistopol", "slavyanoserbsk", "khimki"],
+        ["title", "mokroe", "valday", "chistopol", "slavyanoserbsk", "khimki"],
     )
+
+    tree = require_mapping(content["tree"], "tree")
+    require_keys(
+        tree,
+        "tree",
+        [
+            "label",
+            "h1",
+            "lead",
+            "stats",
+            "column_titles",
+            "status",
+            "missing_father",
+            "missing_mother",
+            "legend",
+            "goals",
+            "generation_names",
+            "generation_fallback_suffix",
+        ],
+    )
+    require_keys(require_mapping(tree["stats"], "tree.stats"), "tree.stats", ["with_parents", "search_goals"])
+    require_list(tree["column_titles"], "tree.column_titles", min_len=6)
+    require_keys(require_mapping(tree["status"], "tree.status"), "tree.status", ["ok", "hyp", "q"])
+    require_keys(
+        require_mapping(tree["legend"], "tree.legend"),
+        "tree.legend",
+        ["ok", "hyp", "q", "anchor"],
+    )
+    goals = require_mapping(tree["goals"], "tree.goals")
+    require_keys(
+        goals,
+        "tree.goals",
+        [
+            "label",
+            "title",
+            "lead",
+            "title_prefix",
+            "line_suffix",
+            "hint_known_place_prefix",
+            "hint_known_place_suffix",
+            "hint_unknown_place",
+            "status_suffix",
+        ],
+    )
+    require_mapping(tree["generation_names"], "tree.generation_names")
+    require_str(tree["generation_fallback_suffix"], "tree.generation_fallback_suffix")
+
+    footer = require_mapping(content["footer"], "footer")
+    require_keys(footer, "footer", ["brand", "middle", "suffix"])
 
 
 def esc(text: str) -> str:
@@ -442,7 +626,7 @@ def build_html(
     surnames_html = "".join(
         f'<div class="card"><h4>{esc(name)}</h4>'
         f'<p>{esc(surname_notes.get(name, surname_default))}</p>'
-        f'<div class="mini">{counted(count, ("носитель", "носителя", "носителей"))} в базе</div></div>'
+        f'<div class="mini">{counted(count, ("носитель", "носителя", "носителей"))} {esc(content["surnames"]["count_suffix"])}</div></div>'
         for name, count in st["top_surnames"][:10]
     )
 
@@ -459,7 +643,9 @@ def build_html(
 
     goals_html = ""
     for i, (person, depth) in enumerate(goals, 1):
-        generation = gen_names.get(depth, f"{depth}-е поколение")
+        generation = gen_names.get(
+            depth, f"{depth}{tree['generation_fallback_suffix']}"
+        )
         place = person.public_place
         if place:
             hint = (
@@ -485,9 +671,9 @@ def build_html(
 
     hero = content["hero"]
     hero_stats = (
-        f'{counted(st["people"], ("человек", "человека", "человек"))} в базе, '
+        f'{counted(st["people"], ("человек", "человека", "человек"))} {esc(hero["sub_stats_people_suffix"])} '
         f'{counted(st["surnames"], ("фамилия", "фамилии", "фамилий"))}, '
-        f'{counted(documented_gens, ("поколение", "поколения", "поколений"))} прослежено.'
+        f'{counted(documented_gens, ("поколение", "поколения", "поколений"))} {esc(hero["sub_stats_gens_suffix"])}'
     )
 
     lines = content["lines"]
@@ -542,7 +728,7 @@ def build_html(
       <div><b>{documented_gens}</b><span>{plural(documented_gens, ('ПОКОЛЕНИЕ', 'ПОКОЛЕНИЯ', 'ПОКОЛЕНИЙ'))} {esc(hero["stats"]["generations"])}</span></div>
       <div><b>{st['people']}</b><span>{plural(st['people'], ('ЧЕЛОВЕК', 'ЧЕЛОВЕКА', 'ЧЕЛОВЕК'))} {esc(hero["stats"]["people"])}</span></div>
       <div><b>{st['surnames']}</b><span>{esc(hero["stats"]["surnames"])}</span></div>
-      <div><b>{st['earliest_year'] or 'XIX в.'}</b><span>{esc(hero["stats"]["earliest_birth"])}</span></div>
+      <div><b>{st['earliest_year'] or esc(hero["stats"]["earliest_fallback"])}</b><span>{esc(hero["stats"]["earliest_birth"])}</span></div>
     </div>
   </div>
 </div>
@@ -663,17 +849,17 @@ def build_html(
         <h3>{esc(missing["title"])}</h3>
         <p style="margin-bottom:10px">{rich(missing["intro"])}</p>
         <ul>
-          <li><b>{counted(st['matched'], ('запись', 'записи', 'записей'))}</b> {esc(missing["items"][0])}</li>
-          <li>{rich(missing["items"][1])}</li>
-          <li>{esc(missing["items"][2])}</li>
+          <li><b>{counted(st['matched'], ('запись', 'записи', 'записей'))}</b> {esc(missing["smart_match_suffix"])}</li>
+          <li>{rich(missing["smart_match_caveat"])}</li>
+          <li>{esc(missing["no_archives"])}</li>
         </ul>
       </div>
       <div class="scard">
         <h3>{esc(legend["title"])}</h3>
         <ul>
-          <li>{rich(legend["items"][0])}</li>
-          <li>{rich(legend["items"][1])}</li>
-          <li>{rich(legend["items"][2])}</li>
+          <li>{rich(legend["hypothesis"])}</li>
+          <li>{rich(legend["calculated_dates"])}</li>
+          <li>{rich(legend["dashed_card"])}</li>
         </ul>
       </div>
       <div class="scard">
