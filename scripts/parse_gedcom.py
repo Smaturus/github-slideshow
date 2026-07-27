@@ -430,6 +430,129 @@ def parse_gedcom(path: Path) -> tuple[dict[str, Person], dict[str, Family], dict
                     family.marr_plac = value
             families[family.id] = family
 
+    # Inject newly discovered ancestors from the 1834 Revision List
+    # that are not present in the GEDCOM file.
+    # We do this programmatically to keep skiba.ged untouched.
+    #
+    # 1. Resolve the father of @I10@ (Andrey Fedotovich Matyukhin, r. 1870)
+    # Andrey's father in GEDCOM is @I11@ (Fedot Matyukhin, r. 1852 in GEDCOM).
+    # We override/enrich @I11@ with correct 1834 data:
+    if "@I11@" in people:
+        fedot = people["@I11@"]
+        fedot.givn = "Федот"
+        fedot.surn = ""  # No surname in 1834
+        fedot.birt = "ABT 1818"  # 16 years old in 1834
+        fedot.birt_plac = "село Мокрое Тульской области"
+        fedot.deceased = True
+        fedot.famc = "@F_MOKROE_26_CHILD@"  # Connect to his parents (Grigory & wife)
+
+    # 2. Create Grigory Ilyin (father of Fedot)
+    grigory = Person(id="@I_MOKROE_GRIGORY@", reference_year=ref_year)
+    grigory.givn = "Григорий"
+    grigory.surn = ""
+    grigory.sex = "M"
+    grigory.birt = "ABT 1790"  # 44 years old in 1834
+    grigory.birt_plac = "село Мокрое Тульской области"
+    grigory.deceased = True
+    grigory.fams = ["@F_MOKROE_26_CHILD@"]
+    grigory.famc = "@F_MOKROE_26_PARENT@"  # Connect to his parents (Ilya & Agrafena)
+    people[grigory.id] = grigory
+
+    # 3. Create Ilya Matveev (father of Grigory)
+    ilya = Person(id="@I_MOKROE_ILYA@", reference_year=ref_year)
+    ilya.givn = "Илья"
+    ilya.surn = ""
+    ilya.sex = "M"
+    ilya.birt = "ABT 1768"  # 66 years old in 1834
+    ilya.birt_plac = "село Мокрое Тульской области"
+    ilya.deceased = True
+    ilya.fams = ["@F_MOKROE_26_PARENT@"]
+    ilya.famc = "@F_MOKROE_26_GRANDPARENT@"  # Connect to his parents (Matvey & wife)
+    people[ilya.id] = ilya
+
+    # 4. Create Matvey (father of Ilya)
+    matvey = Person(id="@I_MOKROE_MATVEY@", reference_year=ref_year)
+    matvey.givn = "Матвей"
+    matvey.surn = ""
+    matvey.sex = "M"
+    matvey.deceased = True
+    matvey.fams = ["@F_MOKROE_26_GRANDPARENT@"]
+    people[matvey.id] = matvey
+
+    # 5. Create Agrafena (wife of Ilya)
+    agrafena = Person(id="@I_MOKROE_AGRAFENA@", reference_year=ref_year)
+    agrafena.givn = "Аграфена"
+    agrafena.surn = ""
+    agrafena.sex = "F"
+    agrafena.birt = "ABT 1771"  # 63 years old in 1834
+    agrafena.birt_plac = "село Мокрое Тульской области"
+    agrafena.deceased = True
+    agrafena.fams = ["@F_MOKROE_26_PARENT@"]
+    people[agrafena.id] = agrafena
+
+    # 6. Create Stepanida (wife of Grigory)
+    stepanida = Person(id="@I_MOKROE_STEPANIDA@", reference_year=ref_year)
+    stepanida.givn = "Степанида"
+    stepanida.surn = ""
+    stepanida.sex = "F"
+    stepanida.birt = "ABT 1791"  # 43 years old in 1834 (without re-calculating birth year precisely)
+    stepanida.birt_plac = "село Мокрое Тульской области"
+    stepanida.deceased = True
+    stepanida.fams = ["@F_MOKROE_26_CHILD@"]
+    people[stepanida.id] = stepanida
+
+    # 7. Create families to connect them
+    # Family of Matvey (Matvey & unknown wife -> Ilya)
+    fam_grandparent = Family(id="@F_MOKROE_26_GRANDPARENT@")
+    fam_grandparent.husb = "@I_MOKROE_MATVEY@"
+    fam_grandparent.chil = ["@I_MOKROE_ILYA@"]
+    families[fam_grandparent.id] = fam_grandparent
+
+    # Family of Ilya (Ilya & Agrafena -> Grigory)
+    fam_parent = Family(id="@F_MOKROE_26_PARENT@")
+    fam_parent.husb = "@I_MOKROE_ILYA@"
+    fam_parent.wife = "@I_MOKROE_AGRAFENA@"
+    fam_parent.chil = ["@I_MOKROE_GRIGORY@"]
+    families[fam_parent.id] = fam_parent
+
+    # Family of Grigory (Grigory & Stepanida -> Fedot)
+    fam_child = Family(id="@F_MOKROE_26_CHILD@")
+    fam_child.husb = "@I_MOKROE_GRIGORY@"
+    fam_child.wife = "@I_MOKROE_STEPANIDA@"
+    fam_child.chil = ["@I_MOKROE_ILYA_PETR@", "@I11@", "@I_MOKROE_GRIGORY_MATVEY@", "@I_MOKROE_GRIGORY_IVAN@"]  # Petr, Fedot, Matvey, Ivan
+    families[fam_child.id] = fam_child
+
+    # 8. Create Grigory's other sons (brothers of Fedot) as separate people to show in family context or stats
+    petr = Person(id="@I_MOKROE_ILYA_PETR@", reference_year=ref_year)
+    petr.givn = "Пётр"
+    petr.surn = ""
+    petr.sex = "M"
+    petr.birt = "ABT 1815"  # 19 years old in 1834
+    petr.birt_plac = "село Мокрое Тульской области"
+    petr.deceased = True
+    petr.famc = "@F_MOKROE_26_CHILD@"
+    people[petr.id] = petr
+
+    matvey_son = Person(id="@I_MOKROE_GRIGORY_MATVEY@", reference_year=ref_year)
+    matvey_son.givn = "Матвей"
+    matvey_son.surn = ""
+    matvey_son.sex = "M"
+    matvey_son.birt = "ABT 1827"  # 7 years old in 1834
+    matvey_son.birt_plac = "село Мокрое Тульской области"
+    matvey_son.deceased = True
+    matvey_son.famc = "@F_MOKROE_26_CHILD@"
+    people[matvey_son.id] = matvey_son
+
+    ivan = Person(id="@I_MOKROE_GRIGORY_IVAN@", reference_year=ref_year)
+    ivan.givn = "Иван"
+    ivan.surn = ""
+    ivan.sex = "M"
+    ivan.birt = "ABT 1828"  # 6 years old in 1834
+    ivan.birt_plac = "село Мокрое Тульской области"
+    ivan.deceased = True
+    ivan.famc = "@F_MOKROE_26_CHILD@"
+    people[ivan.id] = ivan
+
     return people, families, meta
 
 
