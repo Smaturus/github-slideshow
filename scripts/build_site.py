@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import html
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -571,81 +572,95 @@ def alekseev_card(branch: dict[str, Any]) -> str:
     )
 
 
-def build_html(
+@dataclass(frozen=True)
+class FamilyContext:
+    """Root person, spouse and first child used across page sections."""
+
+    root: Person
+    spouse: Person
+    child: Person | None
+
+
+def resolve_family_context(
     people: dict[str, Person],
     families: dict[str, Family],
-    meta: dict[str, str],
-    content: dict[str, Any],
-) -> str:
+) -> FamilyContext:
+    """Resolve the focal family from ROOT_ID."""
     root = people[ROOT_ID]
     spouse_fam = families[root.fams[0]]
     spouse_id = spouse_fam.wife if spouse_fam.husb == ROOT_ID else spouse_fam.husb
     spouse = people[spouse_id]
     children = [people[c] for c in spouse_fam.chil if c in people]
     child = children[0] if children else None
+    return FamilyContext(root=root, spouse=spouse, child=child)
 
-    st = stats(people, families)
-    father_line = direct_lines(ROOT_ID, people, families)["father"]
-    mother_line = direct_lines(ROOT_ID, people, families)["mother"]
-    skiba_father = direct_lines(spouse_id, people, families)["father"]
-    skiba_mother = direct_lines(spouse_id, people, families)["mother"]
 
-    gens_father = count_generations(ROOT_ID, people, families)
-    gens_skiba = count_generations(spouse_id, people, families)
-    documented_gens = max(gens_father, gens_skiba) + 1
-    goals = missing_parent_goals([ROOT_ID, spouse_id], people, families)
-    gen_names = generation_names(content)
-    tree = content["tree"]
-    goals_text = tree["goals"]
-
-    timeline_people = father_line[:6]
-    if len(timeline_people) < 4:
-        timeline_people = skiba_father[:6]
-
-    place_notes = content["places"]["notes"]
-    place_default = content["places"]["default_note"]
-    surname_notes = content["surnames"]["notes"]
-    surname_default = content["surnames"]["default_note"]
-
-    merged_places: Counter[str] = Counter()
+def merged_places(people: dict[str, Person]) -> Counter[str]:
+    """Aggregate canonical place names from deceased persons."""
+    counts: Counter[str] = Counter()
     for person in people.values():
         if person.is_living:
             continue
         for raw_place in (person.birt_plac, person.deat_plac):
             raw_place = raw_place.strip()
             if raw_place and raw_place not in {"Россия", "Украина"}:
-                merged_places[canonical_place(raw_place)] += 1
+                counts[canonical_place(raw_place)] += 1
+    return counts
 
-    places_html = "".join(
-        f'<div class="card"><div class="tag">{esc(content["places"]["card_tag_prefix"])} '
+
+def build_places_html(places_content: dict[str, Any], place_counts: Counter[str]) -> str:
+    """Render geography cards from aggregated place counts."""
+    place_notes = places_content["notes"]
+    place_default = places_content["default_note"]
+    return "".join(
+        f'<div class="card"><div class="tag">{esc(places_content["card_tag_prefix"])} '
         f'{counted(count, ("запись", "записи", "записей"))}</div><h4>{esc(place)}</h4>'
         f'<p>{esc(place_notes.get(place, place_default))}</p></div>'
-        for place, count in merged_places.most_common(9)
+        for place, count in place_counts.most_common(9)
     )
 
-    surnames_html = "".join(
+
+def build_surnames_html(surnames_content: dict[str, Any], top_surnames: list[tuple[str, int]]) -> str:
+    """Render surname frequency cards."""
+    surname_notes = surnames_content["notes"]
+    surname_default = surnames_content["default_note"]
+    return "".join(
         f'<div class="card"><h4>{esc(name)}</h4>'
         f'<p>{esc(surname_notes.get(name, surname_default))}</p>'
-        f'<div class="mini">{counted(count, ("носитель", "носителя", "носителей"))} {esc(content["surnames"]["count_suffix"])}</div></div>'
-        for name, count in st["top_surnames"][:10]
+        f'<div class="mini">{counted(count, ("носитель", "носителя", "носителей"))} {esc(surnames_content["count_suffix"])}</div></div>'
+        for name, count in top_surnames[:10]
     )
 
+
+def build_timeline_html(
+    timeline_content: dict[str, Any],
+    timeline_people: list[Person],
+    root_id: str,
+) -> str:
+    """Render generation timeline items."""
     timeline_html = ""
     for i, person in enumerate(timeline_people):
-        me = " me" if person.id == ROOT_ID else ""
+        me = " me" if person.id == root_id else ""
         timeline_html += f"""
       <div class="tl-item{me}">
-        <div class="tl-gen">{esc(content["timeline"]["generation_prefix"])} {len(timeline_people) - i} {esc(content["timeline"]["generation_suffix"])}</div>
+        <div class="tl-gen">{esc(timeline_content["generation_prefix"])} {len(timeline_people) - i} {esc(timeline_content["generation_suffix"])}</div>
         <h3>{esc(person.label)}</h3>
         <div class="yrs">{esc(person.public_years)}</div>
-        <p>{esc(person.public_place or content["timeline"]["place_fallback"])}</p>
+        <p>{esc(person.public_place or timeline_content["place_fallback"])}</p>
       </div>"""
+    return timeline_html
 
+
+def build_goals_html(
+    tree: dict[str, Any],
+    goals: list[tuple[Person, int]],
+    gen_names: dict[int, str],
+) -> str:
+    """Render search-goal rows for missing ancestors."""
+    goals_text = tree["goals"]
     goals_html = ""
     for i, (person, depth) in enumerate(goals, 1):
-        generation = gen_names.get(
-            depth, f"{depth}{tree['generation_fallback_suffix']}"
-        )
+        generation = gen_names.get(depth, f"{depth}{tree['generation_fallback_suffix']}")
         place = person.public_place
         if place:
             hint = (
@@ -660,45 +675,27 @@ def build_html(
           <p>{esc(person.public_years)} · {esc(generation)} {esc(goals_text["line_suffix"])} {esc(hint)}</p>
           <div class="st">{esc(generation.capitalize())} {esc(goals_text["status_suffix"])}</div>
         </div></div>"""
+    return goals_html
 
-    pedigree_svg = render_pedigree_svg(root, spouse, child, people, families, content, max_gen=5)
-    export_date = format_date(meta.get("date", "")) or "2026"
-    child_line_text = (
-        f" {esc(genitive_given_name(child.name, child.sex))} ({esc(child.public_years)})"
-        if child
-        else content["meeting"]["child_fallback"]
-    )
 
-    hero = content["hero"]
-    hero_stats = (
+def hero_stats_text(hero: dict[str, Any], st: dict[str, Any], documented_gens: int) -> str:
+    """Compose hero subtitle statistics line."""
+    return (
         f'{counted(st["people"], ("человек", "человека", "человек"))} {esc(hero["sub_stats_people_suffix"])} '
         f'{counted(st["surnames"], ("фамилия", "фамилии", "фамилий"))}, '
         f'{counted(documented_gens, ("поколение", "поколения", "поколений"))} {esc(hero["sub_stats_gens_suffix"])}'
     )
 
-    lines = content["lines"]
-    line_cards = "".join(
-        line_branch_card(lines["branches"][key], chain_text(chain))
-        for key, chain in (
-            ("matyukhin_father", father_line[:5]),
-            ("astafyev_mother", mother_line[:4]),
-            ("skiba_father", skiba_father[:5]),
-            ("potashkin_mother", skiba_mother[:5]),
-        )
-    )
 
-    alekseevs = content["alekseevs"]
-    meeting = content["meeting"]
-    sources = content["sources"]
-    provenance = sources["provenance"]
-    missing = sources["missing"]
-    legend = sources["legend"]
-    archives = sources["archives"]
-    meta_content = content["meta"]
-    footer = content["footer"]
+def child_line_text(child: Person | None, meeting: dict[str, Any]) -> str:
+    """Meeting-section suffix for the focal child, if present."""
+    if child:
+        return f" {esc(genitive_given_name(child.name, child.sex))} ({esc(child.public_years)})"
+    return meeting["child_fallback"]
 
-    css = CSS.read_text(encoding="utf-8") if CSS.exists() else ""
 
+def render_document_start(meta_content: dict[str, Any], css: str) -> str:
+    """HTML document preamble through opening body tag."""
     return f"""<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -708,7 +705,12 @@ def build_html(
 <style>{css}</style>
 </head>
 <body>
-<nav>
+"""
+
+
+def render_nav(meta_content: dict[str, Any]) -> str:
+    """Top navigation between chronicle and tree pages."""
+    return f"""<nav>
   <div class="wrap">
     <div class="brand">{esc(meta_content["brand"])}</div>
     <button class="navbtn active" id="nb1" onclick="showPage(1)">{esc(meta_content["nav_chronicle"])}</button>
@@ -716,8 +718,18 @@ def build_html(
   </div>
 </nav>
 
-<div class="page visible" id="page1">
-<div class="hero">
+"""
+
+
+def render_hero_section(
+    hero: dict[str, Any],
+    st: dict[str, Any],
+    documented_gens: int,
+    export_date: str,
+) -> str:
+    """Landing hero with stats and privacy note."""
+    hero_stats = hero_stats_text(hero, st, documented_gens)
+    return f"""<div class="hero">
   <div class="wrap">
     <div class="label">{esc(hero["label_prefix"])} {esc(export_date)}</div>
     <h1>{esc(hero["h1"])}</h1>
@@ -733,7 +745,27 @@ def build_html(
   </div>
 </div>
 
-<section id="line">
+"""
+
+
+def render_lines_section(
+    lines: dict[str, Any],
+    father_line: list[Person],
+    mother_line: list[Person],
+    skiba_father: list[Person],
+    skiba_mother: list[Person],
+) -> str:
+    """Four direct-line branch cards."""
+    line_cards = "".join(
+        line_branch_card(lines["branches"][key], chain_text(chain))
+        for key, chain in (
+            ("matyukhin_father", father_line[:5]),
+            ("astafyev_mother", mother_line[:4]),
+            ("skiba_father", skiba_father[:5]),
+            ("potashkin_mother", skiba_mother[:5]),
+        )
+    )
+    return f"""<section id="line">
   <div class="wrap">
     <div class="sect-head">
       <div class="label">{esc(lines["label"])}</div>
@@ -747,7 +779,12 @@ def build_html(
   </div>
 </section>
 
-<section>
+"""
+
+
+def render_alekseevs_section(alekseevs: dict[str, Any]) -> str:
+    """Alekseev collateral branch cards."""
+    return f"""<section>
   <div class="wrap">
     <div class="sect-head">
       <div class="label">{esc(alekseevs["label"])}</div>
@@ -762,12 +799,17 @@ def build_html(
   </div>
 </section>
 
-<section class="alt">
+"""
+
+
+def render_timeline_section(timeline: dict[str, Any], timeline_html: str) -> str:
+    """Generation timeline section wrapper."""
+    return f"""<section class="alt">
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">{esc(content["timeline"]["label"])}</div>
-      <h2>{esc(content["timeline"]["title"])}</h2>
-      <p>{esc(content["timeline"]["lead"])}</p>
+      <div class="label">{esc(timeline["label"])}</div>
+      <h2>{esc(timeline["title"])}</h2>
+      <p>{esc(timeline["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="tl">{timeline_html}
@@ -775,36 +817,58 @@ def build_html(
   </div>
 </section>
 
-<section>
+"""
+
+
+def render_surnames_section(surnames: dict[str, Any], surnames_html: str) -> str:
+    """Surname frequency section wrapper."""
+    return f"""<section>
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">{esc(content["surnames"]["label"])}</div>
-      <h2>{esc(content["surnames"]["title"])}</h2>
-      <p>{esc(content["surnames"]["lead"])}</p>
+      <div class="label">{esc(surnames["label"])}</div>
+      <h2>{esc(surnames["title"])}</h2>
+      <p>{esc(surnames["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2">{surnames_html}</div>
   </div>
 </section>
 
-<section class="alt">
+"""
+
+
+def render_places_section(places: dict[str, Any], places_html: str) -> str:
+    """Geography section wrapper."""
+    return f"""<section class="alt">
   <div class="wrap">
     <div class="sect-head">
-      <div class="label">{esc(content["places"]["label"])}</div>
-      <h2>{esc(content["places"]["title"])}</h2>
-      <p>{esc(content["places"]["lead"])}</p>
+      <div class="label">{esc(places["label"])}</div>
+      <h2>{esc(places["title"])}</h2>
+      <p>{esc(places["lead"])}</p>
       <div class="hr"></div>
     </div>
     <div class="grid g3">{places_html}</div>
   </div>
 </section>
 
-<section>
+"""
+
+
+def render_meeting_section(
+    meeting: dict[str, Any],
+    root: Person,
+    spouse: Person,
+    child_suffix: str,
+    export_date: str,
+    st: dict[str, Any],
+) -> str:
+    """Marriage meeting point and living-family cards."""
+    return f"""<section>
   <div class="wrap">
     <div class="sect-head">
       <div class="label">{esc(meeting["label"])}</div>
       <h2>{esc(meeting["title"])}</h2>
-      <p>{rich(meeting["lead_prefix"])} <b>{esc(root.short)}</b> ({esc(root.public_years)}) и <b>{esc(spouse.short)}</b> ({esc(spouse.public_years)}) {esc(meeting["lead_suffix"])}{child_line_text}.</p>
+      <p>{rich(meeting["lead_prefix"])} <b>{esc(root.short)}</b> ({esc(root.public_years)}) и <b>{esc(spouse.short)}</b> ({esc(spouse.public_years)}) {esc(meeting["lead_suffix"])}{child_suffix}.</p>
       <div class="hr"></div>
     </div>
     <div class="grid g2">
@@ -822,7 +886,16 @@ def build_html(
   </div>
 </section>
 
-<section class="src">
+"""
+
+
+def render_sources_section(sources: dict[str, Any], st: dict[str, Any]) -> str:
+    """Provenance, gaps, legend and archive guidance."""
+    provenance = sources["provenance"]
+    missing = sources["missing"]
+    legend = sources["legend"]
+    archives = sources["archives"]
+    return f"""<section class="src">
   <div class="wrap">
       <div class="sect-head">
       <div class="label">{esc(sources["label"])}</div>
@@ -875,9 +948,63 @@ def build_html(
     </div>
   </div>
 </section>
-</div>
+"""
 
-<div class="page" id="page2">
+
+def render_chronicle_page(
+    content: dict[str, Any],
+    st: dict[str, Any],
+    family: FamilyContext,
+    father_line: list[Person],
+    mother_line: list[Person],
+    skiba_father: list[Person],
+    skiba_mother: list[Person],
+    documented_gens: int,
+    export_date: str,
+    timeline_people: list[Person],
+    places_html: str,
+    surnames_html: str,
+) -> str:
+    """First page: chronicle sections from hero through sources."""
+    child_suffix = child_line_text(family.child, content["meeting"])
+    timeline_html = build_timeline_html(content["timeline"], timeline_people, family.root.id)
+    return (
+        '<div class="page visible" id="page1">\n'
+        + render_hero_section(content["hero"], st, documented_gens, export_date)
+        + render_lines_section(
+            content["lines"],
+            father_line,
+            mother_line,
+            skiba_father,
+            skiba_mother,
+        )
+        + render_alekseevs_section(content["alekseevs"])
+        + render_timeline_section(content["timeline"], timeline_html)
+        + render_surnames_section(content["surnames"], surnames_html)
+        + render_places_section(content["places"], places_html)
+        + render_meeting_section(
+            content["meeting"],
+            family.root,
+            family.spouse,
+            child_suffix,
+            export_date,
+            st,
+        )
+        + render_sources_section(content["sources"], st)
+        + "</div>\n\n"
+    )
+
+
+def render_tree_page(
+    tree: dict[str, Any],
+    people: dict[str, Person],
+    goals: list[tuple[Person, int]],
+    pedigree_svg: str,
+    goals_html: str,
+) -> str:
+    """Second page: SVG pedigree chart and search goals."""
+    goals_text = tree["goals"]
+    return f"""<div class="page" id="page2">
 <section class="hero hero-compact">
   <div class="wrap">
     <div class="label">{esc(tree["label"])}</div>
@@ -914,21 +1041,92 @@ def build_html(
 </section>
 </div>
 
-<footer>
+"""
+
+
+def render_footer(footer: dict[str, Any], export_date: str) -> str:
+    """Site footer."""
+    return f"""<footer>
   <div class="wrap"><b>{esc(footer["brand"])}</b>{esc(footer["middle"])} {esc(export_date)}{esc(footer["suffix"])}</div>
 </footer>
 
-<script>
-function showPage(n) {{
+"""
+
+
+def render_page_script() -> str:
+    """Client-side tab switcher between chronicle and tree pages."""
+    return """<script>
+function showPage(n) {
   document.getElementById('page1').classList.toggle('visible', n===1);
   document.getElementById('page2').classList.toggle('visible', n===2);
   document.getElementById('nb1').classList.toggle('active', n===1);
   document.getElementById('nb2').classList.toggle('active', n===2);
-  window.scrollTo({{top:0}});
-}}
+  window.scrollTo({top:0});
+}
 </script>
 </body>
 </html>"""
+
+
+def build_html(
+    people: dict[str, Person],
+    families: dict[str, Family],
+    meta: dict[str, str],
+    content: dict[str, Any],
+) -> str:
+    family = resolve_family_context(people, families)
+    st = stats(people, families)
+    father_line = direct_lines(ROOT_ID, people, families)["father"]
+    mother_line = direct_lines(ROOT_ID, people, families)["mother"]
+    skiba_father = direct_lines(family.spouse.id, people, families)["father"]
+    skiba_mother = direct_lines(family.spouse.id, people, families)["mother"]
+
+    gens_father = count_generations(ROOT_ID, people, families)
+    gens_skiba = count_generations(family.spouse.id, people, families)
+    documented_gens = max(gens_father, gens_skiba) + 1
+    goals = missing_parent_goals([ROOT_ID, family.spouse.id], people, families)
+    gen_names = generation_names(content)
+
+    timeline_people = father_line[:6]
+    if len(timeline_people) < 4:
+        timeline_people = skiba_father[:6]
+
+    places_html = build_places_html(content["places"], merged_places(people))
+    surnames_html = build_surnames_html(content["surnames"], st["top_surnames"])
+    goals_html = build_goals_html(content["tree"], goals, gen_names)
+    pedigree_svg = render_pedigree_svg(
+        family.root,
+        family.spouse,
+        family.child,
+        people,
+        families,
+        content,
+        max_gen=5,
+    )
+    export_date = format_date(meta.get("date", "")) or "2026"
+    css = CSS.read_text(encoding="utf-8") if CSS.exists() else ""
+
+    return (
+        render_document_start(content["meta"], css)
+        + render_nav(content["meta"])
+        + render_chronicle_page(
+            content,
+            st,
+            family,
+            father_line,
+            mother_line,
+            skiba_father,
+            skiba_mother,
+            documented_gens,
+            export_date,
+            timeline_people,
+            places_html,
+            surnames_html,
+        )
+        + render_tree_page(content["tree"], people, goals, pedigree_svg, goals_html)
+        + render_footer(content["footer"], export_date)
+        + render_page_script()
+    )
 
 
 def main() -> None:
