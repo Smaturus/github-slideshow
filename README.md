@@ -30,7 +30,7 @@ assets/site.css         ──────────────────�
                                                           │
 merge в master ──► GitHub Actions ──► gh-pages ──► GitHub Pages
                                       (только index.html,
-                                       .nojekyll, assets/)
+                                       .nojekyll)
 ```
 
 | Слой | Источник | Ответственность |
@@ -50,7 +50,7 @@ merge в master ──► GitHub Actions ──► gh-pages ──► GitHub Pag
 
 **Валидация YAML.** `build_site.py` проверяет обязательные ключи и типы в `content/content.yaml` и падает с понятным сообщением, если структура нарушена.
 
-**Безопасная публикация.** Workflow публикует в `gh-pages` только allowlist: `index.html`, `.nojekyll`, `assets/`. Скрипты, YAML и служебные файлы на live-сайт не попадают.
+**Безопасная публикация.** Workflow публикует в `gh-pages` только allowlist: `index.html`, `.nojekyll`. CSS инлайнится при сборке; legacy-шрифты и JS на live-сайт не попадают. Скрипты, YAML и служебные файлы тоже не публикуются.
 
 **Осознанный trade-off.** Сборка не выполняется в CI: GEDCOM содержит персональные данные и остаётся локально. Перед merge в `master` обновлённый `index.html` коммитится вручную после локальной пересборки.
 
