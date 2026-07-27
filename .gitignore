@@ -1,9 +1,8 @@
-_site/
-.sass-cache/
-.jekyll-metadata
-.bundle
-
 # Персональные данные: GEDCOM содержит точные даты и контакты живых людей
 data/*.ged
 data/*.bin
 __pycache__/
+*.pyc
+.Python
+.venv/
+venv/
