@@ -1087,9 +1087,11 @@ def build_html(
     goals = missing_parent_goals([ROOT_ID, family.spouse.id], people, families)
     gen_names = generation_names(content)
 
-    timeline_people = father_line[:6]
+    # Full paternal chain, same depth as the pedigree chart — down to the
+    # 1834 Mokroe ancestors (Fedot, Grigory, Ilya, Matvey).
+    timeline_people = father_line
     if len(timeline_people) < 4:
-        timeline_people = skiba_father[:6]
+        timeline_people = skiba_father
 
     places_html = build_places_html(content["places"], merged_places(people))
     surnames_html = build_surnames_html(content["surnames"], st["top_surnames"])
