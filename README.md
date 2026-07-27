@@ -35,9 +35,9 @@ merge в master ──► GitHub Actions ──► gh-pages ──► GitHub Pag
 
 | Слой | Источник | Ответственность |
 |------|----------|-----------------|
-| **Данные** | `data/skiba.ged` | Имена, даты, связи, статистика |
+| **Данные** | `data/skiba.ged` + `scripts/parse_gedcom.py` | Имена, даты, связи, статистика, фильтрация приватности |
 | **Контент** | `content/content.yaml` | Заголовки, абзацы, подписи, легенда |
-| **Генератор** | `scripts/build_site.py` | Сборка HTML, SVG-древо, фильтрация приватности |
+| **Генератор** | `scripts/build_site.py` | Модульный рендер секций, SVG-древо, валидация YAML, post-build проверка приватности |
 | **Публикация** | `.github/workflows/pages.yml` | Деплой только статических файлов в `gh-pages` |
 
 ---
@@ -106,8 +106,8 @@ python3 -m http.server 8080
 |------|------------|
 | `data/skiba.ged` | GEDCOM-экспорт, локально, в Git не попадает |
 | `content/content.yaml` | Редактируемые тексты сайта |
-| `scripts/parse_gedcom.py` | Парсер GEDCOM, модель персон, приватность |
-| `scripts/build_site.py` | Генератор `index.html`, валидация YAML |
+| `scripts/parse_gedcom.py` | Парсер GEDCOM, модель персон, фильтрация приватности |
+| `scripts/build_site.py` | Генератор `index.html`: `render_*` секции, валидация YAML, post-build проверка |
 | `assets/site.css` | Стили |
 | `index.html` | Собранный сайт (коммитится в `master`) |
 | `requirements.txt` | Python-зависимости |
