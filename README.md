@@ -15,7 +15,7 @@ GEDCOM содержит точные даты рождения, места и к
 - `requirements.txt` — минимальные Python-зависимости для сборки
 - `scripts/parse_gedcom.py` — парсер GEDCOM
 - `scripts/build_site.py` — генератор `index.html` (читает GEDCOM и `content/content.yaml`)
-- `assets/site.css` — стили (по образцу [баталовы.древо.рус](https://баталовы.древо.рус/))
+- `assets/site.css` — стили
 - `index.html` — готовый сайт (летопись + SVG-древо)
 
 ## Редактирование текстов и пересборка
