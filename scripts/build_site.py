@@ -44,7 +44,44 @@ LEFT_PAD = 18
 def load_content() -> dict[str, Any]:
     """Load editorial texts from content/content.yaml."""
     with CONTENT_PATH.open(encoding="utf-8") as handle:
-        return yaml.safe_load(handle)
+        content = yaml.safe_load(handle)
+    validate_content(content)
+    return content
+
+
+def require_keys(data: dict[str, Any], path: str, keys: list[str]) -> None:
+    """Fail fast with a clear error when editable YAML misses required keys."""
+    missing = [key for key in keys if key not in data]
+    if missing:
+        missing_list = ", ".join(missing)
+        raise ValueError(f"Missing required key(s) in content/content.yaml at {path}: {missing_list}")
+
+
+def validate_content(content: Any) -> None:
+    """Minimal schema checks for editor-facing YAML."""
+    if not isinstance(content, dict):
+        raise ValueError("content/content.yaml must contain a top-level mapping")
+
+    require_keys(content, "root", ["meta", "hero", "timeline", "places", "sources", "tree"])
+    require_keys(content["timeline"], "timeline", ["generation_prefix", "generation_suffix", "place_fallback"])
+    require_keys(content["places"], "places", ["card_tag_prefix", "notes", "default_note"])
+
+    sources = content["sources"]
+    require_keys(sources, "sources", ["provenance", "archives"])
+
+    provenance = sources["provenance"]
+    require_keys(
+        provenance,
+        "sources.provenance",
+        ["gedcom_item", "copy_item", "birth_intro_prefix", "birth_intro_middle", "birth_intro_suffix", "birth_buckets"],
+    )
+
+    archives = sources["archives"]
+    require_keys(
+        archives,
+        "sources.archives",
+        ["mokroe", "valday", "chistopol", "slavyanoserbsk", "khimki"],
+    )
 
 
 def esc(text: str) -> str:
@@ -396,7 +433,7 @@ def build_html(
                 merged_places[canonical_place(raw_place)] += 1
 
     places_html = "".join(
-        f'<div class="card"><div class="tag">География · '
+        f'<div class="card"><div class="tag">{esc(content["places"]["card_tag_prefix"])} '
         f'{counted(count, ("запись", "записи", "записей"))}</div><h4>{esc(place)}</h4>'
         f'<p>{esc(place_notes.get(place, place_default))}</p></div>'
         for place, count in merged_places.most_common(9)
@@ -414,7 +451,7 @@ def build_html(
         me = " me" if person.id == ROOT_ID else ""
         timeline_html += f"""
       <div class="tl-item{me}">
-        <div class="tl-gen">Поколение {len(timeline_people) - i} {esc(content["timeline"]["generation_suffix"])}</div>
+        <div class="tl-gen">{esc(content["timeline"]["generation_prefix"])} {len(timeline_people) - i} {esc(content["timeline"]["generation_suffix"])}</div>
         <h3>{esc(person.label)}</h3>
         <div class="yrs">{esc(person.public_years)}</div>
         <p>{esc(person.public_place or content["timeline"]["place_fallback"])}</p>
@@ -611,10 +648,10 @@ def build_html(
       <div class="scard">
         <h3>{esc(provenance["title"])}</h3>
         <ul>
-          <li>{rich(provenance["items"][0])}</li>
-          <li>{rich(provenance["items"][1])}</li>
+          <li>{rich(provenance["gedcom_item"])}</li>
+          <li>{rich(provenance["copy_item"])}</li>
         </ul>
-        <p style="margin:10px 0">{esc(provenance["birth_intro_prefix"])} {counted(st['people'], ('человека', 'человек', 'человек'))} {esc(provenance["birth_intro_middle"])} {st['with_birth']}. Насколько точно известна дата:</p>
+        <p style="margin:10px 0">{esc(provenance["birth_intro_prefix"])} {counted(st['people'], ('человека', 'человек', 'человек'))} {esc(provenance["birth_intro_middle"])} {st['with_birth']}. {esc(provenance["birth_intro_suffix"])}</p>
         <ul>
           <li>{rich(provenance["birth_buckets"]["full"])} — {counted(st['birth_full'], ('запись', 'записи', 'записей'))}</li>
           <li>{rich(provenance["birth_buckets"]["year_only"])} — {st['birth_year_only']}; {esc(provenance["birth_buckets"]["month_year"])} — {st['birth_month_year']}</li>
@@ -642,11 +679,11 @@ def build_html(
       <div class="scard">
         <h3>{esc(archives["title"])}</h3>
         <ul>
-          <li>{rich(archives["items"][0])}</li>
-          <li>{rich(archives["items"][1])}</li>
-          <li>{rich(archives["items"][2])}</li>
-          <li>{rich(archives["items"][3])}</li>
-          <li>{rich(archives["items"][4])}</li>
+          <li>{rich(archives["mokroe"])}</li>
+          <li>{rich(archives["valday"])}</li>
+          <li>{rich(archives["chistopol"])}</li>
+          <li>{rich(archives["slavyanoserbsk"])}</li>
+          <li>{rich(archives["khimki"])}</li>
         </ul>
       </div>
     </div>
