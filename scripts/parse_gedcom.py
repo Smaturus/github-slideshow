@@ -434,17 +434,23 @@ def parse_gedcom(path: Path) -> tuple[dict[str, Person], dict[str, Family], dict
     # that are not present in the GEDCOM file.
     # We do this programmatically to keep skiba.ged untouched.
     #
-    # 1. Resolve the father of @I10@ (Andrey Fedotovich Matyukhin, r. 1870)
-    # Andrey's father in GEDCOM is @I11@ (Fedot Matyukhin, r. 1852 in GEDCOM).
-    # We override/enrich @I11@ with correct 1834 data:
-    if "@I11@" in people:
-        fedot = people["@I11@"]
+    # 1. Resolve the father of @I107@ (Andrey Fedotovich Matyukhin, r. 1870).
+    # Andrey's father in GEDCOM is @I155@ (Федот Матюхин, BEF 1852), whose only
+    # GEDCOM parent is the nameless placeholder @I163@ ("??????") via @F59@.
+    # The 1834 revision names Fedot's real father — Grigory Ilyin — so we enrich
+    # @I155@ and re-point his FAMC to the virtual Grigory family, which replaces
+    # the @F59@ / @I163@ guess in every ancestor walk.
+    if "@I155@" in people:
+        fedot = people["@I155@"]
         fedot.givn = "Федот"
         fedot.surn = ""  # No surname in 1834
         fedot.birt = "ABT 1818"  # 16 years old in 1834
         fedot.birt_plac = "село Мокрое Тульской области"
         fedot.deceased = True
-        fedot.famc = "@F_MOKROE_26_CHILD@"  # Connect to his parents (Grigory & wife)
+        fedot.famc = "@F_MOKROE_26_CHILD@"  # Connect to his parents (Grigory & Stepanida)
+        # Drop the superseded child link so @F59@ no longer claims Fedot.
+        if "@F59@" in families and "@I155@" in families["@F59@"].chil:
+            families["@F59@"].chil.remove("@I155@")
 
     # 2. Create Grigory Ilyin (father of Fedot)
     grigory = Person(id="@I_MOKROE_GRIGORY@", reference_year=ref_year)
@@ -519,7 +525,16 @@ def parse_gedcom(path: Path) -> tuple[dict[str, Person], dict[str, Family], dict
     fam_child = Family(id="@F_MOKROE_26_CHILD@")
     fam_child.husb = "@I_MOKROE_GRIGORY@"
     fam_child.wife = "@I_MOKROE_STEPANIDA@"
-    fam_child.chil = ["@I_MOKROE_ILYA_PETR@", "@I11@", "@I_MOKROE_GRIGORY_MATVEY@", "@I_MOKROE_GRIGORY_IVAN@"]  # Petr, Fedot, Matvey, Ivan
+    # Sons Petr, Fedot (@I155@, the direct ancestor), Matvey, Ivan and
+    # daughters Anna, Agafya — all recorded in yard No. 26 in 1834.
+    fam_child.chil = [
+        "@I_MOKROE_ILYA_PETR@",
+        "@I155@",
+        "@I_MOKROE_GRIGORY_MATVEY@",
+        "@I_MOKROE_GRIGORY_IVAN@",
+        "@I_MOKROE_GRIGORY_ANNA@",
+        "@I_MOKROE_GRIGORY_AGAFYA@",
+    ]
     families[fam_child.id] = fam_child
 
     # 8. Create Grigory's other sons (brothers of Fedot) as separate people to show in family context or stats
@@ -552,6 +567,27 @@ def parse_gedcom(path: Path) -> tuple[dict[str, Person], dict[str, Family], dict
     ivan.deceased = True
     ivan.famc = "@F_MOKROE_26_CHILD@"
     people[ivan.id] = ivan
+
+    # 9. Grigory's daughters from the female half of the same yard
+    anna = Person(id="@I_MOKROE_GRIGORY_ANNA@", reference_year=ref_year)
+    anna.givn = "Анна"
+    anna.surn = ""
+    anna.sex = "F"
+    anna.birt = "ABT 1820"  # 14 years old in 1834
+    anna.birt_plac = "село Мокрое Тульской области"
+    anna.deceased = True
+    anna.famc = "@F_MOKROE_26_CHILD@"
+    people[anna.id] = anna
+
+    agafya = Person(id="@I_MOKROE_GRIGORY_AGAFYA@", reference_year=ref_year)
+    agafya.givn = "Агафья"
+    agafya.surn = ""
+    agafya.sex = "F"
+    agafya.birt = "ABT 1833"  # 1 year old in 1834
+    agafya.birt_plac = "село Мокрое Тульской области"
+    agafya.deceased = True
+    agafya.famc = "@F_MOKROE_26_CHILD@"
+    people[agafya.id] = agafya
 
     return people, families, meta
 
@@ -587,7 +623,7 @@ def direct_lines(
     root_id: str,
     people: dict[str, Person],
     families: dict[str, Family],
-    generations: int = 5,
+    generations: int = 8,
 ) -> dict[str, list[Person]]:
     """Build paternal and maternal ancestor chains."""
 

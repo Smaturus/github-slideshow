@@ -1101,7 +1101,9 @@ def build_html(
         people,
         families,
         content,
-        max_gen=5,
+        # Deep enough to reach the 1834 Mokroe ancestors: Fedot (4),
+        # Grigory (5), Ilya (6) and Matvey (7).
+        max_gen=7,
     )
     export_date = format_date(meta.get("date", "")) or "2026"
     css = CSS.read_text(encoding="utf-8") if CSS.exists() else ""
