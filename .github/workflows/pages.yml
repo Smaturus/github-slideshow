@@ -38,11 +38,20 @@ jobs:
           touch "$PUBLISH_DIR/.nojekyll"
 
           git checkout --orphan gh-pages-tmp
-          git rm -rf . >/dev/null 2>&1 || true
+          git rm -rf .
           git clean -fdx
 
           cp -R "$PUBLISH_DIR/." .
 
           git add index.html .nojekyll assets
+          while IFS= read -r file; do
+            case "$file" in
+              index.html|.nojekyll|assets/*) ;;
+              *)
+                echo "Unexpected file staged for gh-pages publish: $file"
+                exit 1
+                ;;
+            esac
+          done < <(git ls-files)
           git commit -m "Publish static site from ${GITHUB_SHA}"
           git push --force origin HEAD:gh-pages
