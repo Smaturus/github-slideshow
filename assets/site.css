@@ -127,12 +127,18 @@ nav .brand{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--i
 .src li:last-child{border-bottom:none}
 .leg{display:inline-block;background:var(--plum-tint);color:var(--plum);font-weight:600;border-radius:6px;padding:2px 9px;font-size:12px;letter-spacing:.07em;text-transform:uppercase;margin-right:8px;vertical-align:1px}
 
-/* ДРЕВО — статус данных кодируется цветом рамки и бейджем */
-.treewrap{overflow-x:auto;padding-top:26px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--line-strong) var(--paper-deep)}
+/* ДРЕВО — статус данных кодируется цветом рамки и бейджем.
+   Восемь поколений не умещаются в экран (ширина вёрстки ~1972 px), поэтому
+   .treewrap — горизонтальный скроллпорт: страница по горизонтали не едет,
+   а древо прокручивается внутри секции. */
+.treewrap{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;padding-top:26px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--line-strong) var(--paper-deep)}
 .treewrap::-webkit-scrollbar{height:10px}
 .treewrap::-webkit-scrollbar-track{background:var(--paper-deep);border-radius:5px}
 .treewrap::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:5px}
-.pedigree{width:100%;height:auto;display:block;font-family:var(--sans)}
+/* width:auto вместо 100%: иначе SVG сжимается по ширине контейнера и вместо
+   прокрутки древо уменьшается в масштабе. Ширину задаёт inline min-width,
+   который генератор пишет в render_pedigree_svg. */
+.pedigree{width:auto;max-width:none;height:auto;display:block;font-family:var(--sans)}
 .pedigree .colhead{font-size:10.5px;letter-spacing:.16em;font-weight:600;fill:var(--ink-3)}
 .pedigree .ln{stroke:var(--line-strong);stroke-width:1.1;fill:none}
 .pedigree .fr{fill:var(--surface);stroke:var(--line-strong);stroke-width:1.1;filter:drop-shadow(0 1px 1.5px rgba(37,35,33,.06))}
