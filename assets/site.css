@@ -91,27 +91,34 @@ body.over-hero .navbtn.active{background:rgba(167,157,200,.18);color:#CFC8E4}
 /* Мягкий переход из чёрного в фарфор — без резкой смены фона */
 .hero-fade{position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(180deg,rgba(239,241,244,0) 0%,rgba(239,241,244,.55) 62%,var(--porcelain) 100%);pointer-events:none}
 
-/* Кристаллическая решётка: сотни фасетов в трёх ярусах яркости — дальний
-   ярус почти атмосфера, ближний — «электрическая» сирень; светящийся
-   «хребет» отцовской линии с годами и мягкие пятна света за кластерами */
+/* Кристаллическое поле фасетов: плоскости-полости заливаются сиреневой
+   дымкой четырёх ярусов плотности (f4 — почти пустота, lum — светящаяся
+   панель), часть граней прерывистая (d1/d2), редкие яркие рёбра (ridge);
+   светящийся «хребет» отцовской линии с годами поверх */
 .hero-graph{position:relative;justify-self:end;width:100%;max-width:680px;margin:0}
 .hero-graph .lattice{display:block;width:100%;height:auto}
 .lattice .halo{fill:url(#lat-halo)}
-.lattice .eg{fill:none}
-.lattice .e1{stroke:rgba(199,189,236,.55);stroke-width:1}
-.lattice .e2{stroke:rgba(193,184,230,.30);stroke-width:.9}
-.lattice .e3{stroke:rgba(206,212,235,.11);stroke-width:.8}
+.lattice .face{stroke:none}
+.lattice .face.f1{fill:rgba(180,168,222,.32)}
+.lattice .face.f2{fill:rgba(175,164,215,.17)}
+.lattice .face.f3{fill:rgba(178,172,218,.085)}
+.lattice .face.f4{fill:rgba(192,198,228,.04)}
+.lattice .face.lum{fill:rgba(202,191,242,.48);filter:drop-shadow(0 0 12px rgba(190,178,232,.4))}
+.lattice .eg{fill:none;stroke-linecap:round}
+.lattice .e1{stroke:rgba(203,193,240,.58);stroke-width:1}
+.lattice .e2{stroke:rgba(196,187,232,.30);stroke-width:.9}
+.lattice .e3{stroke:rgba(206,212,238,.12);stroke-width:.8}
+.lattice .eg.d1,.lattice .eg.d2{stroke-linecap:butt}
+.lattice .eg.d1{stroke-dasharray:8 7}
+.lattice .eg.d2{stroke-dasharray:3 6.5}
+.lattice .eg.ridge{stroke:#CFC5EF;stroke-width:1.4;filter:drop-shadow(0 0 6px rgba(193,182,234,.8))}
 .lattice .em{stroke:#BEB2E6;stroke-width:1.8}
 .lattice .spine-glow{fill:none;stroke:rgba(190,178,228,.7);stroke-width:2.8}
 .lattice .spine-glow-wide{fill:none;stroke:rgba(172,160,214,.45);stroke-width:8}
 .lattice .nd{fill:#D8CFF4;filter:drop-shadow(0 0 7px rgba(193,182,234,.95))}
 .lattice .nd.approx{fill:var(--hero-bg-2);stroke:#CBC1EC;stroke-width:1.5}
 .lattice .nd.doc{fill:var(--hero-bg-2);stroke:rgba(203,193,236,.85);stroke-width:1.3;stroke-dasharray:2.6 2.2;filter:drop-shadow(0 0 5px rgba(185,173,226,.55))}
-.lattice .nd.sat{filter:none}
-.lattice .sat.s1{fill:rgba(216,210,240,.65)}
-.lattice .sat.s2{fill:rgba(214,208,238,.40)}
-.lattice .sat.s3{fill:rgba(216,222,240,.18)}
-.lattice .nd.hot{fill:#E8E1FB;filter:drop-shadow(0 0 11px rgba(205,194,243,1))}
+.lattice .nd.hot{fill:#E8E1FB;filter:drop-shadow(0 0 9px rgba(205,194,243,.9))}
 .lattice .yr{fill:var(--hero-ink);font-family:var(--sans);font-size:15px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 
 /* Полоса фактов сразу под героем: происхождение данных, две линии рода,
@@ -226,15 +233,17 @@ body.over-hero .navbtn.active{background:rgba(167,157,200,.18);color:#CFC8E4}
 footer{background:var(--hero-bg);color:var(--hero-ink-2);padding:52px 0 58px;font-size:14.5px}
 footer b{color:var(--hero-ink)}
 
-/* Движение — сдержанные жесты: проявление героя, прорисовка решётки,
-   медленное дыхание точек света, смена контекста навигации (transition выше).
-   Только при разрешённой анимации. */
+/* Движение — сдержанные жесты: проявление героя, наплыв фасетов от дальних
+   к ближним, прорисовка хребта, медленное дыхание точек света, смена
+   контекста навигации (transition выше). Только при разрешённой анимации. */
 @media (prefers-reduced-motion: no-preference){
   .hero-copy>*{opacity:0;transform:translateY(14px);animation:rise .7s cubic-bezier(.2,.6,.2,1) forwards}
   .hero-copy>*:nth-child(2){animation-delay:.08s}
   .hero-copy>*:nth-child(3){animation-delay:.16s}
-  .lattice .eg{stroke-dasharray:1;stroke-dashoffset:1;animation:edge-draw 1.3s cubic-bezier(.55,0,.2,1) forwards .45s}
-  .lattice .em{animation-delay:.2s;animation-duration:1.5s}
+  .lattice .face{opacity:0;animation:soft-in 1.5s ease-out forwards .45s}
+  .lattice .face.f2,.lattice .face.f1,.lattice .face.lum{animation-delay:.7s}
+  .lattice .eg{opacity:0;animation:soft-in 1.1s ease-out forwards .8s}
+  .lattice .em{opacity:1;stroke-dasharray:1;stroke-dashoffset:1;animation:edge-draw 1.5s cubic-bezier(.55,0,.2,1) forwards .25s}
   .lattice .halo,.lattice .spine-glow,.lattice .spine-glow-wide{opacity:0;animation:soft-in 1.6s ease-out forwards .9s}
   .lattice .nd{opacity:0;animation:soft-in .7s ease-out forwards 1.1s}
   .lattice .nd.hot{animation:soft-in .7s ease-out forwards 1.1s,hot-pulse 6s ease-in-out 2.4s infinite}
@@ -268,9 +277,9 @@ footer b{color:var(--hero-ink)}
   .hero .sub{font-size:18px;margin:20px 0 34px}
   .hero-grid{gap:44px}
   .hero-graph{max-width:360px}
-  /* На узком экране решётка чуть разрежается: гаснет самый дальний ярус,
-     но светящаяся сетка и годы остаются читаемыми */
-  .lattice .e3,.lattice .sat.s3{display:none}
+  /* На узком экране кристалл чуть разрежается: гаснут самый дальний ярус
+     граней и почти прозрачные фасеты, но полости и годы остаются */
+  .lattice .e3,.lattice .face.f4{display:none}
   .lattice .yr{font-size:19px}
   .hero-fade{height:96px}
   .facts{padding:40px 0 36px}

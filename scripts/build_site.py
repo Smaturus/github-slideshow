@@ -730,9 +730,9 @@ def hero_graph_caption(hero: dict[str, Any], years: list[tuple[str, bool]]) -> s
 
 
 def _hero_mesh_points(rng: random.Random) -> list[tuple[float, float]]:
-    """Satellite nodes for the crystalline mesh: dense clusters around each
-    spine node plus an atmospheric background field, with a minimum node
-    distance so the mesh reads as a lattice rather than noise."""
+    """Satellite vertices for the crystalline facet field: clusters around
+    each spine node plus a looser background field, with a minimum vertex
+    distance tuned so Delaunay cells read as facets rather than dust."""
     fixed = [(x, y) for x, y, _ in HERO_SPINE] + [(HERO_ANCHOR[0], HERO_ANCHOR[1])]
     pts: list[tuple[float, float]] = []
 
@@ -743,55 +743,69 @@ def _hero_mesh_points(rng: random.Random) -> list[tuple[float, float]]:
 
     for sx, sy in fixed:
         placed, attempts = 0, 0
-        while placed < 17 and attempts < 240:
+        while placed < 12 and attempts < 240:
             attempts += 1
             angle = rng.uniform(0, math.tau)
-            radius = rng.uniform(24, 150)
+            radius = rng.uniform(28, 150)
             x = sx + math.cos(angle) * radius
             y = sy + math.sin(angle) * radius * 0.92
-            if fits(x, y, 20):
+            if fits(x, y, 27):
                 pts.append((round(x, 1), round(y, 1)))
                 placed += 1
 
-    # Background field stays close to the main mass so the mesh reads as one
-    # crystalline body without stray islands near the headline.
+    # Background field stays close to the main mass so the crystal reads as
+    # one faceted body without stray islands near the headline.
     placed, attempts = 0, 0
-    while placed < 62 and attempts < 1600:
+    while placed < 46 and attempts < 1600:
         attempts += 1
         x = rng.uniform(72, HERO_VIEW_W - 24)
         y = rng.uniform(36, HERO_VIEW_H - 32)
-        if fits(x, y, 23):
+        if fits(x, y, 31):
             pts.append((round(x, 1), round(y, 1)))
             placed += 1
     return pts
 
 
-def _hero_mesh_edges(
-    points: list[tuple[float, float]],
-    k: int = 3,
-    max_len: float = 150.0,
-) -> list[tuple[int, int]]:
-    """Facet edges: each node links to its k nearest neighbours within
-    max_len (every third node gets one extra link so facets intersect),
-    deduplicated, spine-path pairs excluded (drawn separately)."""
-    spine_pairs = {(a, a + 1) for a in range(len(HERO_SPINE) - 1)}
-    edges: set[tuple[int, int]] = set()
-    for i, (x, y) in enumerate(points):
-        neighbours = sorted(
-            (math.hypot(x - px, y - py), j)
-            for j, (px, py) in enumerate(points)
-            if j != i
-        )
-        limit = k + 1 if i % 3 == 0 else k
-        linked = 0
-        for dist, j in neighbours:
-            if dist > max_len or linked == limit:
-                break
-            pair = (min(i, j), max(i, j))
-            if pair not in spine_pairs:
-                edges.add(pair)
-            linked += 1
-    return sorted(edges)
+def _delaunay(points: list[tuple[float, float]]) -> list[tuple[int, int, int]]:
+    """Deterministic Bowyer–Watson Delaunay triangulation (pure Python,
+    O(n²) insertion — fine for the ~150 hero vertices). Returns sorted
+    vertex-index triples with super-triangle faces removed."""
+    n = len(points)
+    min_x, max_x = min(p[0] for p in points), max(p[0] for p in points)
+    min_y, max_y = min(p[1] for p in points), max(p[1] for p in points)
+    span = max(max_x - min_x, max_y - min_y) or 1.0
+    mid_x, mid_y = (min_x + max_x) / 2, (min_y + max_y) / 2
+    verts = list(points) + [
+        (mid_x - 20 * span, mid_y - 10 * span),
+        (mid_x + 20 * span, mid_y - 10 * span),
+        (mid_x, mid_y + 20 * span),
+    ]
+
+    def circumcircle(tri: tuple[int, int, int]) -> tuple[float, float, float]:
+        (ax, ay), (bx, by), (cx, cy) = (verts[v] for v in tri)
+        d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+        if abs(d) < 1e-9:  # collinear: infinite circle, always invalidated
+            return (0.0, 0.0, float("inf"))
+        a2, b2, c2 = ax * ax + ay * ay, bx * bx + by * by, cx * cx + cy * cy
+        ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d
+        uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d
+        return (ux, uy, (ax - ux) ** 2 + (ay - uy) ** 2)
+
+    first = (n, n + 1, n + 2)
+    tris: dict[tuple[int, int, int], tuple[float, float, float]] = {first: circumcircle(first)}
+    for i in range(n):
+        px, py = verts[i]
+        bad = [t for t, (ux, uy, r2) in tris.items() if (px - ux) ** 2 + (py - uy) ** 2 <= r2]
+        boundary: Counter = Counter()
+        for a, b, c in bad:
+            for edge in ((a, b), (b, c), (a, c)):
+                boundary[edge] += 1
+            del tris[(a, b, c)]
+        for (a, b), count in boundary.items():
+            if count == 1:
+                tri = tuple(sorted((a, b, i)))
+                tris[tri] = circumcircle(tri)
+    return sorted(t for t in tris if all(v < n for v in t))
 
 
 def _spine_distance(x: float, y: float) -> float:
@@ -799,15 +813,57 @@ def _spine_distance(x: float, y: float) -> float:
 
 
 def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
-    """Dense crystalline mesh SVG: glow halos, faceted edges in three
-    brightness tiers, a luminous generation spine labelled with documented
-    years and the 1834 revision-list anchor."""
+    """Crystalline facet-field SVG: Delaunay faces filled with lilac washes in
+    four intensity tiers plus a few luminous panes, seeded voids that break
+    the crystal open, facet edges mixed solid/dashed, and a luminous
+    generation spine labelled with documented years and the 1834 anchor."""
     rng = random.Random(HERO_SEED)
     spine_pts = [(x, y) for x, y, _ in HERO_SPINE]
     anchor_pt = (HERO_ANCHOR[0], HERO_ANCHOR[1])
     satellites = _hero_mesh_points(rng)
     points = spine_pts + [anchor_pt] + satellites
-    edges = _hero_mesh_edges(points)
+
+    def edge_len(a: int, b: int) -> float:
+        (x1, y1), (x2, y2) = points[a], points[b]
+        return math.hypot(x1 - x2, y1 - y2)
+
+    def tri_area(t: tuple[int, int, int]) -> float:
+        (x1, y1), (x2, y2), (x3, y3) = (points[v] for v in t)
+        return abs((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1)) / 2
+
+    # Trim oversized hull-spanning cells and paper-thin slivers so the
+    # outline of the crystal stays organic and ragged.
+    faces = [
+        t
+        for t in _delaunay(points)
+        if max(edge_len(t[0], t[1]), edge_len(t[1], t[2]), edge_len(t[0], t[2])) <= 168
+        and tri_area(t) >= 90
+    ]
+
+    # Fill intensity: distance from the spine sets the base tier, a seeded
+    # jitter breaks the smooth gradient into a mosaic of uneven panes.
+    face_tier: list[int] = []
+    for t in faces:
+        cx = sum(points[v][0] for v in t) / 3
+        cy = sum(points[v][1] for v in t) / 3
+        dist = _spine_distance(cx, cy)
+        tier = 1 if dist < 70 else 2 if dist < 132 else 3 if dist < 196 else 4
+        roll = rng.random()
+        if roll < 0.18 and tier > 1:
+            tier -= 1
+        elif roll > 0.82 and tier < 4:
+            tier += 1
+        face_tier.append(tier)
+
+    # Seeded voids: some cells are left unfilled so the crystal reads as
+    # broken, with cavities. Faces touching the spine stay solid.
+    spine_verts = set(range(len(HERO_SPINE)))
+    eligible = [i for i, t in enumerate(faces) if not (set(t) & spine_verts)]
+    voids = set(rng.sample(eligible, round(len(eligible) * 0.21)))
+
+    # A few luminous panes among the inner faces.
+    inner = [i for i, tier in enumerate(face_tier) if tier <= 2 and i not in voids]
+    lum = set(rng.sample(inner, min(7, len(inner))))
 
     parts: list[str] = [
         '<defs>'
@@ -824,24 +880,64 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
         '</defs>'
     ]
 
-    # Soft luminosity hotspots behind the clusters of the mesh.
+    # Soft luminosity hotspots behind the clusters of the crystal.
     halo_r = {0: 92, 1: 62, 2: 80, 3: 66, 4: 96, 5: 64, 6: 74}
     for idx, radius in halo_r.items():
         x, y, _ = HERO_SPINE[idx]
         parts.append(f'<circle class="halo" cx="{x}" cy="{y}" r="{radius}"/>')
     parts.append(f'<circle class="halo" cx="{anchor_pt[0]}" cy="{anchor_pt[1]}" r="66"/>')
 
-    # Mesh facets, faintest tier first so brighter edges layer on top.
-    tiers = {"e3": [], "e2": [], "e1": []}
-    for i, j in edges:
+    # Faces first, faintest tier to brightest, luminous panes on top.
+    face_layers: dict[int, list[str]] = {4: [], 3: [], 2: [], 1: [], 0: []}
+    for i, t in enumerate(faces):
+        if i in voids:
+            continue
+        pts_attr = " ".join(f"{points[v][0]},{points[v][1]}" for v in t)
+        if i in lum:
+            face_layers[0].append(f'<polygon class="face lum" points="{pts_attr}"/>')
+        else:
+            face_layers[face_tier[i]].append(
+                f'<polygon class="face f{face_tier[i]}" points="{pts_attr}"/>'
+            )
+    for layer in (4, 3, 2, 1, 0):
+        parts.extend(face_layers[layer])
+
+    # Facet boundaries on top of the fills. Void cells keep their edges, so
+    # cavities stay outlined. A seeded subset of edges is interrupted
+    # (dashed) — more often around voids — the rest are solid ridges.
+    spine_pairs = {(a, a + 1) for a in range(len(HERO_SPINE) - 1)}
+    edge_faces: dict[tuple[int, int], list[int]] = {}
+    for i, (a, b, c) in enumerate(faces):
+        for edge in ((a, b), (b, c), (a, c)):
+            edge_faces.setdefault(edge, []).append(i)
+
+    edge_layers: dict[str, list[str]] = {"e3": [], "e2": [], "e1": []}
+    ridge_candidates: list[tuple[int, int]] = []
+    for (i, j), adjacent in edge_faces.items():
+        if (i, j) in spine_pairs:
+            continue  # drawn separately as the luminous spine
         (x1, y1), (x2, y2) = points[i], points[j]
         dist = _spine_distance((x1 + x2) / 2, (y1 + y2) / 2)
         tier = "e1" if dist < 78 else "e2" if dist < 148 else "e3"
-        tiers[tier].append(
-            f'<line class="eg {tier}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" pathLength="1"/>'
+        near_void = any(f in voids for f in adjacent)
+        dash_p = 0.66 if near_void else 0.36
+        if rng.random() < dash_p:
+            dash = "d1" if rng.random() < 0.6 else "d2"
+            cls = f"eg {tier} {dash}"
+        else:
+            cls = f"eg {tier}"
+            if tier == "e1":
+                ridge_candidates.append((i, j))
+        edge_layers[tier].append(
+            f'<line class="{cls}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>'
         )
     for tier in ("e3", "e2", "e1"):
-        parts.extend(tiers[tier])
+        parts.extend(edge_layers[tier])
+
+    # A handful of bright solid ridges catch the light near the spine.
+    for i, j in rng.sample(ridge_candidates, min(9, len(ridge_candidates))):
+        (x1, y1), (x2, y2) = points[i], points[j]
+        parts.append(f'<line class="eg ridge" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>')
 
     # Luminous spine: wide nebula underlay, tight glow, then crisp edges.
     spine_d = "M" + " L".join(f"{x} {y}" for x, y in spine_pts)
@@ -851,22 +947,14 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
         (x1, y1), (x2, y2) = spine_pts[a], spine_pts[a + 1]
         parts.append(f'<line class="eg em" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" pathLength="1"/>')
 
-    # Satellite nodes in matching brightness tiers; a few "hot" glow points.
-    sat_render: list[tuple[float, float, str, float]] = []
-    bright: list[int] = []
-    for idx, (x, y) in enumerate(satellites):
-        dist = _spine_distance(x, y)
-        tier = "s1" if dist < 85 else "s2" if dist < 160 else "s3"
-        radius = 2.2 if tier == "s1" else 1.7 if tier == "s2" else 1.3
-        sat_render.append((x, y, tier, radius))
-        if tier == "s1":
-            bright.append(idx)
-    hot = set(rng.sample(bright, min(10, len(bright))))
-    for idx, (x, y, tier, radius) in enumerate(sat_render):
-        if idx in hot:
-            parts.append(f'<circle class="nd hot" cx="{x}" cy="{y}" r="2.9"/>')
-        else:
-            parts.append(f'<circle class="nd sat {tier}" cx="{x}" cy="{y}" r="{radius}"/>')
+    # Vertices stay almost invisible — only a few "hot" glow points near the
+    # spine, so the crystal reads as planes and cavities, not dots.
+    bright = [
+        idx for idx, (x, y) in enumerate(satellites) if _spine_distance(x, y) < 85
+    ]
+    for idx in rng.sample(bright, min(9, len(bright))):
+        x, y = satellites[idx]
+        parts.append(f'<circle class="nd hot" cx="{x}" cy="{y}" r="2.4"/>')
 
     # Documentary anchor node (1834 revision list) — ring, not a birth year.
     ax, ay, aside = HERO_ANCHOR
