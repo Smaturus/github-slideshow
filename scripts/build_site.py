@@ -1791,7 +1791,7 @@ def render_document_start(meta_content: dict[str, Any], css: str) -> str:
 <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
 <style>{css}</style>
 </head>
-<body>
+<body class="over-hero">
 """
 
 
@@ -2198,6 +2198,22 @@ def render_footer(footer: dict[str, Any], export_date: str) -> str:
 def render_page_script() -> str:
     """Client-side page switcher, section anchors and nav context over the hero."""
     return """<script>
+function syncOverHero(forceOff) {
+  if (forceOff) {
+    document.body.classList.remove('over-hero');
+    return;
+  }
+  var heroEl = document.querySelector('#page1 .hero');
+  var page1 = document.getElementById('page1');
+  if (!heroEl || !page1 || !page1.classList.contains('visible')) {
+    document.body.classList.remove('over-hero');
+    return;
+  }
+  var rect = heroEl.getBoundingClientRect();
+  var nav = document.querySelector('nav');
+  var navH = nav ? nav.offsetHeight : 56;
+  document.body.classList.toggle('over-hero', rect.bottom > navH + 8);
+}
 function showPage(n) {
   document.getElementById('page1').classList.toggle('visible', n===1);
   document.getElementById('page2').classList.toggle('visible', n===2);
@@ -2205,7 +2221,12 @@ function showPage(n) {
     var isTree = btn.getAttribute('data-nav') === 'tree';
     btn.classList.toggle('active', n===2 ? isTree : (!isTree && btn.id === 'nb1'));
   });
-  if (n === 2) window.scrollTo({top:0});
+  if (n === 2) {
+    window.scrollTo({top:0});
+    syncOverHero(true);
+  } else {
+    syncOverHero(false);
+  }
 }
 function goNav(target) {
   if (target === 'tree') {
@@ -2229,10 +2250,13 @@ document.querySelectorAll('[data-nav]').forEach(function(btn) {
 });
 var heroEl = document.querySelector('#page1 .hero');
 if (heroEl && 'IntersectionObserver' in window) {
-  new IntersectionObserver(function(entries) {
-    document.body.classList.toggle('over-hero', entries[0].isIntersecting);
-  }, {rootMargin: '-72px 0px 0px 0px'}).observe(heroEl);
+  new IntersectionObserver(function() {
+    syncOverHero(false);
+  }, {threshold: [0, 0.01, 0.1, 0.25, 0.5, 1]}).observe(heroEl);
 }
+window.addEventListener('scroll', function() { syncOverHero(false); }, {passive: true});
+window.addEventListener('resize', function() { syncOverHero(false); });
+syncOverHero(false);
 </script>
 </body>
 </html>"""
