@@ -1,0 +1,27 @@
+# Якорь контекста проекта
+
+Короткий стартовый контекст для нового чата Cursor.  
+Подробности: [README](../README.md) и [docs/architecture.md](../docs/architecture.md).
+
+## Готово на `master`
+
+- **Live:** https://smaturus.github.io/github-slideshow/
+- **Репозиторий:** Smaturus/github-slideshow
+- **README** — короткий обзор; глубина — в `docs/architecture.md`
+- **Hero:** фон = `assets/Image 1.png`; раскладка = `assets/Image 2.png`
+- **Pages allowlist:** `index.html`, `.nojekyll`, `assets/hero-bg*.{avif,webp,jpg}`
+- **Сборка:** локально `python3 scripts/build_site.py` (GEDCOM не в CI, файл `data/skiba.ged` не в Git)
+
+## Как использовать в новом чате
+
+Скопируйте блок ниже в первое сообщение и допишите задачу:
+
+```text
+Контекст: @assets/project-anchor.md
+(или вставь содержимое этого файла)
+
+Новая задача:
+<опишите, что нужно сделать>
+```
+
+Либо в Cursor: `@` → файл `assets/project-anchor.md`.
