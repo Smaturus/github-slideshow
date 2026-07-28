@@ -4,12 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Структура поколений · Матюхины и Скиба</title>
-<style>@import url('https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&family=Golos+Text:wght@400;500;600&display=swap');
-
-/* Структура поколений — исследовательский, документальный тон.
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" type="image/avif" imagesrcset="assets/hero-bg-768.avif 768w, assets/hero-bg-1280.avif 1280w, assets/hero-bg.avif 1376w" imagesizes="100vw" fetchpriority="high">
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Структура поколений — исследовательский, документальный тон.
    Чёрный герой со светящейся кристаллической констелляцией поколений,
    дальше — холодный светло-серый (фарфоровый) фон, графитовый текст,
-   приглушённая сирень только как акцент. */
+   приглушённая сирень только как акцент.
+   Шрифты подключаются из <head> (preconnect + stylesheet), не через @import. */
 :root{
   /* Холодный светлый контент */
   --porcelain:#EFF1F4;
@@ -444,8 +447,9 @@ footer b{color:var(--hero-ink)}
 <header class="hero" id="top">
   <div class="hero-art" aria-hidden="true">
     <picture>
-      <source type="image/webp" srcset="assets/hero-bg-1280.webp 1280w, assets/hero-bg.webp 1920w" sizes="100vw">
-      <img src="assets/hero-bg.jpg" srcset="assets/hero-bg-1280.jpg 1280w, assets/hero-bg.jpg 1920w" sizes="100vw" alt="" width="1376" height="768" decoding="async" fetchpriority="high">
+      <source type="image/avif" srcset="assets/hero-bg-768.avif 768w, assets/hero-bg-1280.avif 1280w, assets/hero-bg.avif 1376w" sizes="100vw">
+      <source type="image/webp" srcset="assets/hero-bg-768.webp 768w, assets/hero-bg-1280.webp 1280w, assets/hero-bg.webp 1376w" sizes="100vw">
+      <img src="assets/hero-bg.jpg" srcset="assets/hero-bg-768.jpg 768w, assets/hero-bg-1280.jpg 1280w, assets/hero-bg.jpg 1376w" sizes="100vw" alt="" width="1376" height="768" decoding="sync" fetchpriority="high">
     </picture>
     <div class="hero-years" aria-hidden="true"><span class="hero-year" style="left:56.0%;top:11.4%">1834</span><span class="hero-year" style="left:87.7%;top:13.0%">1858</span><span class="hero-year" style="left:91.6%;top:46.5%">1870</span><span class="hero-year" style="left:95.2%;top:59.5%">1918</span><span class="hero-year" style="left:51.0%;top:66.9%">1945</span><span class="hero-year" style="left:42.4%;top:74.2%">1956</span><span class="hero-year" style="left:84.5%;top:73.5%">2001</span></div>
   </div>

@@ -33,13 +33,28 @@ GEDCOM_PATH = ROOT / "data" / "skiba.ged"
 CONTENT_PATH = ROOT / "content" / "content.yaml"
 OUTPUT_PATH = ROOT / "index.html"
 CSS = ROOT / "assets" / "site.css"
-# Hero artwork, referenced from the page (not inlined): the source PNG is used
-# Master artwork stays in the repo; published hero uses optimized derivatives.
-HERO_IMAGE_SRC = "assets/hero-reference.png"
+# Master artwork stays in the repo; published hero uses optimized derivatives
+# generated from assets/Image 1.png (AVIF → WebP → JPEG, responsive widths).
+HERO_IMAGE_SRC = "assets/Image 1.png"
+HERO_IMAGE_AVIF = "assets/hero-bg.avif"
 HERO_IMAGE_WEBP = "assets/hero-bg.webp"
 HERO_IMAGE_JPG = "assets/hero-bg.jpg"
-HERO_IMAGE_WEBP_SM = "assets/hero-bg-1280.webp"
-HERO_IMAGE_JPG_SM = "assets/hero-bg-1280.jpg"
+HERO_IMAGE_AVIF_MD = "assets/hero-bg-1280.avif"
+HERO_IMAGE_WEBP_MD = "assets/hero-bg-1280.webp"
+HERO_IMAGE_JPG_MD = "assets/hero-bg-1280.jpg"
+HERO_IMAGE_AVIF_SM = "assets/hero-bg-768.avif"
+HERO_IMAGE_WEBP_SM = "assets/hero-bg-768.webp"
+HERO_IMAGE_JPG_SM = "assets/hero-bg-768.jpg"
+HERO_SRCSET_AVIF = (
+    f"{HERO_IMAGE_AVIF_SM} 768w, {HERO_IMAGE_AVIF_MD} 1280w, {HERO_IMAGE_AVIF} 1376w"
+)
+HERO_SRCSET_WEBP = (
+    f"{HERO_IMAGE_WEBP_SM} 768w, {HERO_IMAGE_WEBP_MD} 1280w, {HERO_IMAGE_WEBP} 1376w"
+)
+HERO_SRCSET_JPG = (
+    f"{HERO_IMAGE_JPG_SM} 768w, {HERO_IMAGE_JPG_MD} 1280w, {HERO_IMAGE_JPG} 1376w"
+)
+HERO_SIZES = "100vw"
 # Hero date labels from the approved layout (Image 2): plain year text only.
 # Positions are % of the hero frame (centers), measured on Image 2.
 HERO_YEAR_SLOTS = [
@@ -1764,6 +1779,10 @@ def render_document_start(meta_content: dict[str, Any], css: str) -> str:
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{esc(meta_content["title"])}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" type="image/avif" imagesrcset="{HERO_SRCSET_AVIF}" imagesizes="{HERO_SIZES}" fetchpriority="high">
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
 <style>{css}</style>
 </head>
 <body>
@@ -1823,8 +1842,9 @@ def render_hero_section(
     return f"""<header class="hero" id="top">
   <div class="hero-art" aria-hidden="true">
     <picture>
-      <source type="image/webp" srcset="{HERO_IMAGE_WEBP_SM} 1280w, {HERO_IMAGE_WEBP} 1920w" sizes="100vw">
-      <img src="{HERO_IMAGE_JPG}" srcset="{HERO_IMAGE_JPG_SM} 1280w, {HERO_IMAGE_JPG} 1920w" sizes="100vw" alt="" width="1376" height="768" decoding="async" fetchpriority="high">
+      <source type="image/avif" srcset="{HERO_SRCSET_AVIF}" sizes="{HERO_SIZES}">
+      <source type="image/webp" srcset="{HERO_SRCSET_WEBP}" sizes="{HERO_SIZES}">
+      <img src="{HERO_IMAGE_JPG}" srcset="{HERO_SRCSET_JPG}" sizes="{HERO_SIZES}" alt="" width="1376" height="768" decoding="sync" fetchpriority="high">
     </picture>
     {year_labels}
   </div>
