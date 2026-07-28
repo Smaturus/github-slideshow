@@ -761,7 +761,7 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
         parts.append(f'<circle class="nd sat" cx="{x}" cy="{y}" r="2.2"/>')
 
     return (
-        f'<svg class="lattice" viewBox="0 0 560 620" xmlns="http://www.w3.org/2000/svg" '
+        f'<svg class="lattice" viewBox="0 0 560 640" xmlns="http://www.w3.org/2000/svg" '
         f'role="img" aria-label="{esc(caption)}">' + "".join(parts) + "</svg>"
     )
 
