@@ -44,43 +44,51 @@ ROW_H = 92
 TOP_PAD = 56
 LEFT_PAD = 18
 
-# Hero constellation: an ethereal branching crystal on a near-black field.
-# The silhouette is hand-authored as primary ridges (luminous polylines that
-# braid and fork like lightning); everything else — twigs, facets, the far
-# lattice — is grown procedurally around those ridges from a fixed seed.
+# Hero constellation: an open, airy branching network on a near-black field.
+# It is a *background composition*, not an object: the primary ridges run past
+# the viewBox on the top, right and bottom, the page crops them mid-stroke, so
+# the network reads as a larger structure drifting beyond the frame. Only the
+# left side (towards the headline) dissolves into the black instead of exiting.
 HERO_VIEW_W = 780
 HERO_VIEW_H = 720
-# Fixed seed keeps the generated crystal identical between builds.
+# Fixed seed keeps the generated network identical between builds.
 HERO_SEED = 1834
 # Primary ridges. Each polyline starts on an earlier ridge, so the structure
-# reads as one growing body: A is the trunk, B/C/D/E/F fork off it, G braids
-# across the top, H/I close loops, and the short arms fray the outline.
+# reads as one growing web: A is the trunk, B/C/D/E/F fork off it, G braids
+# across the top, H/I close loops, and the arms fray outwards. The interior
+# arrangement is fixed; the terminal points continue past the frame edges.
 HERO_RIDGES = [
-    # A — trunk, from the lower left up to the newest generation top right
-    [(352, 690), (378, 628), (340, 564), (392, 498), (372, 432), (436, 372),
-     (470, 306), (508, 240), (556, 176), (612, 132), (686, 96)],
+    # A — trunk: enters from below the frame, leaves through the top right
+    [(332, 758), (352, 690), (378, 628), (340, 564), (392, 498), (372, 432),
+     (436, 372), (470, 306), (508, 240), (556, 176), (612, 132), (686, 96),
+     (744, 58), (808, 18)],
     # B — upper-left limb
     [(436, 372), (398, 330), (356, 300), (322, 246), (300, 196), (268, 150)],
-    # C — long left reach down to the documentary anchor
+    # C — long left reach down to the documentary anchor; its tail dies in the
+    # dissolve zone towards the headline instead of exiting the frame
     [(392, 498), (344, 478), (296, 462), (232, 486), (176, 516), (124, 556),
-     (86, 588)],
-    # D — right limb
-    [(508, 240), (566, 262), (620, 272), (676, 306), (722, 346)],
-    # E — right descent
-    [(470, 306), (516, 352), (556, 404), (612, 468), (654, 522), (692, 570)],
-    # F — lower limb
-    [(378, 628), (428, 646), (486, 664), (548, 672), (596, 690)],
-    # G — braid across the top
-    [(556, 176), (508, 152), (452, 148), (404, 122), (352, 96), (312, 66)],
+     (86, 588), (36, 620)],
+    # D — right limb, exits right
+    [(508, 240), (566, 262), (620, 272), (676, 306), (722, 346), (784, 388),
+     (832, 420)],
+    # E — right descent, exits bottom right
+    [(470, 306), (516, 352), (556, 404), (612, 468), (654, 522), (692, 570),
+     (738, 634), (774, 700)],
+    # F — lower limb, exits bottom
+    [(378, 628), (428, 646), (486, 664), (548, 672), (596, 690), (650, 716),
+     (696, 748)],
+    # G — braid across the top, exits top
+    [(556, 176), (508, 152), (452, 148), (404, 122), (352, 96), (312, 66),
+     (282, 8), (262, -44)],
     # H — braid closing the lower-left loop
     [(232, 486), (286, 552), (352, 592), (428, 646)],
     # I — braid closing the right loop
     [(722, 346), (702, 402), (656, 438), (612, 468)],
-    # short frayed arms
-    [(268, 150), (222, 116), (198, 70)],
-    [(340, 564), (282, 596), (238, 640), (208, 686)],
-    [(620, 272), (650, 214), (694, 178), (734, 136)],
-    [(556, 404), (600, 388), (652, 372)],
+    # frayed arms, most of them running off the frame
+    [(268, 150), (222, 116), (198, 70), (176, 6), (162, -40)],
+    [(340, 564), (282, 596), (238, 640), (208, 686), (186, 742)],
+    [(620, 272), (650, 214), (694, 178), (734, 136), (772, 96), (802, 56)],
+    [(556, 404), (600, 388), (652, 372), (716, 356), (772, 348)],
     [(296, 462), (262, 408), (246, 356)],
 ]
 # Depth plane of each ridge, in the order above. The trunk and the two long
@@ -91,17 +99,18 @@ HERO_RIDGE_PLANES = (
     "near", "mid", "near", "mid", "near", "mid", "mid",
     "far", "far", "far", "far", "far", "far", "far",
 )
-# Birth-year labels of the paternal line, newest first, pinned to points on the
-# ridges and scattered around the crystal. The third value is the label side
-# (1 = right of the node, -1 = left).
+# Birth-year labels of the paternal line, newest first, pinned to points on
+# the ridges like floating annotations around the network. The third value is
+# the label side (1 = right of the node, -1 = left). The right edge of the
+# composition leaves the screen, so labels near it sit on the inner side.
 HERO_YEAR_ANCHORS = [
-    (686, 96, 1),
+    (612, 132, -1),
     (452, 148, -1),
-    (676, 306, 1),
+    (620, 272, -1),
     (322, 246, -1),
-    (612, 468, 1),
+    (654, 522, -1),
     (296, 462, -1),
-    (486, 664, 1),
+    (340, 564, -1),
 ]
 # Documentary anchor: the 1834 revision list of Mokroe (not a birth year) sits
 # at the far end of the oldest reach — Fedot, Grigory and Ilya.
@@ -154,18 +163,10 @@ HERO_VEILS = [
     (246, 218, 168, 148, 12, 3),
     (676, 470, 156, 168, -24, 3),
 ]
-# Fog pockets in front of the midground: near-black smoke that swallows part of
-# the weave, plus lit pockets that catch the glow of the trunk. The dark ones sit
-# over woven areas on purpose — occlusion is only legible where there is
-# something to occlude.
+# Lit haze pockets that catch the glow of the trunk. The former dark occluding
+# pockets are gone: near-black smoke masses read as a body in fog, and the
+# composition must stay an open network, not an object.
 HERO_FOG = [
-    (238, 566, 168, 122, -14, "dark"),
-    (676, 508, 150, 152, 18, "dark"),
-    (330, 672, 144, 100, -6, "dark"),
-    (600, 104, 132, 92, 22, "dark"),
-    (656, 322, 128, 112, -18, "dark"),
-    (508, 570, 122, 98, 26, "dark"),
-    (418, 168, 120, 96, 10, "dark"),
     (430, 296, 128, 108, 8, "lit"),
     (388, 520, 114, 92, -30, "lit"),
 ]
@@ -852,9 +853,11 @@ Limb = tuple[list[tuple[float, float]], int]
 
 
 def _reflect_inside(
-    x: float, y: float, angle: float, margin: float = 22.0
+    x: float, y: float, angle: float, margin: float = -70.0
 ) -> tuple[float, float, float]:
-    """Bounce a growth direction off the viewBox margins so twigs stay inside."""
+    """Bounce a growth direction off a boundary well outside the viewBox: the
+    network bleeds past the frame (the page crops it), twigs just may not run
+    arbitrarily far into the void."""
     if x < margin:
         x, angle = margin, math.pi - angle
     elif x > HERO_VIEW_W - margin:
@@ -1076,46 +1079,6 @@ def _blob(
     return _closed_spline(pts)
 
 
-def _hero_panes(rng: random.Random) -> list[tuple[str, str, int]]:
-    """Midground glass sheets lofted off ridge segments: wide quads that lie
-    along the structure and overlap it, so branches read as passing behind or in
-    front of a plane instead of floating on one flat field. Only a couple of
-    them, large, blurred and lit from one edge — a card-sized pane would read as
-    a sticker. Returns (outline, single lit rim edge, tier)."""
-    segments = [
-        (a, b)
-        for ridge in HERO_RIDGES
-        for a, b in zip(ridge, ridge[1:])
-        if math.hypot(b[0] - a[0], b[1] - a[1]) > 46
-    ]
-    panes: list[tuple[str, str, int]] = []
-    for (x1, y1), (x2, y2) in rng.sample(segments, 7):
-        span = math.hypot(x2 - x1, y2 - y1) or 1.0
-        ux, uy = (x2 - x1) / span, (y2 - y1) / span
-        nx, ny = -uy, ux
-        side = 1 if rng.random() < 0.5 else -1
-        near = side * rng.uniform(4, 30)
-        far = near + side * rng.uniform(96, 210)
-        head = rng.uniform(0.3, 1.1) * span
-        tail = rng.uniform(0.7, 2.4) * span
-        ax, ay = x1 - ux * head, y1 - uy * head
-        bx, by = x2 + ux * tail, y2 + uy * tail
-        skew = rng.uniform(-52, 52)
-        taper = rng.uniform(0.5, 1.5)
-        poly = [
-            (ax + nx * near, ay + ny * near),
-            (bx + nx * near * taper, by + ny * near * taper),
-            (bx + nx * far * taper + ux * skew, by + ny * far * taper + uy * skew),
-            (ax + nx * far, ay + ny * far),
-        ]
-        poly = [(round(px, 1), round(py, 1)) for px, py in poly]
-        # Only one edge of the pane catches the light — a full outline would
-        # turn the plane back into a diagram.
-        rim = _path_d(poly[:2] if rng.random() < 0.5 else poly[1:3])
-        panes.append((_path_d(poly) + "Z", rim, 1 if rng.random() < 0.45 else 2))
-    return panes
-
-
 def _hero_veil(
     rng: random.Random, field: _SkeletonField
 ) -> tuple[list[tuple[float, float, int]], list[tuple[float, float, float, float, bool]]]:
@@ -1232,32 +1195,12 @@ def _hero_defs(air_blob: str) -> str:
         '<stop offset=".6" stop-color="#7B6DB4" stop-opacity=".07"/>'
         '<stop offset="1" stop-color="#1B1826" stop-opacity="0"/>'
         "</radialGradient>"
-        # Fog pockets. The dark one is the occluder: it eats the mesh behind it.
-        '<radialGradient id="lat-fog-dark">'
-        '<stop offset="0" stop-color="#04050A" stop-opacity=".9"/>'
-        '<stop offset=".55" stop-color="#05060C" stop-opacity=".62"/>'
-        '<stop offset="1" stop-color="#05060C" stop-opacity="0"/>'
-        "</radialGradient>"
+        # Lit haze pockets catching the glow of the trunk.
         '<radialGradient id="lat-fog-lit">'
         '<stop offset="0" stop-color="#C9BDF4" stop-opacity=".17"/>'
         '<stop offset=".5" stop-color="#8578C0" stop-opacity=".08"/>'
         '<stop offset="1" stop-color="#3A3358" stop-opacity="0"/>'
         "</radialGradient>"
-        # Midground sheets: barely lit glass with almost no edge contrast.
-        '<linearGradient id="lat-pane" x1="0" y1="0" x2="1" y2="1">'
-        '<stop offset="0" stop-color="#DCD5FF" stop-opacity=".17"/>'
-        '<stop offset="1" stop-color="#A497DE" stop-opacity=".015"/>'
-        "</linearGradient>"
-        '<linearGradient id="lat-sheet-a" x1="0" y1="0" x2=".6" y2="1">'
-        '<stop offset="0" stop-color="#CFC6F8" stop-opacity=".1"/>'
-        '<stop offset=".62" stop-color="#8B80C4" stop-opacity=".032"/>'
-        '<stop offset="1" stop-color="#4A4370" stop-opacity="0"/>'
-        "</linearGradient>"
-        '<linearGradient id="lat-sheet-b" x1="1" y1=".1" x2="0" y2="1">'
-        '<stop offset="0" stop-color="#B9AFE8" stop-opacity=".055"/>'
-        '<stop offset=".7" stop-color="#6C639A" stop-opacity=".018"/>'
-        '<stop offset="1" stop-color="#3A3558" stop-opacity="0"/>'
-        "</linearGradient>"
         # Streak flare: light along the axis, nothing at the ends.
         '<radialGradient id="lat-core">'
         '<stop offset="0" stop-color="#FBF8FF" stop-opacity=".5"/>'
@@ -1335,16 +1278,18 @@ def _hero_defs(air_blob: str) -> str:
         "0 0 0 0 .78  0 0 0 0 .79  0 0 0 0 .95  2.6 0 0 0 -1.94\"/>"
         '<feComposite in="grain" in2="SourceGraphic" operator="in"/>'
         "</filter>"
-        # The mesh and the far field dissolve towards the periphery, so the
-        # crystal has no hard outline — only the ridges stay crisp to the tips.
+        # The mesh and the far field dissolve towards the periphery. The fade
+        # is much wider than the visible crop, so inside the frame it reads as
+        # edge dissolution, never as a contained oval silhouette: the bright
+        # centre thins out and the main lines keep running off the screen.
         '<radialGradient id="lat-fade">'
         '<stop offset=".42" stop-color="#fff" stop-opacity="1"/>'
         '<stop offset=".74" stop-color="#fff" stop-opacity=".62"/>'
         '<stop offset="1" stop-color="#fff" stop-opacity="0"/>'
         "</radialGradient>"
         '<mask id="lat-mask">'
-        f'<ellipse cx="{HERO_VIEW_W * 0.52:.0f}" cy="{HERO_VIEW_H * 0.53:.0f}" '
-        f'rx="{HERO_VIEW_W * 0.62:.0f}" ry="{HERO_VIEW_H * 0.58:.0f}" fill="url(#lat-fade)"/>'
+        f'<ellipse cx="{HERO_VIEW_W * 0.56:.0f}" cy="{HERO_VIEW_H * 0.5:.0f}" '
+        f'rx="{HERO_VIEW_W * 0.76:.0f}" ry="{HERO_VIEW_H * 0.72:.0f}" fill="url(#lat-fade)"/>'
         "</mask>"
         # A softer, wider fade for the atmosphere, torn by the same turbulence
         # so the haze does not end on a clean ellipse.
@@ -1381,27 +1326,27 @@ def _streak(cx: float, cy: float, angle: float, length: float, width: float, cls
 
 
 def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
-    """Ethereal crystalline constellation built from stacked depth planes, so the
-    structure has volume instead of sitting flat on the black:
+    """Open branching network rendered as an atmospheric background layer, in
+    stacked depth planes but with no body: nothing here encloses a silhouette.
 
     far    — halo, turbulence dust, nebula blooms, defocused ridges and the
-             dimmest mesh, all dissolving into the black under a torn mask;
-    mid    — smoke veils and glass sheets drifting *across* the far plane, which
-             is what makes some branches read as passing behind them;
-    near   — crisp luminous ridges, streak flares along a few main diagonals and
-             pinpoint lights, brightest at the few major junctions;
-    fog     sits between mid and near: dark smoke pockets that swallow part of
-            the weave, lit pockets that catch the glow of the trunk.
+             dimmest web, dissolving into the black under a torn mask;
+    mid    — smoke veils drifting *across* the far plane, which is what makes
+             some branches read as passing behind the haze;
+    near   — crisp luminous ridges running off the frame, streak flares along a
+             few main diagonals and pinpoint lights, brightest at the centre;
+    haze    between mid and near: lit pockets catching the glow of the trunk.
 
-    Weave density follows the braided/void zones, so some areas are intensely
-    woven and others almost empty."""
+    The web is lines and dots only — no filled facets, panes or fog masses that
+    would read as a volume. Density follows the braided/void zones, biased to
+    the centre; the periphery thins out and the main branches exit the frame."""
     rng = random.Random(HERO_SEED)
     air_blob = _blob(
         rng,
-        HERO_VIEW_W * 0.5,
-        HERO_VIEW_H * 0.52,
-        HERO_VIEW_W * 0.72,
-        HERO_VIEW_H * 0.66,
+        HERO_VIEW_W * 0.52,
+        HERO_VIEW_H * 0.5,
+        HERO_VIEW_W * 0.82,
+        HERO_VIEW_H * 0.78,
         -6,
         lobes=11,
         wobble=0.17,
@@ -1410,11 +1355,10 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
     field = _SkeletonField(limbs)
     points = _hero_facet_points(rng, limbs, field)
     veil_dots, veil_lines = _hero_veil(rng, field)
-    panes = _hero_panes(rng)
 
-    # Facets survive only near the skeleton, only if they are compact, and only
-    # where the weave is dense — so the mesh is a branching crystal with holes
-    # in it, not an evenly triangulated hull.
+    # Candidate faces of the web survive only near the skeleton, only if they
+    # are compact, and only where the weave is dense. They are used solely to
+    # pick which *edges* get drawn — the faces themselves are never filled.
     faces: list[tuple[tuple[int, int, int], float, float, float]] = []
     for tri in _delaunay(points):
         (x1, y1), (x2, y2), (x3, y3) = (points[v] for v in tri)
@@ -1443,7 +1387,6 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
     veils: list[str] = []
     far_weave: list[str] = []
     far_ridges: list[str] = []
-    sheets: list[str] = []
     tissue: list[str] = []
     facets: list[str] = []
     mid_ridges: list[str] = []
@@ -1493,48 +1436,7 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
         radius = 0.9 if tier == 1 else 0.7 if tier == 2 else 0.55
         far_weave.append(f'<circle class="vp p{tier}" cx="{x}" cy="{y}" r="{radius}"/>')
 
-    # 5. Midground sheets: glass planes lofted along the ridges, with soft edges
-    # and a barely visible rim — a different plane from the facet mesh, so the
-    # structure has something to pass behind.
-    for path, rim, tier in panes:
-        sheets.append(f'<path class="pn p{tier}" d="{path}"/>')
-        if rng.random() < 0.7:
-            sheets.append(f'<path class="pn-rim" d="{rim}"/>')
-
-    # 6. Glass facets. Most stay void — only a minority get a wash, in three
-    # intensity tiers, brightest close to the ridges and in the braided zones.
-    # The dimmest tier goes onto the far plane, behind the veils.
-    fills: dict[str, list[str]] = {"f3": [], "f2": [], "f1": [], "pane": []}
-    far_fills: list[str] = []
-    for tri, dist, density, longest in faces:
-        pts_attr = " ".join(f"{points[v][0]},{points[v][1]}" for v in tri)
-        # In the braided zones a blurred copy of the facet goes underneath, so
-        # those areas read as luminous tissue rather than as outlined cells.
-        if density > 0.55 and dist < 13 and rng.random() < 0.55:
-            tissue.append(f'<polygon class="face tis" points="{pts_attr}"/>')
-        # A lone filled triangle in an empty area reads as a sticker, so washes
-        # are confined to small faces inside the woven zones.
-        if density < 0.3 or longest > 42:
-            continue
-        roll = rng.random() / max(0.35, density)
-        if dist < 10:
-            cls = "pane" if roll < 0.11 else "f1" if roll < 0.3 else None
-        elif dist < 18:
-            cls = "f1" if roll < 0.05 else "f2" if roll < 0.22 else None
-        else:
-            cls = "f3" if roll < 0.16 else None
-        if cls is None:
-            continue
-        polygon = f'<polygon class="face {cls}" points="{pts_attr}"/>'
-        if cls == "f3" or (cls == "f2" and rng.random() < 0.5):
-            far_fills.append(polygon)
-        else:
-            fills[cls].append(polygon)
-    far_weave.extend(far_fills)
-    for key in ("f3", "f2", "f1", "pane"):
-        facets.extend(fills[key])
-
-    # 7. Facet edges. Brightness follows the light pooling at the major
+    # 5. Web edges. Brightness follows the light pooling at the major
     # junctions, whole edges go missing where the weave thins out, and the
     # faintest ones drop to the far plane — so the triangulation never reads as
     # a continuous wireframe.
@@ -1601,7 +1503,7 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
     for tier in ("e3", "e2", "e1"):
         facets.extend(edges[tier])
 
-    # 8. Twigs and branches: thin filaments, many of them interrupted, thinner
+    # 6. Twigs and branches: thin filaments, many of them interrupted, thinner
     # and dimmer the further they are from the lit junctions. The faintest ones
     # belong to the far plane.
     for poly, depth in limbs:
@@ -1623,20 +1525,17 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
         else:
             filaments.append(limb)
 
-    # 9. Fog pockets in front of the midground: dark smoke that swallows the
-    # weave locally, lit pockets that catch the glow of the trunk.
-    fog_groups: dict[str, list[str]] = {"dark": [], "lit": []}
+    # 7. Lit haze pockets in front of the midground, catching the glow of the
+    # trunk. Screened onto the network — they add air, never occlusion.
+    lit_pockets: list[str] = []
     for cx, cy, rx, ry, rot, kind in HERO_FOG:
         path = _blob(rng, cx, cy, rx, ry, rot, lobes=rng.choice((7, 8)), wobble=0.44)
-        fog_groups[kind].append(
+        lit_pockets.append(
             f'<path class="fg fg-{kind}" d="{path}" filter="url(#lat-fog)"/>'
         )
-    # Dark and lit pockets stay in separate groups: only the lit ones are
-    # screened onto the crystal, the dark ones have to occlude it.
-    for kind, shapes in fog_groups.items():
-        fog.append(f'<g class="fog-{kind}">' + "".join(shapes) + "</g>")
+    fog.append('<g class="fog-lit">' + "".join(lit_pockets) + "</g>")
 
-    # 10. The luminous ridges, split across three planes. Far ridges are
+    # 8. The luminous ridges, split across three planes. Far ridges are
     # defocused and sit behind the veils; the mid ones braid through the mesh;
     # the near ones stay crisp in front of the fog, with a wide bloom, a tight
     # glow and a near-white core. Brightness weight (k1…k3) is independent of
@@ -1681,7 +1580,7 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
                     attrs = ' pathLength="1"'
             bucket.append(f'<path class="{cls}" d="{path}"{attrs}/>')
 
-    # 11. Streak flares: anisotropic glows along a few main diagonals only, so
+    # 9. Streak flares: anisotropic glows along a few main diagonals only, so
     # the light has direction instead of an even halo everywhere.
     for x1, y1, x2, y2, width, tier in HERO_STREAKS:
         mx, my = (x1 + x2) / 2, (y1 + y2) / 2
@@ -1689,12 +1588,12 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
         angle = math.degrees(math.atan2(y2 - y1, x2 - x1))
         streaks.append(_streak(mx, my, angle, length * 0.82, width, f"sk s{tier}"))
 
-    # 12. Foreground wisps: thin smoke drifting in front of the near ridges.
+    # 10. Foreground wisps: thin smoke drifting in front of the near ridges.
     for cx, cy, rx, ry, rot in HERO_WISPS:
         path = _blob(rng, cx, cy, rx, ry, rot, lobes=7, wobble=0.46)
         wisps.append(f'<path class="wp" d="{path}" filter="url(#lat-smoke-2)"/>')
 
-    # 13. Local flare at the major junctions: a long spike along the ridge and a
+    # 11. Local flare at the major junctions: a long spike along the ridge and a
     # short one across it, over a tight core.
     for cx, cy, angle, scale in HERO_CORES:
         flares.append(_streak(cx, cy, angle, 210 * scale, 4.2 * scale, "fl fl-a"))
@@ -1708,7 +1607,7 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
             f'<circle class="fl-core" cx="{cx}" cy="{cy}" r="{30 * scale:.0f}"/>'
         )
 
-    # 14. Pinpoint lights: dim sparks on the twigs, brighter ones on the ridge
+    # 12. Pinpoint lights: dim sparks on the twigs, brighter ones on the ridge
     # junctions, a handful of hot cores with a bloom. All of them dim away from
     # the lit junctions.
     label_pts = {(x, y) for x, y, _ in HERO_YEAR_ANCHORS} | {HERO_ANCHOR[:2]}
@@ -1756,7 +1655,7 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
                 f'opacity="{0.34 + 0.66 * glow:.2f}"/>'
             )
 
-    # 15. Year labels floating around the periphery of the crystal, each pinned
+    # 13. Year labels floating around the network like annotations, each pinned
     # to a ridge junction by a hairline tick. Approximate years keep a hollow
     # node; the 1834 revision list is a dashed documentary ring.
     def pin(x: float, y: float, side: int, text: str, node_class: str, radius: float) -> None:
@@ -1778,10 +1677,10 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
             side,
             f"ок. {value}" if approximate else value,
             "nd key approx" if approximate else "nd key",
-            3.6,
+            3.0,
         )
     ax, ay, aside = HERO_ANCHOR
-    pin(ax, ay, aside, HERO_ANCHOR_LABEL, "nd key doc", 3.6)
+    pin(ax, ay, aside, HERO_ANCHOR_LABEL, "nd key doc", 3.0)
 
     # Draw order is the depth order: everything from here on overlaps what came
     # before, which is where the volume comes from. The masks make each plane
@@ -1796,7 +1695,6 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
         ("veil-far", veils, "lat-mask-air", None),
         ("weave-far", far_weave, "lat-mask", "lat-blur1"),
         ("ridges-far", far_ridges, "lat-mask-air", None),
-        ("panes", sheets, "lat-mask-air", "lat-blur3"),
         ("tissue", tissue, "lat-mask", "lat-blur3"),
         ("facets", facets, "lat-mask", None),
         ("ridges-mid", mid_ridges, None, None),
@@ -1865,24 +1763,27 @@ def render_hero_section(
     export_date: str,
     father_line: list[Person],
 ) -> str:
-    """Black hero kept to the mock's composition: title over a thin lilac
-    hairline, the two-line subtitle, a text-link CTA and the luminous crystal —
-    nothing else. Provenance (export date), the factual sentence, key figures
-    and the privacy line follow in a light facts strip below the first
-    viewport; the crystal's caption lives in its aria-label."""
+    """Black hero: title over a thin lilac hairline, the two-line subtitle and
+    a text-link CTA on the left; the luminous network is not a figure next to
+    the text but a background composition — absolutely positioned, anchored to
+    the right and larger than the hero, so it bleeds past the top, right and
+    bottom edges and the page crops it (.hero has overflow:hidden). Provenance
+    (export date), the factual sentence, key figures and the privacy line
+    follow in a light facts strip below the first viewport; the network's
+    caption lives in its aria-label."""
     years = hero_graph_years(father_line)
     caption = hero_graph_caption(hero, years)
     graph_svg = render_hero_graph(years, caption)
     return f"""<header class="hero">
+  <div class="hero-art">
+    {graph_svg}
+  </div>
   <div class="wrap hero-grid">
     <div class="hero-copy">
       <h1>{esc(hero["h1"])}</h1>
       <p class="sub">{rich(hero["sub"])}</p>
       <button class="cta-link" onclick="showPage(2)">{esc(hero["cta"])}</button>
     </div>
-    <figure class="hero-graph">
-      {graph_svg}
-    </figure>
   </div>
   <div class="hero-fade" aria-hidden="true"></div>
 </header>
