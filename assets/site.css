@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&family=Golos+Text:wght@400;500;600&display=swap');
 
 /* Структура поколений — исследовательский, документальный тон.
-   Тёмно-графитовый герой с кристаллической решёткой поколений,
+   Почти чёрный герой с плотной светящейся кристаллической решёткой поколений,
    дальше — холодный светло-серый (фарфоровый) фон, графитовый текст,
    приглушённая сирень только как акцент. */
 :root{
@@ -23,14 +23,14 @@
   --line:#D3D7DE;
   --line-soft:#DFE2E8;
   --line-strong:#B4BBC6;
-  /* Графитовый герой */
-  --hero-bg:#171A1F;
-  --hero-bg-2:#1C2027;
-  --hero-bg-3:#232833;
-  --hero-ink:#E8EAEF;
-  --hero-ink-2:#A2A8B4;
+  /* Почти чёрный герой — глубокое поле для светящейся решётки */
+  --hero-bg:#0C0E13;
+  --hero-bg-2:#111319;
+  --hero-bg-3:#171A22;
+  --hero-ink:#ECEDF2;
+  --hero-ink-2:#A6ABB8;
   --hero-line:rgba(232,234,239,.13);
-  --hero-lilac:#A79DC8;
+  --hero-lilac:#AFA4D4;
   --serif:'Literata',Georgia,'Times New Roman',serif;
   --sans:'Golos Text','Segoe UI',system-ui,sans-serif;
   --radius:8px;
@@ -64,7 +64,7 @@ nav .brand{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--i
 .navbtn{background:none;border:none;color:var(--ink-2);font-family:var(--sans);font-size:15px;font-weight:500;padding:9px 18px;border-radius:8px;cursor:pointer;transition:color .2s,background-color .2s}
 .navbtn:hover{color:var(--ink);background:rgba(34,37,43,.05)}
 .navbtn.active{background:var(--lilac-tint);color:var(--lilac);font-weight:600}
-body.over-hero nav{background:rgba(23,26,31,.6);border-color:var(--hero-line)}
+body.over-hero nav{background:rgba(12,14,19,.55);border-color:var(--hero-line)}
 body.over-hero nav .brand{color:var(--hero-ink)}
 body.over-hero .navbtn{color:var(--hero-ink-2)}
 body.over-hero .navbtn:hover{color:var(--hero-ink);background:rgba(232,234,239,.08)}
@@ -72,33 +72,52 @@ body.over-hero .navbtn.active{background:rgba(167,157,200,.18);color:#CFC8E4}
 .page{display:none}
 .page.visible{display:block}
 
-/* HERO — тёмный графит, заголовок + одна фраза + CTA + решётка поколений */
-.hero{position:relative;background:linear-gradient(172deg,var(--hero-bg) 0%,var(--hero-bg-2) 58%,var(--hero-bg-3) 100%);color:var(--hero-ink);margin-top:calc(var(--navh) * -1);padding:calc(var(--navh) + 72px) 0 150px;min-height:min(94vh,960px);min-height:min(94svh,960px);display:flex;align-items:center}
+/* HERO — почти чёрное поле: заголовок над тонкой сиреневой линейкой,
+   строка-подзаголовок, текстовая CTA и плотная светящаяся решётка справа */
+.hero{position:relative;background:linear-gradient(168deg,var(--hero-bg) 0%,var(--hero-bg-2) 56%,var(--hero-bg-3) 100%);color:var(--hero-ink);margin-top:calc(var(--navh) * -1);padding:calc(var(--navh) + 64px) 0 150px;min-height:min(96vh,1000px);min-height:min(96svh,1000px);display:flex;align-items:center}
 .hero .wrap{width:100%}
-.hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:72px;align-items:center}
+.hero-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:64px;align-items:center}
 .hero .label{color:var(--hero-lilac)}
 .hero .label::before{background:var(--hero-lilac)}
-.hero h1{font-size:clamp(46px,5.6vw,80px);line-height:1.04;color:var(--hero-ink);margin:26px 0 24px;letter-spacing:-.015em}
-.hero .sub{font-size:19px;line-height:1.6;color:var(--hero-ink-2);max-width:520px;margin-bottom:38px}
+.hero h1{font-size:clamp(48px,6vw,86px);line-height:1.05;color:var(--hero-ink);margin:28px 0 0;letter-spacing:-.015em}
+/* Тонкая сиреневая линейка под заголовком — как в утверждённом макете */
+.hero h1::after{content:"";display:block;width:86px;height:1px;background:var(--hero-lilac);opacity:.6;margin-top:30px}
+.hero .sub{font-size:clamp(19px,1.7vw,22px);line-height:1.55;font-weight:400;letter-spacing:.012em;color:var(--hero-ink-2);max-width:520px;margin:26px 0 44px}
 .hero .sub b{color:var(--hero-ink)}
-.btn{display:inline-block;background:var(--lilac);color:#F4F3F8;text-decoration:none;font-family:var(--sans);font-weight:600;font-size:16px;padding:15px 32px;border-radius:9px;border:none;cursor:pointer;transition:background-color .2s,box-shadow .2s}
-.btn:hover{background:var(--lilac-deep);box-shadow:0 8px 22px rgba(23,26,31,.35)}
-/* Мягкий переход из графита в фарфор — без резкой смены фона */
+/* Текстовая CTA со стрелкой вместо кнопки */
+.cta-link{display:inline-flex;align-items:baseline;gap:10px;background:none;border:none;border-bottom:1px solid rgba(236,237,242,.32);padding:0 2px 7px;color:var(--hero-ink);font-family:var(--sans);font-size:17px;font-weight:500;letter-spacing:.01em;cursor:pointer;transition:color .2s,border-color .25s}
+.cta-link::after{content:"→";font-size:18px;color:var(--hero-lilac);transition:transform .25s}
+.cta-link:hover{color:#FFFFFF;border-color:var(--hero-lilac)}
+.cta-link:hover::after{transform:translateX(5px)}
+/* Мягкий переход из чёрного в фарфор — без резкой смены фона */
 .hero-fade{position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(180deg,rgba(239,241,244,0) 0%,rgba(239,241,244,.55) 62%,var(--porcelain) 100%);pointer-events:none}
 
-/* Кристаллическая решётка: рёбра-фасеты, «хребет» отцовской линии с годами */
-.hero-graph{position:relative;justify-self:end;width:100%;max-width:520px;margin:0}
+/* Кристаллическая решётка: плотная сетка фасетов в трёх ярусах яркости,
+   светящийся «хребет» отцовской линии с годами, мягкие пятна света */
+.hero-graph{position:relative;justify-self:end;width:100%;max-width:620px;margin:0}
 .hero-graph .lattice{display:block;width:100%;height:auto}
-.hero-graph figcaption{margin-top:16px;font-size:13.5px;color:var(--hero-ink-2);font-variant-numeric:tabular-nums}
-.lattice .eg{stroke:var(--hero-line);stroke-width:1;fill:none}
-.lattice .em{stroke:var(--hero-lilac);stroke-width:1.4;opacity:.85}
-.lattice .nd{fill:#B9B0D6;stroke:none}
-.lattice .nd.approx{fill:var(--hero-bg-2);stroke:#B9B0D6;stroke-width:1.4}
-.lattice .nd.sat{fill:rgba(232,234,239,.38)}
-.lattice .yr{fill:var(--hero-ink);font-family:var(--sans);font-size:13.5px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.hero-graph figcaption{margin-top:14px;font-size:13.5px;color:var(--hero-ink-2);font-variant-numeric:tabular-nums}
+.lattice .halo{fill:url(#lat-halo)}
+.lattice .eg{fill:none;stroke-width:1}
+.lattice .e1{stroke:rgba(191,181,226,.50)}
+.lattice .e2{stroke:rgba(191,181,226,.28)}
+.lattice .e3{stroke:rgba(206,212,232,.13)}
+.lattice .em{stroke:var(--hero-lilac);stroke-width:1.7}
+.lattice .spine-glow{fill:none;stroke:rgba(175,164,212,.55);stroke-width:3.6}
+.lattice .nd{fill:#D3CAF0;filter:drop-shadow(0 0 6px rgba(185,173,226,.85))}
+.lattice .nd.approx{fill:var(--hero-bg-2);stroke:#C6BCE8;stroke-width:1.5}
+.lattice .nd.doc{fill:var(--hero-bg-2);stroke:rgba(198,188,232,.8);stroke-width:1.3;stroke-dasharray:2.6 2.2;filter:drop-shadow(0 0 5px rgba(185,173,226,.5))}
+.lattice .nd.sat{filter:none}
+.lattice .sat.s1{fill:rgba(213,207,236,.62)}
+.lattice .sat.s2{fill:rgba(213,207,236,.38)}
+.lattice .sat.s3{fill:rgba(216,222,240,.20)}
+.lattice .nd.hot{fill:#E2DAF8;filter:drop-shadow(0 0 9px rgba(199,188,238,.95))}
+.lattice .yr{fill:var(--hero-ink);font-family:var(--sans);font-size:15px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 
-/* Полоса фактов сразу под героем: цифры и одна строка о приватности */
+/* Полоса фактов сразу под героем: две линии рода, цифры и строка о приватности */
 .facts{background:var(--porcelain);border-bottom:1px solid var(--line-soft);padding:52px 0 46px}
+.facts-lead{font-size:19px;line-height:1.6;color:var(--ink-2);max-width:720px;margin-bottom:38px}
+.facts-lead b{color:var(--ink)}
 .facts-note{margin-top:32px;padding-top:20px;border-top:1px solid var(--line);font-size:15px;color:var(--ink-3);max-width:640px}
 
 /* СТАТИСТИКА — крупные цифры, подписи строчными */
@@ -205,22 +224,26 @@ body.over-hero .navbtn.active{background:rgba(167,157,200,.18);color:#CFC8E4}
 footer{background:var(--hero-bg);color:var(--hero-ink-2);padding:52px 0 58px;font-size:14.5px}
 footer b{color:var(--hero-ink)}
 
-/* Движение — три сдержанных жеста: проявление героя, прорисовка решётки,
-   смена контекста навигации (transition выше). Только при разрешённой анимации. */
+/* Движение — сдержанные жесты: проявление героя, прорисовка решётки,
+   медленное дыхание точек света, смена контекста навигации (transition выше).
+   Только при разрешённой анимации. */
 @media (prefers-reduced-motion: no-preference){
   .hero-copy>*{opacity:0;transform:translateY(14px);animation:rise .7s cubic-bezier(.2,.6,.2,1) forwards}
   .hero-copy>*:nth-child(2){animation-delay:.08s}
   .hero-copy>*:nth-child(3){animation-delay:.16s}
   .hero-copy>*:nth-child(4){animation-delay:.24s}
-  .lattice .eg{stroke-dasharray:1;stroke-dashoffset:1;animation:edge-draw 1.2s cubic-bezier(.55,0,.2,1) forwards .5s}
-  .lattice .em{animation-delay:.15s;animation-duration:1.4s}
-  .lattice .nd{opacity:0;animation:soft-in .7s ease-out forwards 1.15s}
+  .lattice .eg{stroke-dasharray:1;stroke-dashoffset:1;animation:edge-draw 1.3s cubic-bezier(.55,0,.2,1) forwards .45s}
+  .lattice .em{animation-delay:.2s;animation-duration:1.5s}
+  .lattice .halo,.lattice .spine-glow{opacity:0;animation:soft-in 1.6s ease-out forwards .9s}
+  .lattice .nd{opacity:0;animation:soft-in .7s ease-out forwards 1.1s}
+  .lattice .nd.hot{animation:soft-in .7s ease-out forwards 1.1s,hot-pulse 6s ease-in-out 2.4s infinite}
   .lattice .yr{opacity:0;animation:soft-in .8s ease-out forwards 1.4s}
   .hero-graph figcaption{opacity:0;animation:soft-in .8s ease-out forwards 1.6s}
 }
 @keyframes rise{to{opacity:1;transform:none}}
 @keyframes edge-draw{to{stroke-dashoffset:0}}
 @keyframes soft-in{to{opacity:1}}
+@keyframes hot-pulse{0%,100%{opacity:1}50%{opacity:.55}}
 
 @media(max-width:980px){
   .g2,.g3{grid-template-columns:1fr}
@@ -228,7 +251,7 @@ footer b{color:var(--hero-ink)}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .hero{min-height:0;padding:calc(var(--navh) + 56px) 0 130px}
   .hero-grid{grid-template-columns:1fr;gap:52px}
-  .hero-graph{justify-self:center;max-width:420px}
+  .hero-graph{justify-self:center;max-width:460px}
   .pagehead .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:600px){
@@ -241,12 +264,18 @@ footer b{color:var(--hero-ink)}
   .navbtn{padding:8px 12px;font-size:14px}
   .hero{padding:calc(var(--navh) + 44px) 0 140px;overflow:visible}
   .hero-grid{padding-bottom:8px}
-  .hero h1{margin:20px 0 18px}
-  .hero .sub{font-size:17.5px;margin-bottom:30px}
+  .hero h1{margin:20px 0 0}
+  .hero h1::after{width:64px;margin-top:22px}
+  .hero .sub{font-size:18px;margin:20px 0 34px}
   .hero-grid{gap:44px}
-  .hero-graph{max-width:340px}
+  .hero-graph{max-width:360px}
+  /* На узком экране решётка чуть разрежается: гаснет самый дальний ярус,
+     но светящаяся сетка и годы остаются читаемыми */
+  .lattice .e3,.lattice .sat.s3{display:none}
+  .lattice .yr{font-size:19px}
   .hero-fade{height:96px}
   .facts{padding:40px 0 36px}
+  .facts-lead{font-size:17px;margin-bottom:30px}
   .facts-note{margin-top:26px}
   .pagehead{padding:56px 0 40px}
   .sect-head{margin-bottom:40px}
