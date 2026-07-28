@@ -2198,32 +2198,30 @@ def render_footer(footer: dict[str, Any], export_date: str) -> str:
 def render_page_script() -> str:
     """Client-side page switcher, section anchors and nav context over the hero."""
     return """<script>
-function syncNavHeight() {
+var cachedNavH = 56;
+function measureNavHeight() {
   var nav = document.querySelector('nav');
-  if (!nav) return 56;
+  if (!nav) return cachedNavH;
   var h = Math.ceil(nav.getBoundingClientRect().height);
-  var prev = getComputedStyle(document.documentElement).getPropertyValue('--navh').trim();
-  if (prev !== h + 'px') {
-    document.documentElement.style.setProperty('--navh', h + 'px');
+  if (h > 0 && h !== cachedNavH) {
+    cachedNavH = h;
+    document.documentElement.style.setProperty('--navh', cachedNavH + 'px');
   }
-  return h;
+  return cachedNavH;
 }
 function syncOverHero(forceOff) {
   if (forceOff) {
     document.body.classList.remove('over-hero');
-    syncNavHeight();
     return;
   }
   var heroEl = document.querySelector('#page1 .hero');
   var page1 = document.getElementById('page1');
   if (!heroEl || !page1 || !page1.classList.contains('visible')) {
     document.body.classList.remove('over-hero');
-    syncNavHeight();
     return;
   }
   var rect = heroEl.getBoundingClientRect();
-  var navH = syncNavHeight();
-  document.body.classList.toggle('over-hero', rect.bottom > navH + 8);
+  document.body.classList.toggle('over-hero', rect.bottom > cachedNavH + 8);
 }
 function showPage(n) {
   document.getElementById('page1').classList.toggle('visible', n===1);
@@ -2266,8 +2264,21 @@ if (heroEl && 'IntersectionObserver' in window) {
   }, {threshold: [0, 0.01, 0.1, 0.25, 0.5, 1]}).observe(heroEl);
 }
 window.addEventListener('scroll', function() { syncOverHero(false); }, {passive: true});
-window.addEventListener('resize', function() { syncOverHero(false); });
-syncOverHero(false);
+window.addEventListener('resize', function() {
+  measureNavHeight();
+  syncOverHero(false);
+});
+measureNavHeight();
+requestAnimationFrame(function() {
+  measureNavHeight();
+  syncOverHero(false);
+});
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(function() {
+    measureNavHeight();
+    syncOverHero(false);
+  });
+}
 </script>
 </body>
 </html>"""
