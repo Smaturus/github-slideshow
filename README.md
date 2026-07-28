@@ -76,7 +76,7 @@ merge в master ──► GitHub Actions ──► gh-pages ──► GitHub Pag
 
 **Валидация YAML.** `build_site.py` проверяет обязательные ключи и типы в `content/content.yaml` и падает с понятным сообщением, если структура нарушена.
 
-**Безопасная публикация.** Workflow публикует в `gh-pages` только allowlist: `index.html`, `.nojekyll` и производные фона первого экрана `assets/hero-bg{,-768,-1280}.{avif,webp,jpg}`. CSS инлайнится при сборке; мастер-арт первого экрана (`assets/Image 1.png`) в Pages не попадает — отдаются только сжатые responsive-варианты, а не base64 и не исходный PNG. Скрипты, YAML и служебные файлы на live-сайт не уходят. Репозиторий — чистый Python-генератор без Jekyll/Ruby/reveal.js.
+**Безопасная публикация.** Workflow публикует в `gh-pages` только allowlist: `index.html`, `.nojekyll` и производные фона первого экрана `assets/hero-bg{,-768,-1280}.{avif,webp,jpg}`. CSS инлайнится при сборке; мастер-арт hero-секции (`assets/Image 1.png`) в Pages не попадает — отдаются только сжатые responsive-варианты, а не base64 и не исходный PNG. Скрипты, YAML и служебные файлы на live-сайт не уходят. Репозиторий — чистый Python-генератор без Jekyll/Ruby/reveal.js.
 
 **Ассеты первого экрана.** Фон — мастер `assets/Image 1.png`; раскладка заголовка, навигации и дат сверстана по референсу `assets/Image 2.png`. В прод уходят только производные AVIF → WebP → JPEG (ширины 768 / 1280 / 1376) с preload LCP-кандидата.
 
