@@ -377,8 +377,7 @@ footer b{color:var(--hero-ink)}
   .wrap{padding:0 20px}
   section{padding:60px 0}
   nav .wrap{gap:10px}
-  nav .brand{font-size:15px;line-height:1.2;max-width:none;flex:0 1 auto}
-  .nav-links{gap:6px 12px;max-width:64%}
+  .nav-links{gap:6px 12px}
   .navbtn{padding:8px 0;margin-left:0;font-size:10.5px;letter-spacing:.1em}
   .hero{padding:calc(var(--navh) + 44px) 0 min(118vw,560px)}
   .hero-grid{padding-bottom:8px}
