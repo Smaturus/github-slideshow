@@ -66,6 +66,12 @@ HERO_YEAR_SLOTS = [
     ("1956", 42.4, 74.2),
     ("2001", 84.5, 73.5),
 ]
+# Subtle dotted leaders under 1834 / 1858 (layout from Image 2; not in Image 1).
+# Each: (top%, left%, width%, nodes) — nodes is "left", "right", or "both".
+HERO_YEAR_LEADERS = [
+    (16.13, 54.0, 7.3, "left"),   # under 1834
+    (14.62, 80.2, 14.8, "both"),  # under 1858
+]
 
 STATUS_BADGE_W = {"ok": 100, "hyp": 74, "q": 86}
 BADGE_H = 16
@@ -1822,6 +1828,17 @@ def render_hero_year_labels() -> str:
         )
         for year, left, top in HERO_YEAR_SLOTS
     ]
+    for top, left, width, nodes in HERO_YEAR_LEADERS:
+        node_html = ""
+        if nodes in ("left", "both"):
+            node_html += '<i class="hero-leader-node start"></i>'
+        if nodes in ("right", "both"):
+            node_html += '<i class="hero-leader-node end"></i>'
+        parts.append(
+            f'<span class="hero-leader" '
+            f'style="top:{top:.2f}%;left:{left:.1f}%;width:{width:.1f}%">'
+            f"{node_html}</span>"
+        )
     if not parts:
         return ""
     return f'<div class="hero-years" aria-hidden="true">{"".join(parts)}</div>'

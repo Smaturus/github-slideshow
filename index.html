@@ -107,8 +107,15 @@ body.over-hero .nav-tree{display:none}
 .hero-art img{object-fit:cover;object-position:57% 50%}
 .hero-years{position:absolute;inset:0;z-index:3;pointer-events:none}
 .hero-year{position:absolute;transform:translate(-50%,-50%);font-family:var(--serif);font-size:clamp(11px,1.45svh,16px);font-weight:400;letter-spacing:.24em;color:rgba(228,222,209,.95);white-space:nowrap;font-variant-numeric:tabular-nums;background:none;border:none;padding:0;box-shadow:none;text-shadow:none}
+/* Пунктирные линейки под 1834 / 1858 — как в Image 2; без рамок и подложек */
+.hero-leader{position:absolute;height:0;border:none;margin:0;padding:0;transform:translateY(-50%);background:none;box-shadow:none;pointer-events:none}
+.hero-leader::before{content:"";position:absolute;left:0;right:0;top:50%;height:0;border-top:1px dotted rgba(214,190,205,.58);transform:translateY(-50%)}
+.hero-leader-node{position:absolute;top:50%;width:5px;height:5px;border:1px solid rgba(224,188,210,.72);border-radius:50%;background:rgba(210,170,200,.4);box-sizing:border-box;transform:translate(-50%,-50%);display:block}
+.hero-leader-node.start{left:0}
+.hero-leader-node.end{left:100%}
 @media(max-width:980px){
   .hero-year{font-size:12px}
+  .hero-leader-node{width:4px;height:4px}
 }
 
 /* ОТКРЫТАЯ СВЕТЯЩАЯСЯ СЕТЬ — стили генерируемого SVG-слоя (.lattice).
@@ -451,7 +458,7 @@ footer b{color:var(--hero-ink)}
       <source type="image/webp" srcset="assets/hero-bg-768.webp 768w, assets/hero-bg-1280.webp 1280w, assets/hero-bg.webp 1376w" sizes="100vw">
       <img src="assets/hero-bg.jpg" srcset="assets/hero-bg-768.jpg 768w, assets/hero-bg-1280.jpg 1280w, assets/hero-bg.jpg 1376w" sizes="100vw" alt="" width="1376" height="768" decoding="sync" fetchpriority="high">
     </picture>
-    <div class="hero-years" aria-hidden="true"><span class="hero-year" style="left:56.0%;top:11.4%">1834</span><span class="hero-year" style="left:87.7%;top:13.0%">1858</span><span class="hero-year" style="left:91.6%;top:46.5%">1870</span><span class="hero-year" style="left:95.2%;top:59.5%">1918</span><span class="hero-year" style="left:51.0%;top:66.9%">1945</span><span class="hero-year" style="left:42.4%;top:74.2%">1956</span><span class="hero-year" style="left:84.5%;top:73.5%">2001</span></div>
+    <div class="hero-years" aria-hidden="true"><span class="hero-year" style="left:56.0%;top:11.4%">1834</span><span class="hero-year" style="left:87.7%;top:13.0%">1858</span><span class="hero-year" style="left:91.6%;top:46.5%">1870</span><span class="hero-year" style="left:95.2%;top:59.5%">1918</span><span class="hero-year" style="left:51.0%;top:66.9%">1945</span><span class="hero-year" style="left:42.4%;top:74.2%">1956</span><span class="hero-year" style="left:84.5%;top:73.5%">2001</span><span class="hero-leader hero-leader-left" style="top:16.13%;left:54.0%;width:7.3%"></span><span class="hero-leader hero-leader-both" style="top:14.62%;left:80.2%;width:14.8%"></span></div>
   </div>
   <div class="wrap hero-grid">
     <div class="hero-copy">
