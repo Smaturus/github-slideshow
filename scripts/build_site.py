@@ -2198,20 +2198,28 @@ def render_footer(footer: dict[str, Any], export_date: str) -> str:
 def render_page_script() -> str:
     """Client-side page switcher, section anchors and nav context over the hero."""
     return """<script>
+function syncNavHeight() {
+  var nav = document.querySelector('nav');
+  if (!nav) return 56;
+  var h = Math.ceil(nav.getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--navh', h + 'px');
+  return h;
+}
 function syncOverHero(forceOff) {
   if (forceOff) {
     document.body.classList.remove('over-hero');
+    syncNavHeight();
     return;
   }
   var heroEl = document.querySelector('#page1 .hero');
   var page1 = document.getElementById('page1');
   if (!heroEl || !page1 || !page1.classList.contains('visible')) {
     document.body.classList.remove('over-hero');
+    syncNavHeight();
     return;
   }
   var rect = heroEl.getBoundingClientRect();
-  var nav = document.querySelector('nav');
-  var navH = nav ? nav.offsetHeight : 56;
+  var navH = syncNavHeight();
   document.body.classList.toggle('over-hero', rect.bottom > navH + 8);
 }
 function showPage(n) {
