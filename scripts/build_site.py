@@ -33,6 +33,9 @@ GEDCOM_PATH = ROOT / "data" / "skiba.ged"
 CONTENT_PATH = ROOT / "content" / "content.yaml"
 OUTPUT_PATH = ROOT / "index.html"
 CSS = ROOT / "assets" / "site.css"
+# Hero artwork, referenced from the page (not inlined): the source PNG is used
+# as-is so the hero composition matches the reference exactly.
+HERO_IMAGE = "assets/hero-reference.png"
 
 STATUS_BADGE_W = {"ok": 100, "hyp": 74, "q": 86}
 BADGE_H = 16
@@ -1329,6 +1332,10 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
     """Open branching network rendered as an atmospheric background layer, in
     stacked depth planes but with no body: nothing here encloses a silhouette.
 
+    Not called any more: the hero now shows the reference artwork itself
+    (assets/hero-reference.png) instead of this modelled approximation of it.
+    Kept, together with its .lattice styles, as the generated-graphics variant.
+
     far    — halo, turbulence dust, nebula blooms, defocused ridges and the
              dimmest web, dissolving into the black under a torn mask;
     mid    — smoke veils drifting *across* the far plane, which is what makes
@@ -1763,20 +1770,20 @@ def render_hero_section(
     export_date: str,
     father_line: list[Person],
 ) -> str:
-    """Black hero: title over a thin lilac hairline, the two-line subtitle and
-    a text-link CTA on the left; the luminous network is not a figure next to
-    the text but a background composition — absolutely positioned, anchored to
-    the right and larger than the hero, so it bleeds past the top, right and
-    bottom edges and the page crops it (.hero has overflow:hidden). Provenance
-    (export date), the factual sentence, key figures and the privacy line
-    follow in a light facts strip below the first viewport; the network's
-    caption lives in its aria-label."""
+    """Dark hero: title over a thin lilac hairline, the two-line subtitle and
+    a text-link CTA on the left; the luminous network is the reference artwork
+    itself (assets/hero-reference.png), not a generated approximation of it.
+    The image is a background composition rather than a figure beside the
+    text: it fills the hero and runs off its right edge, so the network is cut
+    by the frame exactly as it is cut in the source. Provenance (export
+    date), the factual sentence, key figures and the privacy line follow in a
+    light facts strip below the first viewport, where the network's caption
+    also lives."""
     years = hero_graph_years(father_line)
     caption = hero_graph_caption(hero, years)
-    graph_svg = render_hero_graph(years, caption)
     return f"""<header class="hero">
-  <div class="hero-art">
-    {graph_svg}
+  <div class="hero-art" aria-hidden="true">
+    <img src="{HERO_IMAGE}" alt="" width="4128" height="2304" decoding="async" fetchpriority="high">
   </div>
   <div class="wrap hero-grid">
     <div class="hero-copy">
