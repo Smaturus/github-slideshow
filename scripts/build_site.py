@@ -34,8 +34,23 @@ CONTENT_PATH = ROOT / "content" / "content.yaml"
 OUTPUT_PATH = ROOT / "index.html"
 CSS = ROOT / "assets" / "site.css"
 # Hero artwork, referenced from the page (not inlined): the source PNG is used
-# as-is so the hero composition matches the reference exactly.
-HERO_IMAGE = "assets/hero-reference.png"
+# Master artwork stays in the repo; published hero uses optimized derivatives.
+HERO_IMAGE_SRC = "assets/hero-reference.png"
+HERO_IMAGE_WEBP = "assets/hero-bg.webp"
+HERO_IMAGE_JPG = "assets/hero-bg.jpg"
+HERO_IMAGE_WEBP_SM = "assets/hero-bg-1280.webp"
+HERO_IMAGE_JPG_SM = "assets/hero-bg-1280.jpg"
+# Percentage slots on the hero background for timeline years (newest first).
+# Structure itself is not rearranged — labels float over existing bright nodes.
+HERO_YEAR_SLOTS = [
+    (82.0, 16.0),
+    (70.0, 24.0),
+    (88.0, 38.0),
+    (58.0, 36.0),
+    (90.0, 58.0),
+    (56.0, 58.0),
+    (64.0, 76.0),
+]
 
 STATUS_BADGE_W = {"ok": 100, "hyp": 74, "q": 86}
 BADGE_H = 16
@@ -258,7 +273,12 @@ def validate_content(content: Any) -> None:
     )
 
     meta = require_mapping(content["meta"], "meta")
-    require_keys(meta, "meta", ["title", "brand", "nav_chronicle", "nav_tree"])
+    require_keys(meta, "meta", ["title", "brand", "nav_items", "nav_tree"])
+    nav_items = require_list(meta["nav_items"], "meta.nav_items", min_len=1)
+    for index, item in enumerate(nav_items):
+        path = f"meta.nav_items[{index}]"
+        require_mapping(item, path)
+        require_keys(item, path, ["label", "target"])
 
     hero = require_mapping(content["hero"], "hero")
     require_keys(
@@ -1751,16 +1771,44 @@ def render_document_start(meta_content: dict[str, Any], css: str) -> str:
 
 
 def render_nav(meta_content: dict[str, Any]) -> str:
-    """Top navigation between chronicle and tree pages."""
+    """Top navigation: mock header items plus access to the tree page."""
+    items = []
+    for index, item in enumerate(meta_content["nav_items"]):
+        active = " active" if index == 0 else ""
+        nid = f' id="nb{index + 1}"' if index == 0 else ""
+        items.append(
+            f'<button class="navbtn{active}"{nid} type="button" '
+            f'data-nav="{esc(item["target"])}">{esc(item["label"])}</button>'
+        )
+    items.append(
+        f'<button class="navbtn" id="nb-tree" type="button" data-nav="tree">'
+        f'{esc(meta_content["nav_tree"])}</button>'
+    )
     return f"""<nav>
   <div class="wrap">
-    <div class="brand">{esc(meta_content["brand"])}</div>
-    <button class="navbtn active" id="nb1" onclick="showPage(1)">{esc(meta_content["nav_chronicle"])}</button>
-    <button class="navbtn" id="nb2" onclick="showPage(2)">{esc(meta_content["nav_tree"])}</button>
+    <button class="brand" type="button" data-nav="top">{esc(meta_content["brand"])}</button>
+    <div class="nav-links">{"".join(items)}</div>
   </div>
 </nav>
 
 """
+
+
+def render_hero_year_labels(years: list[tuple[str, bool]]) -> str:
+    """Float timeline years over the reference artwork without moving its form."""
+    parts: list[str] = []
+    for index, (year, approx) in enumerate(years):
+        if index >= len(HERO_YEAR_SLOTS):
+            break
+        left, top = HERO_YEAR_SLOTS[index]
+        label = f"ок. {year}" if approx else year
+        parts.append(
+            f'<span class="hero-year" style="left:{left:.1f}%;top:{top:.1f}%">'
+            f"{esc(label)}</span>"
+        )
+    if not parts:
+        return ""
+    return f'<div class="hero-years" aria-hidden="true">{"".join(parts)}</div>'
 
 
 def render_hero_section(
@@ -1770,26 +1818,24 @@ def render_hero_section(
     export_date: str,
     father_line: list[Person],
 ) -> str:
-    """Dark hero: title over a thin lilac hairline, the two-line subtitle and
-    a text-link CTA on the left; the luminous network is the reference artwork
-    itself (assets/hero-reference.png), not a generated approximation of it.
-    The image is a background composition rather than a figure beside the
-    text: it fills the hero and runs off its right edge, so the network is cut
-    by the frame exactly as it is cut in the source. Provenance (export
-    date), the factual sentence, key figures and the privacy line follow in a
-    light facts strip below the first viewport, where the network's caption
-    also lives."""
+    """Dark hero: title, subtitle and CTA over the optimized reference artwork.
+    Timeline years are annotated on top of the network without rearranging it."""
     years = hero_graph_years(father_line)
     caption = hero_graph_caption(hero, years)
-    return f"""<header class="hero">
+    year_labels = render_hero_year_labels(years)
+    return f"""<header class="hero" id="top">
   <div class="hero-art" aria-hidden="true">
-    <img src="{HERO_IMAGE}" alt="" width="4128" height="2304" decoding="async" fetchpriority="high">
+    <picture>
+      <source type="image/webp" srcset="{HERO_IMAGE_WEBP_SM} 1280w, {HERO_IMAGE_WEBP} 1920w" sizes="100vw">
+      <img src="{HERO_IMAGE_JPG}" srcset="{HERO_IMAGE_JPG_SM} 1280w, {HERO_IMAGE_JPG} 1920w" sizes="100vw" alt="" width="1920" height="1072" decoding="async" fetchpriority="high">
+    </picture>
+    {year_labels}
   </div>
   <div class="wrap hero-grid">
     <div class="hero-copy">
       <h1>{esc(hero["h1"])}</h1>
       <p class="sub">{rich(hero["sub"])}</p>
-      <button class="cta-link" onclick="showPage(2)">{esc(hero["cta"])}</button>
+      <button class="cta-link" type="button" data-nav="tree">{esc(hero["cta"])}</button>
     </div>
   </div>
   <div class="hero-fade" aria-hidden="true"></div>
@@ -1868,7 +1914,7 @@ def render_alekseevs_section(alekseevs: dict[str, Any]) -> str:
 
 def render_timeline_section(timeline: dict[str, Any], timeline_html: str) -> str:
     """Generation timeline section wrapper."""
-    return f"""<section class="alt">
+    return f"""<section class="alt" id="timeline">
   <div class="wrap">
     <div class="sect-head">
       <div class="label">{esc(timeline["label"])}</div>
@@ -1886,7 +1932,7 @@ def render_timeline_section(timeline: dict[str, Any], timeline_html: str) -> str
 
 def render_surnames_section(surnames: dict[str, Any], surnames_html: str) -> str:
     """Surname frequency section wrapper."""
-    return f"""<section>
+    return f"""<section id="surnames">
   <div class="wrap">
     <div class="sect-head">
       <div class="label">{esc(surnames["label"])}</div>
@@ -1903,7 +1949,7 @@ def render_surnames_section(surnames: dict[str, Any], surnames_html: str) -> str
 
 def render_places_section(places: dict[str, Any], places_html: str) -> str:
     """Geography section wrapper."""
-    return f"""<section class="alt">
+    return f"""<section class="alt" id="places">
   <div class="wrap">
     <div class="sect-head">
       <div class="label">{esc(places["label"])}</div>
@@ -1959,7 +2005,7 @@ def render_sources_section(sources: dict[str, Any], st: dict[str, Any]) -> str:
     missing = sources["missing"]
     legend = sources["legend"]
     archives = sources["archives"]
-    return f"""<section class="src">
+    return f"""<section class="src" id="sources">
   <div class="wrap">
       <div class="sect-head">
       <div class="label">{esc(sources["label"])}</div>
@@ -2110,7 +2156,7 @@ def render_tree_page(
 
 def render_footer(footer: dict[str, Any], export_date: str) -> str:
     """Site footer."""
-    return f"""<footer>
+    return f"""<footer id="contacts">
   <div class="wrap"><b>{esc(footer["brand"])}</b>{esc(footer["middle"])} {esc(export_date)}{esc(footer["suffix"])}</div>
 </footer>
 
@@ -2118,16 +2164,37 @@ def render_footer(footer: dict[str, Any], export_date: str) -> str:
 
 
 def render_page_script() -> str:
-    """Client-side tab switcher plus nav context: the sticky nav turns graphite
-    while the dark hero is in view and porcelain everywhere else."""
+    """Client-side page switcher, section anchors and nav context over the hero."""
     return """<script>
 function showPage(n) {
   document.getElementById('page1').classList.toggle('visible', n===1);
   document.getElementById('page2').classList.toggle('visible', n===2);
-  document.getElementById('nb1').classList.toggle('active', n===1);
-  document.getElementById('nb2').classList.toggle('active', n===2);
-  window.scrollTo({top:0});
+  document.querySelectorAll('nav .navbtn').forEach(function(btn) {
+    var isTree = btn.getAttribute('data-nav') === 'tree';
+    btn.classList.toggle('active', n===2 ? isTree : (!isTree && btn.id === 'nb1'));
+  });
+  if (n === 2) window.scrollTo({top:0});
 }
+function goNav(target) {
+  if (target === 'tree') {
+    showPage(2);
+    return;
+  }
+  showPage(1);
+  var el = document.getElementById(target === 'top' ? 'top' : target);
+  if (el) {
+    requestAnimationFrame(function() {
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  } else {
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+}
+document.querySelectorAll('[data-nav]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    goNav(btn.getAttribute('data-nav'));
+  });
+});
 var heroEl = document.querySelector('#page1 .hero');
 if (heroEl && 'IntersectionObserver' in window) {
   new IntersectionObserver(function(entries) {

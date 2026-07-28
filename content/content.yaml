@@ -4,7 +4,15 @@
 meta:
   title: "Структура поколений · Матюхины и Скиба"
   brand: "Структура поколений"
-  nav_chronicle: "Летопись"
+  # Пункты верхней строки — как в утверждённом макете; цель — якорь секции
+  # или переключение на страницу древа.
+  nav_items:
+    - {label: "О проекте", target: "top"}
+    - {label: "Ветви", target: "line"}
+    - {label: "Документы", target: "sources"}
+    - {label: "Места", target: "places"}
+    - {label: "Хроника", target: "timeline"}
+    - {label: "Контакты", target: "contacts"}
   nav_tree: "Древо"
 
 hero:
