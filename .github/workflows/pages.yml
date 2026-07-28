@@ -30,9 +30,12 @@ jobs:
           set -euo pipefail
 
           test -f index.html
+          test -f assets/hero-reference.png
 
           PUBLISH_DIR="$(mktemp -d)"
           cp index.html "$PUBLISH_DIR/index.html"
+          mkdir -p "$PUBLISH_DIR/assets"
+          cp assets/hero-reference.png "$PUBLISH_DIR/assets/hero-reference.png"
           touch "$PUBLISH_DIR/.nojekyll"
 
           git checkout --orphan gh-pages-tmp
@@ -41,10 +44,10 @@ jobs:
 
           cp -R "$PUBLISH_DIR/." .
 
-          git add index.html .nojekyll
+          git add index.html .nojekyll assets/hero-reference.png
           while IFS= read -r file; do
             case "$file" in
-              index.html|.nojekyll) ;;
+              index.html|.nojekyll|assets/hero-reference.png) ;;
               *)
                 echo "Unexpected file staged for gh-pages publish: $file"
                 exit 1
