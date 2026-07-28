@@ -2202,7 +2202,10 @@ function syncNavHeight() {
   var nav = document.querySelector('nav');
   if (!nav) return 56;
   var h = Math.ceil(nav.getBoundingClientRect().height);
-  document.documentElement.style.setProperty('--navh', h + 'px');
+  var prev = getComputedStyle(document.documentElement).getPropertyValue('--navh').trim();
+  if (prev !== h + 'px') {
+    document.documentElement.style.setProperty('--navh', h + 'px');
+  }
   return h;
 }
 function syncOverHero(forceOff) {
