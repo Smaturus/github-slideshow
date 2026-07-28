@@ -1,221 +1,262 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&family=Golos+Text:wght@400;500;600&display=swap');
 
-/* Светлый цифровой семейный архив в редакционной эстетике:
-   молочная бумага, тонкие линии, сливовый и серо-оливковый акценты.
-   Никаких тёмных плашек, градиентов и имитации пергамента. */
+/* Структура поколений — исследовательский, документальный тон.
+   Тёмно-графитовый герой с кристаллической решёткой поколений,
+   дальше — холодный светло-серый (фарфоровый) фон, графитовый текст,
+   приглушённая сирень только как акцент. */
 :root{
-  --paper:#F4F0E8;
-  --paper-deep:#EDE8DE;
-  --surface:#FCFAF6;
-  --ink:#252321;
-  --ink-2:#756F68;
-  /* Мелкий текст (12–14 px) затемнён относительно --ink-2:
-     на молочном фоне вторичный тон иначе не добирает контраста. */
-  --ink-3:#5C574F;
-  --plum:#76536C;
-  --plum-deep:#5D4155;
-  --plum-tint:rgba(118,83,108,.09);
-  --olive:#7B806C;
-  --olive-ink:#5C6150;
-  --olive-tint:rgba(123,128,108,.14);
-  --line:#D8D0C5;
-  --line-soft:#E7E1D6;
-  --line-strong:#C4BAAB;
-  --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
-  --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
-  --shadow:0 1px 2px rgba(37,35,33,.03),0 10px 28px rgba(37,35,33,.05);
-  --radius:14px;
+  /* Холодный светлый контент */
+  --porcelain:#EFF1F4;
+  --porcelain-deep:#E6E9EE;
+  --surface:#F8F9FB;
+  --ink:#22252B;
+  --ink-2:#565B66;
+  --ink-3:#454A55;
+  /* Приглушённая сирень — единственный акцент */
+  --lilac:#6F6690;
+  --lilac-deep:#59517A;
+  --lilac-tint:rgba(111,102,144,.10);
+  /* Стальной серо-синий — статус «подтверждено» */
+  --steel:#6A7686;
+  --steel-ink:#4E5866;
+  --steel-tint:rgba(106,118,134,.12);
+  --line:#D3D7DE;
+  --line-soft:#DFE2E8;
+  --line-strong:#B4BBC6;
+  /* Графитовый герой */
+  --hero-bg:#171A1F;
+  --hero-bg-2:#1C2027;
+  --hero-bg-3:#232833;
+  --hero-ink:#E8EAEF;
+  --hero-ink-2:#A2A8B4;
+  --hero-line:rgba(232,234,239,.13);
+  --hero-lilac:#A79DC8;
+  --serif:'Literata',Georgia,'Times New Roman',serif;
+  --sans:'Golos Text','Segoe UI',system-ui,sans-serif;
+  --radius:8px;
+  --navh:64px;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:18px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-h1,h2,h3,h4{font-family:var(--serif);color:var(--ink);font-weight:500;letter-spacing:-.005em}
+body{background:var(--porcelain);color:var(--ink);font-family:var(--sans);font-size:18.5px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,h4{font-family:var(--serif);color:var(--ink);font-weight:500;letter-spacing:-.01em}
 b,strong{font-weight:600;color:var(--ink)}
-:focus-visible{outline:2px solid var(--plum);outline-offset:3px;border-radius:4px}
-.wrap{max-width:1120px;margin:0 auto;padding:0 34px}
-section{padding:96px 0}
-.alt{background:var(--paper-deep)}
+::selection{background:rgba(111,102,144,.22)}
+:focus-visible{outline:2px solid var(--lilac);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1160px;margin:0 auto;padding:0 36px}
+section{padding:104px 0}
+.alt{background:var(--porcelain-deep)}
 .numtab{font-variant-numeric:tabular-nums}
 
-/* Надзаголовок с короткой линейкой — единственный постоянный декоративный элемент */
-.label{display:inline-flex;align-items:center;gap:11px;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--plum);font-weight:600;line-height:1.4}
-.label::before{content:"";width:26px;height:1px;background:var(--plum);opacity:.5;flex-shrink:0}
-.sect-head{margin-bottom:54px;max-width:840px}
-.sect-head h2{font-size:clamp(32px,4.4vw,52px);line-height:1.08;margin-top:18px}
-.sect-head p{color:var(--ink-2);margin-top:18px;font-size:17px}
-.hr{height:1px;background:var(--line);width:180px;margin-top:28px}
+/* Надзаголовок: без капса и микрокегля, короткая линейка слева */
+.label{display:inline-flex;align-items:center;gap:12px;font-size:14px;letter-spacing:.02em;color:var(--lilac);font-weight:500;line-height:1.4}
+.label::before{content:"";width:24px;height:1px;background:var(--lilac);opacity:.55;flex-shrink:0}
+.sect-head{margin-bottom:56px;max-width:840px}
+.sect-head h2{font-size:clamp(32px,4.2vw,48px);line-height:1.1;margin-top:16px}
+.sect-head p{color:var(--ink-2);margin-top:16px;font-size:18px;max-width:680px}
+.hr{height:1px;background:var(--line-strong);width:72px;margin-top:30px}
 
-/* NAV */
-nav{position:sticky;top:0;z-index:50;background:rgba(244,240,232,.93);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-nav .wrap{display:flex;align-items:center;gap:8px;padding-top:16px;padding-bottom:16px}
-nav .brand{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);margin-right:auto}
-.navbtn{background:none;border:none;color:var(--ink-2);font-family:var(--sans);font-size:14.5px;font-weight:500;padding:9px 18px;border-radius:10px;cursor:pointer;transition:color .18s,background .18s}
-.navbtn:hover{color:var(--ink);background:rgba(37,35,33,.04)}
-.navbtn.active{background:var(--plum-tint);color:var(--plum);font-weight:600}
+/* NAV — два контекста: графитовое стекло над тёмным героем,
+   фарфоровое — на прокрутке и на странице древа */
+nav{position:sticky;top:0;z-index:50;background:rgba(239,241,244,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);transition:background-color .3s ease,border-color .3s ease}
+nav .wrap{display:flex;align-items:center;gap:8px;height:var(--navh)}
+nav .brand{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--ink);margin-right:auto;transition:color .3s ease}
+.navbtn{background:none;border:none;color:var(--ink-2);font-family:var(--sans);font-size:15px;font-weight:500;padding:9px 18px;border-radius:8px;cursor:pointer;transition:color .2s,background-color .2s}
+.navbtn:hover{color:var(--ink);background:rgba(34,37,43,.05)}
+.navbtn.active{background:var(--lilac-tint);color:var(--lilac);font-weight:600}
+body.over-hero nav{background:rgba(23,26,31,.6);border-color:var(--hero-line)}
+body.over-hero nav .brand{color:var(--hero-ink)}
+body.over-hero .navbtn{color:var(--hero-ink-2)}
+body.over-hero .navbtn:hover{color:var(--hero-ink);background:rgba(232,234,239,.08)}
+body.over-hero .navbtn.active{background:rgba(167,157,200,.18);color:#CFC8E4}
 .page{display:none}
 .page.visible{display:block}
 
-/* HERO */
-.hero{position:relative;padding:112px 0 86px;overflow:hidden}
-.hero::before{content:"";position:absolute;right:-170px;top:-140px;width:540px;height:540px;border:1px solid var(--line);border-radius:50%;opacity:.6;pointer-events:none}
-.hero .wrap{position:relative}
-.hero h1{font-size:clamp(44px,6.4vw,82px);line-height:1.02;margin:24px 0 22px;max-width:900px}
-.hero .sub{font-size:19.5px;color:var(--ink-2);max-width:700px;margin-bottom:34px}
-.hero .note{font-size:16px;margin-top:-20px;max-width:660px}
-.hero-compact{padding:76px 0 48px}
-.hero-compact h1{font-size:clamp(34px,4.6vw,58px)}
-.btn{display:inline-block;background:var(--plum);color:#FCFAF6;text-decoration:none;font-family:var(--sans);font-weight:600;font-size:16px;padding:15px 30px;border-radius:10px;border:none;cursor:pointer;transition:background .18s,box-shadow .18s}
-.btn:hover{background:var(--plum-deep);box-shadow:0 6px 18px rgba(118,83,108,.18)}
+/* HERO — тёмный графит, заголовок + одна фраза + CTA + решётка поколений */
+.hero{position:relative;background:linear-gradient(172deg,var(--hero-bg) 0%,var(--hero-bg-2) 58%,var(--hero-bg-3) 100%);color:var(--hero-ink);margin-top:calc(var(--navh) * -1);padding:calc(var(--navh) + 72px) 0 150px;min-height:min(94vh,960px);min-height:min(94svh,960px);display:flex;align-items:center}
+.hero .wrap{width:100%}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:72px;align-items:center}
+.hero .label{color:var(--hero-lilac)}
+.hero .label::before{background:var(--hero-lilac)}
+.hero h1{font-size:clamp(46px,5.6vw,80px);line-height:1.04;color:var(--hero-ink);margin:26px 0 24px;letter-spacing:-.015em}
+.hero .sub{font-size:19px;line-height:1.6;color:var(--hero-ink-2);max-width:520px;margin-bottom:38px}
+.hero .sub b{color:var(--hero-ink)}
+.btn{display:inline-block;background:var(--lilac);color:#F4F3F8;text-decoration:none;font-family:var(--sans);font-weight:600;font-size:16px;padding:15px 32px;border-radius:9px;border:none;cursor:pointer;transition:background-color .2s,box-shadow .2s}
+.btn:hover{background:var(--lilac-deep);box-shadow:0 8px 22px rgba(23,26,31,.35)}
+/* Мягкий переход из графита в фарфор — без резкой смены фона */
+.hero-fade{position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(180deg,rgba(239,241,244,0) 0%,rgba(239,241,244,.55) 62%,var(--porcelain) 100%);pointer-events:none}
 
-/* СТАТИСТИКА — крупные цифры под тонкой линейкой, без дашбордных плашек */
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:30px 40px;margin-top:56px;padding-top:28px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
-.stats b{display:block;font-family:var(--serif);font-size:clamp(38px,4.6vw,56px);line-height:1;font-weight:500;color:var(--ink)}
-.stats span{display:block;margin-top:12px;font-size:11.5px;line-height:1.5;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+/* Кристаллическая решётка: рёбра-фасеты, «хребет» отцовской линии с годами */
+.hero-graph{position:relative;justify-self:end;width:100%;max-width:520px;margin:0}
+.hero-graph .lattice{display:block;width:100%;height:auto}
+.hero-graph figcaption{margin-top:16px;font-size:13.5px;color:var(--hero-ink-2);font-variant-numeric:tabular-nums}
+.lattice .eg{stroke:var(--hero-line);stroke-width:1;fill:none}
+.lattice .em{stroke:var(--hero-lilac);stroke-width:1.4;opacity:.85}
+.lattice .nd{fill:#B9B0D6;stroke:none}
+.lattice .nd.approx{fill:var(--hero-bg-2);stroke:#B9B0D6;stroke-width:1.4}
+.lattice .nd.sat{fill:rgba(232,234,239,.38)}
+.lattice .yr{fill:var(--hero-ink);font-family:var(--sans);font-size:13.5px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+
+/* Полоса фактов сразу под героем: цифры и одна строка о приватности */
+.facts{background:var(--porcelain);border-bottom:1px solid var(--line-soft);padding:52px 0 46px}
+.facts-note{margin-top:32px;padding-top:20px;border-top:1px solid var(--line);font-size:15px;color:var(--ink-3);max-width:640px}
+
+/* СТАТИСТИКА — крупные цифры, подписи строчными */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px 40px;font-variant-numeric:tabular-nums}
+.stats b{display:block;font-family:var(--serif);font-size:clamp(36px,4.2vw,52px);line-height:1;font-weight:500;color:var(--ink)}
+.stats span{display:block;margin-top:10px;font-size:14px;line-height:1.45;color:var(--ink-3)}
+
+/* Шапка страницы древа — светлая */
+.pagehead{padding:92px 0 56px}
+.pagehead h1{font-size:clamp(38px,4.8vw,60px);line-height:1.06;margin:22px 0 18px}
+.pagehead .sub{font-size:19px;color:var(--ink-2);max-width:780px}
+.pagehead .stats{grid-template-columns:repeat(2,minmax(0,220px))}
 
 /* ЛЕНТА ПОКОЛЕНИЙ */
 .tl{position:relative;padding-left:36px}
 .tl::before{content:"";position:absolute;left:7px;top:12px;bottom:18px;width:1px;background:var(--line-strong)}
-.tl-item{position:relative;padding-bottom:42px}
+.tl-item{position:relative;padding-bottom:44px}
 .tl-item:last-child{padding-bottom:0}
-.tl-item::before{content:"";position:absolute;left:-36px;top:9px;width:15px;height:15px;border-radius:50%;background:var(--surface);border:1.5px solid var(--olive)}
-.tl-item.me::before{background:var(--plum);border-color:var(--plum)}
-.tl-gen{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
-.tl-item h3{font-size:29px;line-height:1.14;margin:8px 0 3px}
-.tl-item .yrs{color:var(--plum);font-size:15.5px;font-weight:500;font-variant-numeric:tabular-nums}
-.tl-item p{color:var(--ink-2);font-size:16px;max-width:660px;margin-top:9px}
+.tl-item::before{content:"";position:absolute;left:-36px;top:9px;width:15px;height:15px;border-radius:50%;background:var(--surface);border:1.5px solid var(--steel)}
+.tl-item.me::before{background:var(--lilac);border-color:var(--lilac)}
+.tl-gen{font-size:14px;color:var(--ink-3);font-weight:500}
+.tl-item h3{font-size:28px;line-height:1.15;margin:8px 0 3px}
+.tl-item .yrs{color:var(--lilac);font-size:16px;font-weight:500;font-variant-numeric:tabular-nums}
+.tl-item p{color:var(--ink-2);font-size:16.5px;max-width:660px;margin-top:9px}
 
-/* КАРТОЧКИ */
-.grid{display:grid;gap:24px}
+/* КАРТОЧКИ — плоские контейнеры чтения: тонкая рамка, без теней */
+.grid{display:grid;gap:22px}
 .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:30px;transition:border-color .2s,box-shadow .2s}
-.card:hover{border-color:var(--line-strong);box-shadow:var(--shadow)}
-.card h3{font-size:28px;line-height:1.14;margin-bottom:6px}
-.card h4{font-size:23px;line-height:1.2;margin-bottom:6px}
-.card .tag{display:block;font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--olive-ink);font-weight:600;margin-bottom:14px}
-.card p{font-size:16px;color:var(--ink-2);margin-top:12px}
-.card .mini{font-size:13.5px;color:var(--ink-3);margin-top:22px;padding-top:14px;border-top:1px solid var(--line-soft)}
-.gip{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--plum);background:var(--plum-tint);border-radius:6px;padding:2px 8px;margin-left:6px;vertical-align:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:34px 32px;transition:border-color .2s}
+.card:hover{border-color:var(--line-strong)}
+.card h3{font-size:27px;line-height:1.15;margin-bottom:6px}
+.card h4{font-size:22px;line-height:1.2;margin-bottom:6px}
+.card .tag{display:block;font-size:13.5px;letter-spacing:.02em;color:var(--steel-ink);font-weight:500;margin-bottom:14px}
+.card p{font-size:16.5px;color:var(--ink-2);margin-top:12px}
+.card .mini{font-size:14.5px;color:var(--ink-3);margin-top:24px;padding-top:14px;border-top:1px solid var(--line-soft)}
 
-/* ФОТОГРАФИИ — архивные врезки: тонкая рамка, светлое паспарту, сухая подпись */
-.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
-.ph{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
-.ph img{width:100%;height:250px;object-fit:cover;display:block;border-radius:6px}
-.ph figcaption{padding:14px 4px 2px;font-size:13.5px;line-height:1.5;color:var(--ink-3)}
-.wcard{display:flex;gap:22px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;transition:border-color .2s,box-shadow .2s}
-.wcard:hover{border-color:var(--line-strong);box-shadow:var(--shadow)}
-.wcard img{width:116px;height:116px;object-fit:cover;border-radius:8px;border:1px solid var(--line);flex-shrink:0}
-.wcard h3{font-size:23px;line-height:1.14}
-.wcard .yrs{color:var(--plum);font-size:14.5px}
-.wcard p{font-size:15px;color:var(--ink-2);margin-top:8px}
-
-/* ПЕРЕМЕЩЕНИЯ */
-.route{display:flex;align-items:flex-start;gap:18px;padding:22px 0;border-bottom:1px solid var(--line-soft)}
-.route:last-child{border-bottom:none}
-.route .from{min-width:240px}
-.route .arrow{color:var(--olive);font-size:20px;padding-top:2px}
-.route b{font-size:16.5px}
-.route span{display:block;font-size:14px;color:var(--ink-3);margin-top:4px}
-
-/* ИСТОЧНИКИ — светлая вкладка внутри страницы */
+/* ИСТОЧНИКИ */
 .src{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.src .scard{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:30px}
-.src .scard h3{font-size:24px;line-height:1.18;margin-bottom:14px}
-.src p,.src li{color:var(--ink-2);font-size:16px}
+.src .scard{background:var(--porcelain);border:1px solid var(--line);border-radius:var(--radius);padding:32px 30px}
+.src .scard h3{font-size:23px;line-height:1.2;margin-bottom:14px}
+.src p,.src li{color:var(--ink-2);font-size:16.5px}
 .src ul{list-style:none}
 .src li{padding:10px 0;border-bottom:1px solid var(--line-soft)}
 .src li:last-child{border-bottom:none}
-.leg{display:inline-block;background:var(--plum-tint);color:var(--plum);font-weight:600;border-radius:6px;padding:2px 9px;font-size:12px;letter-spacing:.07em;text-transform:uppercase;margin-right:8px;vertical-align:1px}
+.leg{display:inline-block;background:var(--lilac-tint);color:var(--lilac);font-weight:600;border-radius:6px;padding:2px 10px;font-size:13.5px;margin-right:8px;vertical-align:1px}
 
-/* ДРЕВО — статус данных кодируется цветом рамки и бейджем.
-   Восемь поколений не умещаются в экран (ширина вёрстки ~1972 px, высота SVG
-   ~2700 px), поэтому .treewrap — двухосевой скроллпорт внутри viewport:
-   страница по горизонтали не едет (body overflow-x:hidden), а древо
-   прокручивается внутри секции. max-height держит горизонтальный скроллбар
-   в видимой области, а не внизу высокого SVG. */
-.treewrap{overflow:auto;overscroll-behavior:contain;max-height:min(85vh,920px);padding-top:26px;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--line-strong) var(--paper-deep)}
+/* ДРЕВО — статус кодируется цветом рамки и бейджем.
+   Восемь поколений не умещаются в экран, поэтому .treewrap — двухосевой
+   скроллпорт внутри viewport: страница по горизонтали не едет
+   (body overflow-x:hidden), а древо прокручивается внутри секции.
+   max-height держит горизонтальный скроллбар в видимой области. */
+.treewrap{overflow:auto;overscroll-behavior:contain;max-height:min(85vh,920px);padding-top:26px;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--line-strong) var(--porcelain-deep)}
 .treewrap::-webkit-scrollbar{height:10px;width:10px}
-.treewrap::-webkit-scrollbar-track{background:var(--paper-deep);border-radius:5px}
+.treewrap::-webkit-scrollbar-track{background:var(--porcelain-deep);border-radius:5px}
 .treewrap::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:5px}
 /* width:auto вместо 100%: иначе SVG сжимается по ширине контейнера и вместо
    прокрутки древо уменьшается в масштабе. Ширину задаёт inline min-width,
    который генератор пишет в render_pedigree_svg. */
 .pedigree{width:auto;max-width:none;height:auto;display:block;font-family:var(--sans)}
-.pedigree .colhead{font-size:10.5px;letter-spacing:.16em;font-weight:600;fill:var(--ink-3)}
+.pedigree .colhead{font-size:12px;letter-spacing:.04em;font-weight:600;fill:var(--ink-3)}
 .pedigree .ln{stroke:var(--line-strong);stroke-width:1.1;fill:none}
-.pedigree .fr{fill:var(--surface);stroke:var(--line-strong);stroke-width:1.1;filter:drop-shadow(0 1px 1.5px rgba(37,35,33,.06))}
+.pedigree .fr{fill:var(--surface);stroke:var(--line-strong);stroke-width:1.1}
 .pedigree .t1{font-size:13px;font-weight:600;fill:var(--ink)}
 .pedigree .t2{font-size:11px;fill:var(--ink)}
 .pedigree .t3{font-size:10.5px;fill:var(--ink-3);font-variant-numeric:tabular-nums}
-.pedigree .bdg{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.pedigree .bdg{font-size:10px;font-weight:500;letter-spacing:.02em}
 .pedigree .bg{stroke:none}
 .pedigree .bx{transition:opacity .15s}
-/* Подтверждено — серо-оливковый */
-.pedigree .bx.ok .fr{stroke:var(--olive)}
-.pedigree .bx.ok .bg{fill:var(--olive-tint)}
-.pedigree .bx.ok .bdg{fill:var(--olive-ink)}
-/* Гипотеза — сливовый */
-.pedigree .bx.hyp .fr{stroke:var(--plum)}
-.pedigree .bx.hyp .bg{fill:var(--plum-tint)}
-.pedigree .bx.hyp .bdg{fill:var(--plum)}
-/* Нет данных — светло-серый пунктир, без подложки и тени */
-.pedigree .bx.q .fr{fill:none;stroke:var(--line-strong);stroke-width:1;stroke-dasharray:5 4;filter:none}
+/* Подтверждено — стальной серо-синий */
+.pedigree .bx.ok .fr{stroke:var(--steel)}
+.pedigree .bx.ok .bg{fill:var(--steel-tint)}
+.pedigree .bx.ok .bdg{fill:var(--steel-ink)}
+/* Гипотеза — приглушённая сирень */
+.pedigree .bx.hyp .fr{stroke:var(--lilac)}
+.pedigree .bx.hyp .bg{fill:var(--lilac-tint)}
+.pedigree .bx.hyp .bdg{fill:var(--lilac)}
+/* Нет данных — светлый пунктир, без подложки */
+.pedigree .bx.q .fr{fill:none;stroke:var(--line-strong);stroke-width:1;stroke-dasharray:5 4}
 .pedigree .bx.q .t1,.pedigree .bx.q .t2{fill:var(--ink-2)}
-.pedigree .bx.q .bg{fill:rgba(37,35,33,.05)}
+.pedigree .bx.q .bg{fill:rgba(34,37,43,.05)}
 .pedigree .bx.q .bdg{fill:var(--ink-3)}
-/* Край прослеженной линии — та же палитра, только плотнее рамка */
+/* Край прослеженной линии — плотнее рамка */
 .pedigree .bx.deep .fr{stroke-width:1.6}
 /* Семья, от которой ведётся отсчёт */
-.pedigree .bx.me .fr{fill:var(--paper-deep)}
+.pedigree .bx.me .fr{fill:var(--porcelain-deep);stroke:var(--ink-3)}
 .pedigree .bx.me .t1{font-weight:700}
-.legend{display:flex;flex-wrap:wrap;gap:14px 30px;margin-top:26px;font-size:14px;color:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:14px 30px;margin-top:26px;font-size:14.5px;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:9px}
 .legend i{width:15px;height:15px;border-radius:4px;flex-shrink:0}
-.legend i.ok{background:var(--olive-tint);border:1px solid var(--olive)}
-.legend i.hyp{background:var(--plum-tint);border:1px solid var(--plum)}
+.legend i.ok{background:var(--steel-tint);border:1px solid var(--steel)}
+.legend i.hyp{background:var(--lilac-tint);border:1px solid var(--lilac)}
 .legend i.q{border:1px dashed var(--line-strong)}
-.legend i.anchor{background:var(--paper-deep);border:1px solid var(--ink)}
+.legend i.anchor{background:var(--porcelain-deep);border:1px solid var(--ink-3)}
 
 /* КАРТА ПОИСКА */
-.goalrow{display:flex;align-items:flex-start;gap:18px;padding:20px 0;border-bottom:1px solid var(--line)}
+.goalrow{display:flex;align-items:flex-start;gap:18px;padding:22px 0;border-bottom:1px solid var(--line)}
 .goalrow:last-child{border-bottom:none}
-.goalrow .n{font-family:var(--serif);font-size:30px;line-height:1;font-weight:500;color:var(--plum);min-width:36px;padding-top:3px;font-variant-numeric:tabular-nums}
-.goalrow b{font-size:16.5px}
-.goalrow p{font-size:15px;color:var(--ink-2);margin-top:5px}
-.goalrow .st{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--olive-ink);font-weight:600;margin-top:9px}
+.goalrow .n{font-family:var(--serif);font-size:30px;line-height:1;font-weight:500;color:var(--lilac);min-width:36px;padding-top:3px;font-variant-numeric:tabular-nums}
+.goalrow b{font-size:17px}
+.goalrow p{font-size:15.5px;color:var(--ink-2);margin-top:5px}
+.goalrow .st{font-size:13.5px;color:var(--steel-ink);font-weight:500;margin-top:9px}
 
-footer{padding:56px 0 64px;border-top:1px solid var(--line);color:var(--ink-3);font-size:14px}
-footer b{color:var(--ink)}
+footer{background:var(--hero-bg);color:var(--hero-ink-2);padding:52px 0 58px;font-size:14.5px}
+footer b{color:var(--hero-ink)}
+
+/* Движение — три сдержанных жеста: проявление героя, прорисовка решётки,
+   смена контекста навигации (transition выше). Только при разрешённой анимации. */
+@media (prefers-reduced-motion: no-preference){
+  .hero-copy>*{opacity:0;transform:translateY(14px);animation:rise .7s cubic-bezier(.2,.6,.2,1) forwards}
+  .hero-copy>*:nth-child(2){animation-delay:.08s}
+  .hero-copy>*:nth-child(3){animation-delay:.16s}
+  .hero-copy>*:nth-child(4){animation-delay:.24s}
+  .lattice .eg{stroke-dasharray:1;stroke-dashoffset:1;animation:edge-draw 1.2s cubic-bezier(.55,0,.2,1) forwards .5s}
+  .lattice .em{animation-delay:.15s;animation-duration:1.4s}
+  .lattice .nd{opacity:0;animation:soft-in .7s ease-out forwards 1.15s}
+  .lattice .yr{opacity:0;animation:soft-in .8s ease-out forwards 1.4s}
+  .hero-graph figcaption{opacity:0;animation:soft-in .8s ease-out forwards 1.6s}
+}
+@keyframes rise{to{opacity:1;transform:none}}
+@keyframes edge-draw{to{stroke-dashoffset:0}}
+@keyframes soft-in{to{opacity:1}}
 
 @media(max-width:980px){
-  .g2,.g3,.strip{grid-template-columns:1fr}
-  section{padding:70px 0}
+  .g2,.g3{grid-template-columns:1fr}
+  section{padding:76px 0}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .route .from{min-width:160px}
+  .hero{min-height:0;padding:calc(var(--navh) + 56px) 0 130px}
+  .hero-grid{grid-template-columns:1fr;gap:52px}
+  .hero-graph{justify-self:center;max-width:420px}
+  .pagehead .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:600px){
-  body{font-size:17px}
+  :root{--navh:56px}
+  body{font-size:17.5px}
   .wrap{padding:0 20px}
-  section{padding:56px 0}
-  nav .wrap{gap:4px;padding-top:12px;padding-bottom:12px}
-  nav .brand{font-size:16px;line-height:1.15;max-width:38%}
-  .navbtn{padding:8px 12px;font-size:13.5px}
-  .hero{padding:60px 0 52px}
-  .hero::before{display:none}
-  .hero h1{margin:18px 0 18px}
-  .hero .sub{font-size:18px}
-  .hero .note{font-size:15.5px;margin-top:-14px}
-  .hero-compact{padding:48px 0 36px}
-  .sect-head{margin-bottom:38px}
-  .sect-head p{font-size:16px}
-  .stats{gap:24px 22px;margin-top:38px;padding-top:22px}
-  .stats b{font-size:38px}
-  .stats span{font-size:11px;margin-top:9px}
-  .card{padding:24px}
-  .card h3{font-size:25px}
-  .src .scard{padding:24px}
-  .tl-item h3{font-size:25px}
+  section{padding:60px 0}
+  nav .wrap{gap:4px}
+  nav .brand{font-size:16px;line-height:1.15;max-width:40%}
+  .navbtn{padding:8px 12px;font-size:14px}
+  .hero{padding:calc(var(--navh) + 44px) 0 118px}
+  .hero h1{margin:20px 0 18px}
+  .hero .sub{font-size:17.5px;margin-bottom:30px}
+  .hero-grid{gap:44px}
+  .hero-graph{max-width:340px}
+  .hero-fade{height:96px}
+  .facts{padding:40px 0 36px}
+  .facts-note{margin-top:26px}
+  .pagehead{padding:56px 0 40px}
+  .sect-head{margin-bottom:40px}
+  .sect-head p{font-size:16.5px}
+  .stats{gap:24px 22px}
+  .stats b{font-size:36px}
+  .stats span{font-size:13px;margin-top:8px}
+  .card{padding:26px 22px}
+  .card h3{font-size:24px}
+  .src .scard{padding:26px 22px}
+  .tl-item h3{font-size:24px}
   .goalrow .n{font-size:25px;min-width:28px}
-  .wcard{flex-direction:column}
   .legend{gap:12px 20px;font-size:13.5px}
 }
