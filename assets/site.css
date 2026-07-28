@@ -72,7 +72,6 @@ body.over-hero .nav-links{justify-content:flex-start;gap:10px 41px;margin-right:
 body.over-hero .navbtn{font-size:15px;letter-spacing:.08em;color:rgba(214,207,193,.9)}
 body.over-hero .navbtn:hover{color:#F0EBE3}
 body.over-hero .navbtn.active{color:#F0EBE3}
-body.over-hero .nav-tree{display:none}
 .page{display:none}
 .page.visible{display:block}
 
