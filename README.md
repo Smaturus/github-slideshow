@@ -54,6 +54,7 @@ assets/site.css         ──────────────────�
                                                           │
 merge в master ──► GitHub Actions ──► gh-pages ──► GitHub Pages
                                       (только index.html,
+                                       assets/hero-reference.png,
                                        .nojekyll)
 ```
 
@@ -76,7 +77,7 @@ merge в master ──► GitHub Actions ──► gh-pages ──► GitHub Pag
 
 **Валидация YAML.** `build_site.py` проверяет обязательные ключи и типы в `content/content.yaml` и падает с понятным сообщением, если структура нарушена.
 
-**Безопасная публикация.** Workflow публикует в `gh-pages` только allowlist: `index.html`, `.nojekyll`. CSS инлайнится при сборке. Скрипты, YAML и служебные файлы на live-сайт не попадают. Репозиторий — чистый Python-генератор без Jekyll/Ruby/reveal.js.
+**Безопасная публикация.** Workflow публикует в `gh-pages` только allowlist: `index.html`, `assets/hero-reference.png`, `.nojekyll`. CSS инлайнится при сборке; фоновая композиция героя отдаётся файлом, а не base64 — иначе страница выросла бы на 16 МБ. Скрипты, YAML и служебные файлы на live-сайт не попадают. Репозиторий — чистый Python-генератор без Jekyll/Ruby/reveal.js.
 
 **Осознанный trade-off.** Сборка не выполняется в CI: GEDCOM содержит персональные данные и остаётся локально. Перед merge в `master` обновлённый `index.html` коммитится вручную после локальной пересборки.
 

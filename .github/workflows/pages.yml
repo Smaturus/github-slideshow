@@ -30,9 +30,21 @@ jobs:
           set -euo pipefail
 
           test -f index.html
+          for f in \
+            assets/hero-bg.avif assets/hero-bg.webp assets/hero-bg.jpg \
+            assets/hero-bg-1280.avif assets/hero-bg-1280.webp assets/hero-bg-1280.jpg \
+            assets/hero-bg-768.avif assets/hero-bg-768.webp assets/hero-bg-768.jpg
+          do
+            test -f "$f"
+          done
 
           PUBLISH_DIR="$(mktemp -d)"
           cp index.html "$PUBLISH_DIR/index.html"
+          mkdir -p "$PUBLISH_DIR/assets"
+          cp assets/hero-bg.avif assets/hero-bg.webp assets/hero-bg.jpg \
+             assets/hero-bg-1280.avif assets/hero-bg-1280.webp assets/hero-bg-1280.jpg \
+             assets/hero-bg-768.avif assets/hero-bg-768.webp assets/hero-bg-768.jpg \
+             "$PUBLISH_DIR/assets/"
           touch "$PUBLISH_DIR/.nojekyll"
 
           git checkout --orphan gh-pages-tmp
@@ -41,10 +53,13 @@ jobs:
 
           cp -R "$PUBLISH_DIR/." .
 
-          git add index.html .nojekyll
+          git add index.html .nojekyll \
+            assets/hero-bg.avif assets/hero-bg.webp assets/hero-bg.jpg \
+            assets/hero-bg-1280.avif assets/hero-bg-1280.webp assets/hero-bg-1280.jpg \
+            assets/hero-bg-768.avif assets/hero-bg-768.webp assets/hero-bg-768.jpg
           while IFS= read -r file; do
             case "$file" in
-              index.html|.nojekyll) ;;
+              index.html|.nojekyll|assets/hero-bg.avif|assets/hero-bg.webp|assets/hero-bg.jpg|assets/hero-bg-1280.avif|assets/hero-bg-1280.webp|assets/hero-bg-1280.jpg|assets/hero-bg-768.avif|assets/hero-bg-768.webp|assets/hero-bg-768.jpg) ;;
               *)
                 echo "Unexpected file staged for gh-pages publish: $file"
                 exit 1
