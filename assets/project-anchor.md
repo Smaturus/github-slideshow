@@ -1,7 +1,7 @@
 # Якорь контекста проекта
 
 Короткий стартовый контекст для нового чата Cursor.  
-Подробности: [README](../README.md) и [docs/architecture.md](../docs/architecture.md).
+Подробности: [README](../README.md), [docs/architecture.md](../docs/architecture.md), [docs/decisions.md](../docs/decisions.md).
 
 ## Готово на `master`
 
