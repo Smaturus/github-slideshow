@@ -1795,16 +1795,15 @@ def render_nav(meta_content: dict[str, Any]) -> str:
 
 
 def render_hero_year_labels(years: list[tuple[str, bool]]) -> str:
-    """Float timeline years over the reference artwork without moving its form."""
+    """Float quiet year marks over the artwork as illustration only."""
     parts: list[str] = []
-    for index, (year, approx) in enumerate(years):
+    for index, (year, _approx) in enumerate(years):
         if index >= len(HERO_YEAR_SLOTS):
             break
         left, top = HERO_YEAR_SLOTS[index]
-        label = f"ок. {year}" if approx else year
         parts.append(
             f'<span class="hero-year" style="left:{left:.1f}%;top:{top:.1f}%">'
-            f"{esc(label)}</span>"
+            f"{esc(year)}</span>"
         )
     if not parts:
         return ""
