@@ -41,15 +41,15 @@ HERO_IMAGE_JPG = "assets/hero-bg.jpg"
 HERO_IMAGE_WEBP_SM = "assets/hero-bg-1280.webp"
 HERO_IMAGE_JPG_SM = "assets/hero-bg-1280.jpg"
 # Percentage slots on the hero background for timeline years (newest first).
-# Structure itself is not rearranged — labels float over existing bright nodes.
+# Placed near bright nodes but slightly offset into darker pockets for contrast.
 HERO_YEAR_SLOTS = [
-    (82.0, 16.0),
-    (70.0, 24.0),
-    (88.0, 38.0),
-    (58.0, 36.0),
-    (90.0, 58.0),
-    (56.0, 58.0),
-    (64.0, 76.0),
+    (84.0, 14.0),
+    (68.0, 22.0),
+    (91.0, 40.0),
+    (54.0, 34.0),
+    (93.0, 62.0),
+    (52.0, 60.0),
+    (62.0, 82.0),
 ]
 
 STATUS_BADGE_W = {"ok": 100, "hyp": 74, "q": 86}
