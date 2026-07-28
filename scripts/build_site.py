@@ -40,16 +40,16 @@ HERO_IMAGE_WEBP = "assets/hero-bg.webp"
 HERO_IMAGE_JPG = "assets/hero-bg.jpg"
 HERO_IMAGE_WEBP_SM = "assets/hero-bg-1280.webp"
 HERO_IMAGE_JPG_SM = "assets/hero-bg-1280.jpg"
-# Percentage slots on the hero background for timeline years (newest first).
-# Placed near bright nodes but slightly offset into darker pockets for contrast.
+# Hero date labels from the approved layout (Image 2): plain year text only.
+# Positions are % of the hero frame (centers), measured on Image 2.
 HERO_YEAR_SLOTS = [
-    (84.0, 14.0),
-    (68.0, 22.0),
-    (91.0, 40.0),
-    (54.0, 34.0),
-    (93.0, 62.0),
-    (52.0, 60.0),
-    (40.0, 85.0),  # 1768 — тёмный карман слева от яркого нижнего узла
+    ("1834", 56.0, 11.4),
+    ("1858", 87.7, 13.0),
+    ("1870", 91.6, 46.5),
+    ("1918", 95.2, 59.5),
+    ("1945", 51.0, 66.9),
+    ("1956", 42.4, 74.2),
+    ("2001", 84.5, 73.5),
 ]
 
 STATUS_BADGE_W = {"ok": 100, "hyp": 74, "q": 86}
@@ -1781,7 +1781,7 @@ def render_nav(meta_content: dict[str, Any]) -> str:
             f'data-nav="{esc(item["target"])}">{esc(item["label"])}</button>'
         )
     items.append(
-        f'<button class="navbtn" id="nb-tree" type="button" data-nav="tree">'
+        f'<button class="navbtn nav-tree" id="nb-tree" type="button" data-nav="tree">'
         f'{esc(meta_content["nav_tree"])}</button>'
     )
     return f"""<nav>
@@ -1794,17 +1794,15 @@ def render_nav(meta_content: dict[str, Any]) -> str:
 """
 
 
-def render_hero_year_labels(years: list[tuple[str, bool]]) -> str:
-    """Float quiet year marks over the artwork as illustration only."""
-    parts: list[str] = []
-    for index, (year, _approx) in enumerate(years):
-        if index >= len(HERO_YEAR_SLOTS):
-            break
-        left, top = HERO_YEAR_SLOTS[index]
-        parts.append(
+def render_hero_year_labels() -> str:
+    """Float plain year marks over the master artwork (layout from Image 2)."""
+    parts = [
+        (
             f'<span class="hero-year" style="left:{left:.1f}%;top:{top:.1f}%">'
             f"{esc(year)}</span>"
         )
+        for year, left, top in HERO_YEAR_SLOTS
+    ]
     if not parts:
         return ""
     return f'<div class="hero-years" aria-hidden="true">{"".join(parts)}</div>'
@@ -1817,16 +1815,16 @@ def render_hero_section(
     export_date: str,
     father_line: list[Person],
 ) -> str:
-    """Dark hero: title, subtitle and CTA over the optimized reference artwork.
-    Timeline years are annotated on top of the network without rearranging it."""
+    """Dark hero: title, subtitle and CTA over the master artwork (Image 1).
+    Date labels follow the approved layout (Image 2) without redesigning the art."""
     years = hero_graph_years(father_line)
     caption = hero_graph_caption(hero, years)
-    year_labels = render_hero_year_labels(years)
+    year_labels = render_hero_year_labels()
     return f"""<header class="hero" id="top">
   <div class="hero-art" aria-hidden="true">
     <picture>
       <source type="image/webp" srcset="{HERO_IMAGE_WEBP_SM} 1280w, {HERO_IMAGE_WEBP} 1920w" sizes="100vw">
-      <img src="{HERO_IMAGE_JPG}" srcset="{HERO_IMAGE_JPG_SM} 1280w, {HERO_IMAGE_JPG} 1920w" sizes="100vw" alt="" width="1920" height="1072" decoding="async" fetchpriority="high">
+      <img src="{HERO_IMAGE_JPG}" srcset="{HERO_IMAGE_JPG_SM} 1280w, {HERO_IMAGE_JPG} 1920w" sizes="100vw" alt="" width="1376" height="768" decoding="async" fetchpriority="high">
     </picture>
     {year_labels}
   </div>
@@ -1837,7 +1835,6 @@ def render_hero_section(
       <button class="cta-link" type="button" data-nav="tree">{esc(hero["cta"])}</button>
     </div>
   </div>
-  <div class="hero-fade" aria-hidden="true"></div>
 </header>
 
 <div class="facts">
