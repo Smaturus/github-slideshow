@@ -1796,7 +1796,7 @@ def render_document_start(meta_content: dict[str, Any], css: str) -> str:
 
 
 def render_nav(meta_content: dict[str, Any]) -> str:
-    """Top navigation: mock header items plus access to the tree page."""
+    """Top navigation: seven mock header items (Image 2), including Древо."""
     items = []
     for index, item in enumerate(meta_content["nav_items"]):
         active = " active" if index == 0 else ""
@@ -1811,7 +1811,6 @@ def render_nav(meta_content: dict[str, Any]) -> str:
     )
     return f"""<nav>
   <div class="wrap">
-    <button class="brand" type="button" data-nav="top">{esc(meta_content["brand"])}</button>
     <div class="nav-links">{"".join(items)}</div>
   </div>
 </nav>
