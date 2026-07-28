@@ -83,6 +83,14 @@ HERO_RIDGES = [
     [(556, 404), (600, 388), (652, 372)],
     [(296, 462), (262, 408), (246, 356)],
 ]
+# Depth plane of each ridge, in the order above. The trunk and the two long
+# reaches (A, C, E) come forward and stay in focus; the limbs braid through the
+# middle; the closing braids and the frayed arms fall back out of focus behind
+# the haze. Same silhouette, three planes.
+HERO_RIDGE_PLANES = (
+    "near", "mid", "near", "mid", "near", "mid", "mid",
+    "far", "far", "far", "far", "far", "far", "far",
+)
 # Birth-year labels of the paternal line, newest first, pinned to points on the
 # ridges and scattered around the crystal. The third value is the label side
 # (1 = right of the node, -1 = left).
@@ -109,6 +117,71 @@ HERO_BLOOMS = [
     (428, 646, 126, 2),
     (640, 486, 108, 3),
     (330, 250, 104, 3),
+]
+# Major junctions where the light pools: (x, y, flare angle, flare scale). The
+# first two values also drive the luminance field, so brightness concentrates
+# here and the outer reaches stay thin and dim.
+HERO_CORES = [
+    (392, 498, -22, 1.0),
+    (470, 306, -52, 0.94),
+    (556, 176, -36, 0.7),
+    (612, 468, 42, 0.62),
+]
+# Braided zones (dense weave) and void pockets (mesh nearly gone). Density is
+# never uniform, so the triangulation stops reading as a diagram.
+HERO_DENSE = [
+    (392, 498, 116),
+    (470, 306, 104),
+    (556, 176, 84),
+    (620, 272, 82),
+    (428, 646, 80),
+    (296, 462, 74),
+]
+HERO_VOIDS = [
+    (214, 296, 132),
+    (700, 618, 158),
+    (312, 118, 118),
+    (150, 664, 116),
+    (536, 556, 96),
+]
+# Far translucent veils drifting behind the structure: (cx, cy, rx, ry, rot,
+# tier). Tier 1 sits deepest and widest, tier 3 is a small drifting scrap.
+HERO_VEILS = [
+    (306, 424, 258, 186, -18, 1),
+    (566, 296, 236, 202, 26, 1),
+    (452, 618, 262, 152, -8, 2),
+    (628, 168, 188, 146, 34, 2),
+    (246, 218, 168, 148, 12, 3),
+    (676, 470, 156, 168, -24, 3),
+]
+# Fog pockets in front of the midground: near-black smoke that swallows part of
+# the weave, plus lit pockets that catch the glow of the trunk. The dark ones sit
+# over woven areas on purpose — occlusion is only legible where there is
+# something to occlude.
+HERO_FOG = [
+    (238, 566, 168, 122, -14, "dark"),
+    (676, 508, 150, 152, 18, "dark"),
+    (330, 672, 144, 100, -6, "dark"),
+    (600, 104, 132, 92, 22, "dark"),
+    (656, 322, 128, 112, -18, "dark"),
+    (508, 570, 122, 98, 26, "dark"),
+    (418, 168, 120, 96, 10, "dark"),
+    (430, 296, 128, 108, 8, "lit"),
+    (388, 520, 114, 92, -30, "lit"),
+]
+# Foreground wisps: a little atmosphere in front of even the brightest ridges,
+# so the crystal is seen through air rather than pressed against the glass.
+HERO_WISPS = [
+    (500, 396, 210, 150, -16),
+    (300, 610, 176, 120, 24),
+]
+# Anisotropic flare streaks along a few main diagonals only:
+# (x1, y1, x2, y2, width, tier).
+HERO_STREAKS = [
+    (372, 432, 686, 96, 30, 1),
+    (392, 498, 124, 556, 22, 2),
+    (470, 306, 692, 570, 26, 2),
+    (556, 176, 312, 66, 18, 3),
 ]
 
 
@@ -888,7 +961,9 @@ class _SkeletonField:
         return math.sqrt(best) if best < math.inf else math.inf
 
 
-def _hero_facet_points(rng: random.Random, limbs: list[Limb]) -> list[tuple[float, float]]:
+def _hero_facet_points(
+    rng: random.Random, limbs: list[Limb], field: _SkeletonField
+) -> list[tuple[float, float]]:
     """Facet vertices sown along the skeleton — never over the whole frame — so
     the triangulated body follows the branching silhouette instead of filling a
     hull. Reach falls with branch depth: wide panes hug the trunk, fine chips
@@ -927,33 +1002,153 @@ def _hero_facet_points(rng: random.Random, limbs: list[Limb]) -> list[tuple[floa
                 for _ in range(2):
                     off = rng.uniform(6, reach) * (1 if rng.random() < 0.5 else -1)
                     place(bx + nx * off + rng.uniform(-3, 3), by + ny * off + rng.uniform(-3, 3), min_d)
+
+    # Second, finer sowing inside the braided zones only: there the weave gets
+    # small tight cells, while the quiet zones keep the coarse spacing above.
+    for cx, cy, radius in HERO_DENSE:
+        for _ in range(260):
+            angle = rng.uniform(0, 2 * math.pi)
+            r = radius * 0.95 * math.sqrt(rng.random())
+            x, y = cx + math.cos(angle) * r, cy + math.sin(angle) * r
+            if field.dist(x, y, rings=2) > 21:
+                continue
+            if rng.random() > _hero_density(x, y) ** 1.5:
+                continue
+            place(x, y, rng.uniform(9.0, 12.5))
     return pts
+
+
+def _hero_density(x: float, y: float) -> float:
+    """Weave density, 0…1. Peaks in the braided zones and collapses in the void
+    pockets, so no two areas of the crystal carry the same amount of mesh."""
+    value = 0.3
+    for cx, cy, radius in HERO_DENSE:
+        value += 0.85 * math.exp(-math.hypot(x - cx, y - cy) / radius)
+    for cx, cy, radius in HERO_VOIDS:
+        value -= 0.82 * math.exp(-math.hypot(x - cx, y - cy) / radius)
+    return max(0.0, min(1.0, value))
+
+
+def _hero_glow(x: float, y: float) -> float:
+    """Luminance, 0…1. Light pools at the major junctions and falls off with
+    distance, which keeps the outer branches thin and dim."""
+    value = 0.0
+    for cx, cy, _, scale in HERO_CORES:
+        value += scale * math.exp(-math.hypot(x - cx, y - cy) / 150)
+    return max(0.0, min(1.0, value))
+
+
+def _closed_spline(pts: list[tuple[float, float]]) -> str:
+    """Catmull–Rom loop through the points, emitted as closed cubic Béziers —
+    the veils and fog pockets need soft organic outlines, not polygons."""
+    count = len(pts)
+    d = f"M{pts[0][0]:.1f} {pts[0][1]:.1f}"
+    for i in range(count):
+        p0, p1 = pts[(i - 1) % count], pts[i]
+        p2, p3 = pts[(i + 1) % count], pts[(i + 2) % count]
+        c1x, c1y = p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6
+        c2x, c2y = p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6
+        d += (
+            f" C{c1x:.1f} {c1y:.1f} {c2x:.1f} {c2y:.1f} {p2[0]:.1f} {p2[1]:.1f}"
+        )
+    return d + "Z"
+
+
+def _blob(
+    rng: random.Random,
+    cx: float,
+    cy: float,
+    rx: float,
+    ry: float,
+    rot: float,
+    lobes: int = 8,
+    wobble: float = 0.38,
+) -> str:
+    """One irregular cloud: a rotated ellipse whose radius wanders per lobe."""
+    rad = math.radians(rot)
+    cos_r, sin_r = math.cos(rad), math.sin(rad)
+    pts: list[tuple[float, float]] = []
+    for i in range(lobes):
+        angle = 2 * math.pi * (i + rng.uniform(-0.16, 0.16)) / lobes
+        px = math.cos(angle) * rx * (1 + rng.uniform(-wobble, wobble))
+        py = math.sin(angle) * ry * (1 + rng.uniform(-wobble, wobble))
+        pts.append((cx + px * cos_r - py * sin_r, cy + px * sin_r + py * cos_r))
+    return _closed_spline(pts)
+
+
+def _hero_panes(rng: random.Random) -> list[tuple[str, str, int]]:
+    """Midground glass sheets lofted off ridge segments: wide quads that lie
+    along the structure and overlap it, so branches read as passing behind or in
+    front of a plane instead of floating on one flat field. Only a couple of
+    them, large, blurred and lit from one edge — a card-sized pane would read as
+    a sticker. Returns (outline, single lit rim edge, tier)."""
+    segments = [
+        (a, b)
+        for ridge in HERO_RIDGES
+        for a, b in zip(ridge, ridge[1:])
+        if math.hypot(b[0] - a[0], b[1] - a[1]) > 46
+    ]
+    panes: list[tuple[str, str, int]] = []
+    for (x1, y1), (x2, y2) in rng.sample(segments, 7):
+        span = math.hypot(x2 - x1, y2 - y1) or 1.0
+        ux, uy = (x2 - x1) / span, (y2 - y1) / span
+        nx, ny = -uy, ux
+        side = 1 if rng.random() < 0.5 else -1
+        near = side * rng.uniform(4, 30)
+        far = near + side * rng.uniform(96, 210)
+        head = rng.uniform(0.3, 1.1) * span
+        tail = rng.uniform(0.7, 2.4) * span
+        ax, ay = x1 - ux * head, y1 - uy * head
+        bx, by = x2 + ux * tail, y2 + uy * tail
+        skew = rng.uniform(-52, 52)
+        taper = rng.uniform(0.5, 1.5)
+        poly = [
+            (ax + nx * near, ay + ny * near),
+            (bx + nx * near * taper, by + ny * near * taper),
+            (bx + nx * far * taper + ux * skew, by + ny * far * taper + uy * skew),
+            (ax + nx * far, ay + ny * far),
+        ]
+        poly = [(round(px, 1), round(py, 1)) for px, py in poly]
+        # Only one edge of the pane catches the light — a full outline would
+        # turn the plane back into a diagram.
+        rim = _path_d(poly[:2] if rng.random() < 0.5 else poly[1:3])
+        panes.append((_path_d(poly) + "Z", rim, 1 if rng.random() < 0.45 else 2))
+    return panes
 
 
 def _hero_veil(
     rng: random.Random, field: _SkeletonField
 ) -> tuple[list[tuple[float, float, int]], list[tuple[float, float, float, float, bool]]]:
     """Far field: a dotted micro-lattice and long hairline edges that fade out
-    of the black. Density decays exponentially with distance from the skeleton,
-    so the crystal keeps an atmosphere instead of a hard edge."""
+    of the black. Density decays exponentially with distance from the skeleton
+    and follows the braided/void zones, so the crystal keeps an atmosphere
+    instead of a hard edge — and tier 3 is the barely-there background dust."""
     dots: list[tuple[float, float, int]] = []
-    for _ in range(4200):
-        if len(dots) >= 420:
+    for _ in range(7200):
+        if len(dots) >= 620:
             break
-        x = rng.uniform(24, HERO_VIEW_W - 20)
-        y = rng.uniform(22, HERO_VIEW_H - 18)
-        dist = field.dist(x, y, rings=7)
-        if dist > 170 or rng.random() > math.exp(-dist / 74):
+        x = rng.uniform(16, HERO_VIEW_W - 14)
+        y = rng.uniform(14, HERO_VIEW_H - 12)
+        dist = field.dist(x, y, rings=9)
+        if dist > 260:
             continue
-        dots.append((round(x, 1), round(y, 1), 1 if dist < 62 else 2))
+        chance = math.exp(-dist / 88) * (0.35 + 0.65 * _hero_density(x, y))
+        if rng.random() > chance:
+            continue
+        tier = 1 if dist < 58 else 2 if dist < 130 else 3
+        dots.append((round(x, 1), round(y, 1), tier))
 
+    near_dots = [dot for dot in dots if dot[2] < 3] or dots
     lines: list[tuple[float, float, float, float, bool]] = []
     attempts = 0
-    while len(lines) < 96 and attempts < 2600:
+    while len(lines) < 104 and attempts < 3200:
         attempts += 1
-        (x1, y1, _), (x2, y2, _) = rng.choice(dots), rng.choice(dots)
+        (x1, y1, _), (x2, y2, _) = rng.choice(near_dots), rng.choice(near_dots)
         span = math.hypot(x2 - x1, y2 - y1)
         if not 58 <= span <= 210:
+            continue
+        mid_dens = _hero_density((x1 + x2) / 2, (y1 + y2) / 2)
+        if rng.random() > 0.25 + 0.75 * mid_dens:
             continue
         lines.append((x1, y1, x2, y2, rng.random() < 0.45))
     return dots, lines
@@ -1001,24 +1196,144 @@ def _delaunay(points: list[tuple[float, float]]) -> list[tuple[int, int, int]]:
     return sorted(t for t in tris if all(v < n for v in t))
 
 
-def _hero_defs() -> str:
-    """Gradients and blur filters for the blooms and the ridge glow."""
+def _hero_defs(air_blob: str) -> str:
+    """Paints and filters for every depth plane: the nebula halo, the smoke
+    turbulence that gives the veils and fog pockets irregular soft edges, the
+    anisotropic streak blur for the flares, and the masks that dissolve the
+    structure into the black."""
     return (
         "<defs>"
+        # Volume behind the whole crystal: one wide, very dark lilac halo.
+        '<radialGradient id="lat-halo">'
+        '<stop offset="0" stop-color="#6F5FA8" stop-opacity=".3"/>'
+        '<stop offset=".4" stop-color="#4B3F78" stop-opacity=".15"/>'
+        '<stop offset=".72" stop-color="#2C2545" stop-opacity=".06"/>'
+        '<stop offset="1" stop-color="#14111E" stop-opacity="0"/>'
+        "</radialGradient>"
         '<radialGradient id="lat-bloom">'
         '<stop offset="0" stop-color="#9A8CD8" stop-opacity=".42"/>'
         '<stop offset=".45" stop-color="#7466B4" stop-opacity=".16"/>'
         '<stop offset="1" stop-color="#5B4E96" stop-opacity="0"/>'
         "</radialGradient>"
+        # Translucent veils: light enters from one corner and dies out, so each
+        # plane has its own direction instead of a flat wash.
+        '<linearGradient id="lat-veil-a" x1="0" y1="0" x2=".82" y2="1">'
+        '<stop offset="0" stop-color="#9789CE" stop-opacity=".34"/>'
+        '<stop offset=".48" stop-color="#6B5F9E" stop-opacity=".15"/>'
+        '<stop offset="1" stop-color="#241F38" stop-opacity="0"/>'
+        "</linearGradient>"
+        '<linearGradient id="lat-veil-b" x1="1" y1="0" x2="0" y2=".9">'
+        '<stop offset="0" stop-color="#B6A9E6" stop-opacity=".26"/>'
+        '<stop offset=".55" stop-color="#6E62A4" stop-opacity=".1"/>'
+        '<stop offset="1" stop-color="#1E1A2C" stop-opacity="0"/>'
+        "</linearGradient>"
+        '<radialGradient id="lat-veil-c">'
+        '<stop offset="0" stop-color="#C4B8F2" stop-opacity=".2"/>'
+        '<stop offset=".6" stop-color="#7B6DB4" stop-opacity=".07"/>'
+        '<stop offset="1" stop-color="#1B1826" stop-opacity="0"/>'
+        "</radialGradient>"
+        # Fog pockets. The dark one is the occluder: it eats the mesh behind it.
+        '<radialGradient id="lat-fog-dark">'
+        '<stop offset="0" stop-color="#04050A" stop-opacity=".9"/>'
+        '<stop offset=".55" stop-color="#05060C" stop-opacity=".62"/>'
+        '<stop offset="1" stop-color="#05060C" stop-opacity="0"/>'
+        "</radialGradient>"
+        '<radialGradient id="lat-fog-lit">'
+        '<stop offset="0" stop-color="#C9BDF4" stop-opacity=".17"/>'
+        '<stop offset=".5" stop-color="#8578C0" stop-opacity=".08"/>'
+        '<stop offset="1" stop-color="#3A3358" stop-opacity="0"/>'
+        "</radialGradient>"
+        # Midground sheets: barely lit glass with almost no edge contrast.
         '<linearGradient id="lat-pane" x1="0" y1="0" x2="1" y2="1">'
         '<stop offset="0" stop-color="#DCD5FF" stop-opacity=".17"/>'
         '<stop offset="1" stop-color="#A497DE" stop-opacity=".015"/>'
+        "</linearGradient>"
+        '<linearGradient id="lat-sheet-a" x1="0" y1="0" x2=".6" y2="1">'
+        '<stop offset="0" stop-color="#CFC6F8" stop-opacity=".1"/>'
+        '<stop offset=".62" stop-color="#8B80C4" stop-opacity=".032"/>'
+        '<stop offset="1" stop-color="#4A4370" stop-opacity="0"/>'
+        "</linearGradient>"
+        '<linearGradient id="lat-sheet-b" x1="1" y1=".1" x2="0" y2="1">'
+        '<stop offset="0" stop-color="#B9AFE8" stop-opacity=".055"/>'
+        '<stop offset=".7" stop-color="#6C639A" stop-opacity=".018"/>'
+        '<stop offset="1" stop-color="#3A3558" stop-opacity="0"/>'
+        "</linearGradient>"
+        # Streak flare: light along the axis, nothing at the ends.
+        '<radialGradient id="lat-core">'
+        '<stop offset="0" stop-color="#FBF8FF" stop-opacity=".5"/>'
+        '<stop offset=".3" stop-color="#D9CFFF" stop-opacity=".22"/>'
+        '<stop offset="1" stop-color="#9C8DDA" stop-opacity="0"/>'
+        "</radialGradient>"
+        '<linearGradient id="lat-streak-g" x1="0" y1="0" x2="1" y2="0">'
+        '<stop offset="0" stop-color="#8A78D6" stop-opacity="0"/>'
+        '<stop offset=".34" stop-color="#A491E8" stop-opacity=".3"/>'
+        '<stop offset=".52" stop-color="#D6CBFF" stop-opacity=".5"/>'
+        '<stop offset=".7" stop-color="#A491E8" stop-opacity=".26"/>'
+        '<stop offset="1" stop-color="#8A78D6" stop-opacity="0"/>'
         "</linearGradient>"
         '<filter id="lat-soft" x="-70%" y="-70%" width="240%" height="240%">'
         '<feGaussianBlur stdDeviation="3.2"/>'
         "</filter>"
         '<filter id="lat-wide" x="-90%" y="-90%" width="280%" height="280%">'
         '<feGaussianBlur stdDeviation="13"/>'
+        "</filter>"
+        # Ridges on the far plane are out of focus, which is what puts them
+        # behind the haze rather than merely making them dimmer.
+        '<filter id="lat-defocus" x="-40%" y="-40%" width="180%" height="180%">'
+        '<feGaussianBlur stdDeviation="2.1"/>'
+        "</filter>"
+        '<filter id="lat-blur1" x="-8%" y="-8%" width="116%" height="116%" '
+        'color-interpolation-filters="sRGB">'
+        '<feGaussianBlur stdDeviation="1.05"/>'
+        "</filter>"
+        '<filter id="lat-blur2" x="-10%" y="-10%" width="120%" height="120%" '
+        'color-interpolation-filters="sRGB">'
+        '<feGaussianBlur stdDeviation="1.9"/>'
+        "</filter>"
+        '<filter id="lat-blur3" x="-12%" y="-12%" width="124%" height="124%" '
+        'color-interpolation-filters="sRGB">'
+        '<feGaussianBlur stdDeviation="4.2"/>'
+        "</filter>"
+        # Flares stretch along one axis only: a wide blur in x, a tight one in y.
+        '<filter id="lat-streak" x="-30%" y="-620%" width="160%" height="1340%" '
+        'color-interpolation-filters="sRGB">'
+        '<feGaussianBlur stdDeviation="15 3.4"/>'
+        "</filter>"
+        # Smoke: fractal turbulence displaces the blob outline, then a heavy
+        # blur softens it — the veils get torn, wispy edges no polygon can give.
+        '<filter id="lat-smoke" x="-42%" y="-42%" width="184%" height="184%" '
+        'color-interpolation-filters="sRGB">'
+        '<feTurbulence type="fractalNoise" baseFrequency=".004" numOctaves="3" '
+        'seed="21" result="n"/>'
+        '<feDisplacementMap in="SourceGraphic" in2="n" scale="164" '
+        'xChannelSelector="R" yChannelSelector="G"/>'
+        '<feGaussianBlur stdDeviation="15"/>'
+        "</filter>"
+        '<filter id="lat-smoke-2" x="-42%" y="-42%" width="184%" height="184%" '
+        'color-interpolation-filters="sRGB">'
+        '<feTurbulence type="fractalNoise" baseFrequency=".0074" numOctaves="3" '
+        'seed="7" result="n"/>'
+        '<feDisplacementMap in="SourceGraphic" in2="n" scale="104" '
+        'xChannelSelector="G" yChannelSelector="B"/>'
+        '<feGaussianBlur stdDeviation="10"/>'
+        "</filter>"
+        '<filter id="lat-fog" x="-42%" y="-42%" width="184%" height="184%" '
+        'color-interpolation-filters="sRGB">'
+        '<feTurbulence type="fractalNoise" baseFrequency=".0062" numOctaves="3" '
+        'seed="43" result="n"/>'
+        '<feDisplacementMap in="SourceGraphic" in2="n" scale="86" '
+        'xChannelSelector="R" yChannelSelector="B"/>'
+        '<feGaussianBlur stdDeviation="12"/>'
+        "</filter>"
+        # Background dust: sparse turbulence speckle, thresholded down to a few
+        # grains per hundred pixels and clipped to the layer rectangle.
+        '<filter id="lat-dust" x="0" y="0" width="100%" height="100%" '
+        'color-interpolation-filters="sRGB">'
+        '<feTurbulence type="fractalNoise" baseFrequency=".72" numOctaves="1" '
+        'seed="11" result="n"/>'
+        '<feColorMatrix in="n" type="matrix" result="grain" values="'
+        "0 0 0 0 .78  0 0 0 0 .79  0 0 0 0 .95  2.6 0 0 0 -1.94\"/>"
+        '<feComposite in="grain" in2="SourceGraphic" operator="in"/>'
         "</filter>"
         # The mesh and the far field dissolve towards the periphery, so the
         # crystal has no hard outline — only the ridges stay crisp to the tips.
@@ -1031,6 +1346,20 @@ def _hero_defs() -> str:
         f'<ellipse cx="{HERO_VIEW_W * 0.52:.0f}" cy="{HERO_VIEW_H * 0.53:.0f}" '
         f'rx="{HERO_VIEW_W * 0.62:.0f}" ry="{HERO_VIEW_H * 0.58:.0f}" fill="url(#lat-fade)"/>'
         "</mask>"
+        # A softer, wider fade for the atmosphere, torn by the same turbulence
+        # so the haze does not end on a clean ellipse.
+        '<radialGradient id="lat-fade-wide">'
+        '<stop offset=".3" stop-color="#fff" stop-opacity="1"/>'
+        '<stop offset=".66" stop-color="#fff" stop-opacity=".78"/>'
+        '<stop offset=".88" stop-color="#fff" stop-opacity=".3"/>'
+        '<stop offset="1" stop-color="#fff" stop-opacity="0"/>'
+        "</radialGradient>"
+        # The atmosphere fades out along an irregular outline rather than a clean
+        # ellipse. The wobble is geometry, not a filter: this mask is referenced
+        # by five groups, and a turbulence here would be evaluated five times.
+        '<mask id="lat-mask-air">'
+        f'<path d="{air_blob}" fill="url(#lat-fade-wide)"/>'
+        "</mask>"
         "</defs>"
     )
 
@@ -1039,22 +1368,54 @@ def _path_d(poly: list[tuple[float, float]]) -> str:
     return "M" + " L".join(f"{x} {y}" for x, y in poly)
 
 
+def _streak(cx: float, cy: float, angle: float, length: float, width: float, cls: str) -> str:
+    """One anisotropic flare: a gradient bar rotated onto the given axis and
+    blurred far along it, hardly at all across it."""
+    return (
+        f'<g transform="rotate({angle:.1f} {cx:.1f} {cy:.1f})">'
+        f'<rect class="{cls}" x="{cx - length / 2:.1f}" y="{cy - width / 2:.1f}" '
+        f'width="{length:.1f}" height="{width:.1f}" rx="{width / 2:.1f}" '
+        'filter="url(#lat-streak)"/>'
+        "</g>"
+    )
+
+
 def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
-    """Ethereal crystalline constellation. Four layers of depth on the black
-    field: nebula blooms, a dotted far lattice fading out, a mid layer of
-    mostly unfilled glass facets with interrupted edges, and near luminous
-    ridges braiding through the structure — with pinpoint lights at the
-    junctions and the documented years of the paternal line floating around
-    the periphery."""
+    """Ethereal crystalline constellation built from stacked depth planes, so the
+    structure has volume instead of sitting flat on the black:
+
+    far    — halo, turbulence dust, nebula blooms, defocused ridges and the
+             dimmest mesh, all dissolving into the black under a torn mask;
+    mid    — smoke veils and glass sheets drifting *across* the far plane, which
+             is what makes some branches read as passing behind them;
+    near   — crisp luminous ridges, streak flares along a few main diagonals and
+             pinpoint lights, brightest at the few major junctions;
+    fog     sits between mid and near: dark smoke pockets that swallow part of
+            the weave, lit pockets that catch the glow of the trunk.
+
+    Weave density follows the braided/void zones, so some areas are intensely
+    woven and others almost empty."""
     rng = random.Random(HERO_SEED)
+    air_blob = _blob(
+        rng,
+        HERO_VIEW_W * 0.5,
+        HERO_VIEW_H * 0.52,
+        HERO_VIEW_W * 0.72,
+        HERO_VIEW_H * 0.66,
+        -6,
+        lobes=11,
+        wobble=0.17,
+    )
     limbs = _hero_limbs(rng)
     field = _SkeletonField(limbs)
-    points = _hero_facet_points(rng, limbs)
+    points = _hero_facet_points(rng, limbs, field)
     veil_dots, veil_lines = _hero_veil(rng, field)
+    panes = _hero_panes(rng)
 
-    # Facets survive only near the skeleton, and only if they are compact —
-    # so the mesh is a branching crystal, not a triangulated hull.
-    faces: list[tuple[tuple[int, int, int], float]] = []
+    # Facets survive only near the skeleton, only if they are compact, and only
+    # where the weave is dense — so the mesh is a branching crystal with holes
+    # in it, not an evenly triangulated hull.
+    faces: list[tuple[tuple[int, int, int], float, float, float]] = []
     for tri in _delaunay(points):
         (x1, y1), (x2, y2), (x3, y3) = (points[v] for v in tri)
         longest = max(
@@ -1063,110 +1424,304 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
             math.hypot(x1 - x3, y1 - y3),
         )
         area = abs((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1)) / 2
-        dist = field.dist((x1 + x2 + x3) / 3, (y1 + y2 + y3) / 3)
+        mx, my = (x1 + x2 + x3) / 3, (y1 + y2 + y3) / 3
+        dist = field.dist(mx, my)
         if dist > 24 or longest > 54 or area < 28:
             continue
-        faces.append((tri, dist))
+        # Needle-shaped faces are what makes a triangulation look like a
+        # diagram, so slivers are dropped outright.
+        if area / (longest * longest) < 0.14:
+            continue
+        density = _hero_density(mx, my)
+        if rng.random() > 0.16 + 0.84 * density:
+            continue
+        faces.append((tri, dist, density, longest))
 
+    air: list[str] = []
+    dust: list[str] = []
     blooms: list[str] = []
-    veil: list[str] = []
+    veils: list[str] = []
+    far_weave: list[str] = []
+    far_ridges: list[str] = []
+    sheets: list[str] = []
+    tissue: list[str] = []
     facets: list[str] = []
+    mid_ridges: list[str] = []
+    fog: list[str] = []
     filaments: list[str] = []
+    streaks: list[str] = []
     ridges: list[str] = []
+    wisps: list[str] = []
     sparks: list[str] = []
+    flares: list[str] = []
     labels: list[str] = []
 
-    # 1. Atmosphere: nebula blooms behind the densest junctions.
+    # 1. Deepest plane: one wide halo giving the crystal a body of light, and a
+    # grain of dust that is only just above the black.
+    air.append(
+        f'<ellipse class="halo" cx="{HERO_VIEW_W * 0.5:.0f}" cy="{HERO_VIEW_H * 0.5:.0f}" '
+        f'rx="{HERO_VIEW_W * 0.52:.0f}" ry="{HERO_VIEW_H * 0.5:.0f}"/>'
+    )
+    air.append(
+        f'<ellipse class="halo halo-2" cx="{HERO_VIEW_W * 0.46:.0f}" '
+        f'cy="{HERO_VIEW_H * 0.62:.0f}" rx="{HERO_VIEW_W * 0.34:.0f}" '
+        f'ry="{HERO_VIEW_H * 0.3:.0f}"/>'
+    )
+    dust.append(
+        f'<rect class="grain" x="0" y="0" width="{HERO_VIEW_W}" height="{HERO_VIEW_H}" '
+        'filter="url(#lat-dust)"/>'
+    )
+
+    # 2. Atmosphere: nebula blooms behind the densest junctions.
     for cx, cy, radius, tier in HERO_BLOOMS:
         blooms.append(f'<circle class="bloom b{tier}" cx="{cx}" cy="{cy}" r="{radius}"/>')
 
-    # 2. Far field: hairline edges and a dotted micro-lattice, barely there.
+    # 3. Far veils: large irregular smoke planes, torn by turbulence, sitting
+    # behind the branches. Each shape carries its own filter on purpose — one
+    # filter over the whole group would run the turbulence across the union of
+    # their boxes and costs several times more to paint.
+    for cx, cy, rx, ry, rot, tier in HERO_VEILS:
+        path = _blob(rng, cx, cy, rx, ry, rot, lobes=rng.choice((7, 8, 9)), wobble=0.4)
+        filt = "lat-smoke" if tier == 1 else "lat-smoke-2"
+        veils.append(f'<path class="vg v{tier}" d="{path}" filter="url(#{filt})"/>')
+
+    # 4. Far field: hairline edges and a dotted micro-lattice, barely there.
     for x1, y1, x2, y2, dashed in veil_lines:
         cls = "vl vl-dash" if dashed else "vl"
-        veil.append(f'<line class="{cls}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>')
+        far_weave.append(f'<line class="{cls}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>')
     for x, y, tier in veil_dots:
-        veil.append(f'<circle class="vp p{tier}" cx="{x}" cy="{y}" r="{0.9 if tier == 1 else 0.7}"/>')
+        radius = 0.9 if tier == 1 else 0.7 if tier == 2 else 0.55
+        far_weave.append(f'<circle class="vp p{tier}" cx="{x}" cy="{y}" r="{radius}"/>')
 
-    # 3. Mid field: glass panes. Most facets stay void — only a minority get a
-    # wash, in three intensity tiers, brightest close to the ridges.
+    # 5. Midground sheets: glass planes lofted along the ridges, with soft edges
+    # and a barely visible rim — a different plane from the facet mesh, so the
+    # structure has something to pass behind.
+    for path, rim, tier in panes:
+        sheets.append(f'<path class="pn p{tier}" d="{path}"/>')
+        if rng.random() < 0.7:
+            sheets.append(f'<path class="pn-rim" d="{rim}"/>')
+
+    # 6. Glass facets. Most stay void — only a minority get a wash, in three
+    # intensity tiers, brightest close to the ridges and in the braided zones.
+    # The dimmest tier goes onto the far plane, behind the veils.
     fills: dict[str, list[str]] = {"f3": [], "f2": [], "f1": [], "pane": []}
-    for tri, dist in faces:
-        roll = rng.random()
+    far_fills: list[str] = []
+    for tri, dist, density, longest in faces:
+        pts_attr = " ".join(f"{points[v][0]},{points[v][1]}" for v in tri)
+        # In the braided zones a blurred copy of the facet goes underneath, so
+        # those areas read as luminous tissue rather than as outlined cells.
+        if density > 0.55 and dist < 13 and rng.random() < 0.55:
+            tissue.append(f'<polygon class="face tis" points="{pts_attr}"/>')
+        # A lone filled triangle in an empty area reads as a sticker, so washes
+        # are confined to small faces inside the woven zones.
+        if density < 0.3 or longest > 42:
+            continue
+        roll = rng.random() / max(0.35, density)
         if dist < 10:
-            cls = "pane" if roll < 0.1 else "f1" if roll < 0.28 else None
+            cls = "pane" if roll < 0.11 else "f1" if roll < 0.3 else None
         elif dist < 18:
-            cls = "f1" if roll < 0.04 else "f2" if roll < 0.2 else None
+            cls = "f1" if roll < 0.05 else "f2" if roll < 0.22 else None
         else:
-            cls = "f3" if roll < 0.14 else None
+            cls = "f3" if roll < 0.16 else None
         if cls is None:
             continue
-        pts_attr = " ".join(f"{points[v][0]},{points[v][1]}" for v in tri)
-        fills[cls].append(f'<polygon class="face {cls}" points="{pts_attr}"/>')
+        polygon = f'<polygon class="face {cls}" points="{pts_attr}"/>'
+        if cls == "f3" or (cls == "f2" and rng.random() < 0.5):
+            far_fills.append(polygon)
+        else:
+            fills[cls].append(polygon)
+    far_weave.extend(far_fills)
     for key in ("f3", "f2", "f1", "pane"):
         facets.extend(fills[key])
 
-    # 4. Facet edges. Brightness follows the distance from the ridges and a
-    # large share is interrupted, so the mesh flickers instead of reading as
+    # 7. Facet edges. Brightness follows the light pooling at the major
+    # junctions, whole edges go missing where the weave thins out, and the
+    # faintest ones drop to the far plane — so the triangulation never reads as
     # a continuous wireframe.
     edge_dist: dict[tuple[int, int], float] = {}
-    for tri, dist in faces:
+    for tri, dist, _, _ in faces:
         a, b, c = tri
         for edge in ((a, b), (b, c), (a, c)):
             edge_dist[edge] = min(edge_dist.get(edge, math.inf), dist)
     edges: dict[str, list[str]] = {"e3": [], "e2": [], "e1": []}
+    far_edges: list[str] = []
+    soft_edges: list[str] = []
     for (i, j), dist in edge_dist.items():
-        tier = "e1" if dist < 9 else "e2" if dist < 17 else "e3"
-        # Whole edges go missing, so the facets read as chipped glass rather
-        # than a complete wireframe net.
-        keep = 0.9 if tier == "e1" else 0.66 if tier == "e2" else 0.44
-        if rng.random() > keep:
-            continue
         (x1, y1), (x2, y2) = points[i], points[j]
+        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+        density, glow = _hero_density(mx, my), _hero_glow(mx, my)
+        tier = "e1" if dist < 9 else "e2" if dist < 17 else "e3"
+        base = 0.92 if tier == "e1" else 0.66 if tier == "e2" else 0.4
+        # Two independent gates: the weave thins in the void zones, and it thins
+        # again away from the lit junctions. Together they leave whole quiet
+        # areas with almost nothing in them.
+        if rng.random() > base * (0.2 + 0.8 * density) * (0.46 + 0.66 * glow):
+            continue
         cls = f"eg {tier}"
         if rng.random() < (0.24 if tier == "e1" else 0.5):
             cls += " d1" if rng.random() < 0.55 else " d2"
-        edges[tier].append(f'<line class="{cls}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>')
+        # Most edges are drawn only over part of their span: light catches a
+        # stretch of an edge, it does not outline a cell. Closed triangles are
+        # what made the weave read as a wireframe.
+        if rng.random() < 0.62:
+            t0 = rng.uniform(0, 0.36)
+            t1 = min(1.0, t0 + rng.uniform(0.34, 0.78))
+            x1, y1, x2, y2 = (
+                round(x1 + (x2 - x1) * t0, 1),
+                round(y1 + (y2 - y1) * t0, 1),
+                round(x1 + (x2 - x1) * t1, 1),
+                round(y1 + (y2 - y1) * t1, 1),
+            )
+        # Luminance falls off away from the junctions; the dimmest edges sink
+        # behind the veils.
+        alpha = round(0.2 + 0.95 * glow, 2)
+        line = (
+            f'<line class="{cls}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" '
+            f'stroke-opacity="{alpha}"/>'
+        )
+        # In the braided zones the bright edges also get a blurred copy in the
+        # tissue layer, so the weave carries a glow instead of only outlines.
+        if tier == "e1" and density > 0.5 and rng.random() < 0.7:
+            tissue.append(
+                f'<line class="eg tis-eg" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>'
+            )
+        if tier == "e3" or (tier == "e2" and glow < 0.16):
+            far_edges.append(line)
+        elif rng.random() < 0.3:
+            # A slice of the near weave is out of focus, so even one visual
+            # plane has depth inside it.
+            soft_edges.append(line)
+        else:
+            edges[tier].append(line)
+    far_weave.extend(far_edges)
+    if soft_edges:
+        facets.append(
+            '<g class="defocus" filter="url(#lat-blur2)">' + "".join(soft_edges) + "</g>"
+        )
     for tier in ("e3", "e2", "e1"):
         facets.extend(edges[tier])
 
-    # 5. Twigs and branches: thin filaments, many of them interrupted.
+    # 8. Twigs and branches: thin filaments, many of them interrupted, thinner
+    # and dimmer the further they are from the lit junctions. The faintest ones
+    # belong to the far plane.
     for poly, depth in limbs:
         if depth == 0:
             continue
+        mx, my = poly[len(poly) // 2]
+        glow = _hero_glow(mx, my)
         cls = "br b-near" if depth == 1 else "br b-far"
         if rng.random() < (0.3 if depth == 1 else 0.5):
             cls += " d1" if rng.random() < 0.5 else " d2"
-        filaments.append(f'<path class="{cls}" d="{_path_d(poly)}"/>')
+        alpha = round(0.14 + 0.9 * glow, 2)
+        width = round((1.0 if depth == 1 else 0.78) * (0.55 + 0.55 * glow), 2)
+        limb = (
+            f'<path class="{cls}" d="{_path_d(poly)}" stroke-opacity="{alpha}" '
+            f'stroke-width="{width}"/>'
+        )
+        if glow < 0.2 or (depth >= 2 and glow < 0.34):
+            far_weave.append(limb)
+        else:
+            filaments.append(limb)
 
-    # 6. Near field: the luminous ridges — a wide bloom, a tight glow and a
-    # crisp near-white core, so the paths braid through the crystal. The trunk
-    # and its main limbs (k1) burn brightest, the braids (k2) and the frayed
-    # arms (k3) fall back into the mesh.
-    ridge_tiers = [(i, 1 if i < 6 else 2 if i < 9 else 3) for i in range(len(HERO_RIDGES))]
+    # 9. Fog pockets in front of the midground: dark smoke that swallows the
+    # weave locally, lit pockets that catch the glow of the trunk.
+    fog_groups: dict[str, list[str]] = {"dark": [], "lit": []}
+    for cx, cy, rx, ry, rot, kind in HERO_FOG:
+        path = _blob(rng, cx, cy, rx, ry, rot, lobes=rng.choice((7, 8)), wobble=0.44)
+        fog_groups[kind].append(
+            f'<path class="fg fg-{kind}" d="{path}" filter="url(#lat-fog)"/>'
+        )
+    # Dark and lit pockets stay in separate groups: only the lit ones are
+    # screened onto the crystal, the dark ones have to occlude it.
+    for kind, shapes in fog_groups.items():
+        fog.append(f'<g class="fog-{kind}">' + "".join(shapes) + "</g>")
+
+    # 10. The luminous ridges, split across three planes. Far ridges are
+    # defocused and sit behind the veils; the mid ones braid through the mesh;
+    # the near ones stay crisp in front of the fog, with a wide bloom, a tight
+    # glow and a near-white core. Brightness weight (k1…k3) is independent of
+    # the plane, so only a few paths burn.
     ridge_paths = [_path_d(list(ridge)) for ridge in HERO_RIDGES]
-    # Part of the fainter ridges is interrupted, like a light path breaking up.
-    dashed_ridges = {i for i, tier in ridge_tiers if tier > 1 and rng.random() < 0.5}
-    for layer, extra in (
-        ("rg-wide", ' filter="url(#lat-wide)"'),
-        ("rg-soft", ' filter="url(#lat-soft)"'),
-        ("rg-core", ""),
-    ):
-        for i, tier in ridge_tiers:
-            cls = f"rg {layer} k{tier}"
+    planes: dict[str, tuple[list[str], int]] = {
+        "far": (far_ridges, 3),
+        "mid": (mid_ridges, 2),
+        "near": (ridges, 1),
+    }
+    dashed_ridges = {
+        i
+        for i, plane in enumerate(HERO_RIDGE_PLANES)
+        if plane != "near" and rng.random() < 0.55
+    }
+    for i, plane in enumerate(HERO_RIDGE_PLANES):
+        bucket, weight = planes[plane]
+        path = ridge_paths[i]
+        if plane == "far":
+            bucket.append(
+                f'<path class="rg rg-wide k3" d="{path}" filter="url(#lat-wide)"/>'
+            )
+            bucket.append(
+                f'<path class="rg rg-core rg-blur k3" d="{path}" '
+                'filter="url(#lat-defocus)"/>'
+            )
+            continue
+        layers_for_plane = [
+            ("rg-wide", ' filter="url(#lat-wide)"'),
+            ("rg-soft", ' filter="url(#lat-soft)"'),
+            ("rg-core", ""),
+        ]
+        if plane == "near":
+            layers_for_plane.insert(0, ("rg-halo", ' filter="url(#lat-wide)"'))
+        for layer, extra in layers_for_plane:
+            cls = f"rg {layer} k{weight}"
             attrs = extra
             if layer == "rg-core":
                 if i in dashed_ridges:
                     cls += " rg-dash"
                 else:
                     attrs = ' pathLength="1"'
-            ridges.append(f'<path class="{cls}" d="{ridge_paths[i]}"{attrs}/>')
+            bucket.append(f'<path class="{cls}" d="{path}"{attrs}/>')
 
-    # 7. Pinpoint lights: dim sparks on the twigs, brighter ones on the ridge
-    # junctions, a handful of hot cores with a bloom.
+    # 11. Streak flares: anisotropic glows along a few main diagonals only, so
+    # the light has direction instead of an even halo everywhere.
+    for x1, y1, x2, y2, width, tier in HERO_STREAKS:
+        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+        length = math.hypot(x2 - x1, y2 - y1)
+        angle = math.degrees(math.atan2(y2 - y1, x2 - x1))
+        streaks.append(_streak(mx, my, angle, length * 0.82, width, f"sk s{tier}"))
+
+    # 12. Foreground wisps: thin smoke drifting in front of the near ridges.
+    for cx, cy, rx, ry, rot in HERO_WISPS:
+        path = _blob(rng, cx, cy, rx, ry, rot, lobes=7, wobble=0.46)
+        wisps.append(f'<path class="wp" d="{path}" filter="url(#lat-smoke-2)"/>')
+
+    # 13. Local flare at the major junctions: a long spike along the ridge and a
+    # short one across it, over a tight core.
+    for cx, cy, angle, scale in HERO_CORES:
+        flares.append(_streak(cx, cy, angle, 210 * scale, 4.2 * scale, "fl fl-a"))
+        flares.append(_streak(cx, cy, angle + 74, 104 * scale, 3.2 * scale, "fl fl-b"))
+        blooms.append(
+            f'<circle class="bloom bc" cx="{cx}" cy="{cy}" r="{58 * scale:.0f}"/>'
+        )
+        # A tight white core under the flare: the light has a source, not just
+        # an even halo.
+        flares.append(
+            f'<circle class="fl-core" cx="{cx}" cy="{cy}" r="{30 * scale:.0f}"/>'
+        )
+
+    # 14. Pinpoint lights: dim sparks on the twigs, brighter ones on the ridge
+    # junctions, a handful of hot cores with a bloom. All of them dim away from
+    # the lit junctions.
     label_pts = {(x, y) for x, y, _ in HERO_YEAR_ANCHORS} | {HERO_ANCHOR[:2]}
     twig_tips = [poly[-1] for poly, depth in limbs if depth >= 2]
-    for x, y in rng.sample(twig_tips, min(46, len(twig_tips))):
-        sparks.append(f'<circle class="nd dim" cx="{x}" cy="{y}" r="0.9"/>')
+    for x, y in rng.sample(twig_tips, min(52, len(twig_tips))):
+        glow = _hero_glow(x, y)
+        if rng.random() > 0.3 + 0.7 * _hero_density(x, y):
+            continue
+        target = sparks if glow > 0.24 else far_weave
+        target.append(
+            f'<circle class="nd dim" cx="{x}" cy="{y}" r="{0.75 + 0.5 * glow:.2f}" '
+            f'opacity="{0.2 + 0.6 * glow:.2f}"/>'
+        )
     # Pinpoint lights strung along the ridges themselves, between the junctions.
     for ridge in HERO_RIDGES:
         for (x1, y1), (x2, y2) in zip(ridge, ridge[1:]):
@@ -1176,20 +1731,32 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
                     continue
                 t = rng.uniform(0.18, 0.82)
                 sx, sy = round(x1 + (x2 - x1) * t, 1), round(y1 + (y2 - y1) * t, 1)
-                radius = 1.5 if rng.random() < 0.3 else 1.0
-                sparks.append(f'<circle class="nd" cx="{sx}" cy="{sy}" r="{radius}"/>')
+                glow = _hero_glow(sx, sy)
+                radius = (1.5 if rng.random() < 0.3 else 1.0) * (0.66 + 0.5 * glow)
+                sparks.append(
+                    f'<circle class="nd" cx="{sx}" cy="{sy}" r="{radius:.2f}" '
+                    f'opacity="{0.3 + 0.7 * glow:.2f}"/>'
+                )
     ridge_verts = sorted({p for ridge in HERO_RIDGES for p in ridge if p not in label_pts})
-    hot = set(rng.sample(ridge_verts, min(13, len(ridge_verts))))
+    # The hottest junctions are the lit ones, not a random handful.
+    hot = set(
+        sorted(ridge_verts, key=lambda p: -_hero_glow(*p))[:9]
+        + rng.sample(ridge_verts, 4)
+    )
     # Soft halos sit in the bloom layer under the brightest junctions.
     for x, y in sorted(hot | label_pts):
         blooms.append(f'<circle class="bloom bn" cx="{x}" cy="{y}" r="{rng.choice((28, 34, 42))}"/>')
     for x, y in ridge_verts:
+        glow = _hero_glow(x, y)
         if (x, y) in hot:
-            sparks.append(f'<circle class="nd hot" cx="{x}" cy="{y}" r="2.5"/>')
+            sparks.append(f'<circle class="nd hot" cx="{x}" cy="{y}" r="{2.1 + 0.9 * glow:.2f}"/>')
         else:
-            sparks.append(f'<circle class="nd" cx="{x}" cy="{y}" r="1.5"/>')
+            sparks.append(
+                f'<circle class="nd" cx="{x}" cy="{y}" r="{1.1 + 0.6 * glow:.2f}" '
+                f'opacity="{0.34 + 0.66 * glow:.2f}"/>'
+            )
 
-    # 8. Year labels floating around the periphery of the crystal, each pinned
+    # 15. Year labels floating around the periphery of the crystal, each pinned
     # to a ridge junction by a hairline tick. Approximate years keep a hollow
     # node; the 1834 revision list is a dashed documentary ring.
     def pin(x: float, y: float, side: int, text: str, node_class: str, radius: float) -> None:
@@ -1216,23 +1783,42 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
     ax, ay, aside = HERO_ANCHOR
     pin(ax, ay, aside, HERO_ANCHOR_LABEL, "nd key doc", 3.6)
 
+    # Draw order is the depth order: everything from here on overlaps what came
+    # before, which is where the volume comes from. The masks make each plane
+    # dissolve into the black at its own rate.
+    # (group, contents, mask, filter). The far planes are blurred as whole
+    # groups: aerial perspective, not just lower opacity, is what pushes them
+    # behind the haze.
     layers = (
-        ("blooms", blooms, False),
-        ("veil", veil, True),
-        ("facets", facets, True),
-        ("filaments", filaments, True),
-        ("ridges", ridges, False),
-        ("sparks", sparks, False),
-        ("labels", labels, False),
+        ("air", air, None, None),
+        ("dust", dust, "lat-mask-air", None),
+        ("blooms", blooms, None, None),
+        ("veil-far", veils, "lat-mask-air", None),
+        ("weave-far", far_weave, "lat-mask", "lat-blur1"),
+        ("ridges-far", far_ridges, "lat-mask-air", None),
+        ("panes", sheets, "lat-mask-air", "lat-blur3"),
+        ("tissue", tissue, "lat-mask", "lat-blur3"),
+        ("facets", facets, "lat-mask", None),
+        ("ridges-mid", mid_ridges, None, None),
+        ("fog", fog, None, None),
+        ("filaments", filaments, "lat-mask", None),
+        ("streaks", streaks, None, None),
+        ("ridges", ridges, None, None),
+        ("veil-near", wisps, "lat-mask-air", None),
+        ("sparks", sparks, None, None),
+        ("flares", flares, None, None),
+        ("labels", labels, None, None),
     )
     body = ""
-    for name, items, masked in layers:
-        mask_attr = ' mask="url(#lat-mask)"' if masked else ""
-        body += f'<g class="{name}"{mask_attr}>' + "".join(items) + "</g>"
+    for name, items, mask, filt in layers:
+        attrs = f' mask="url(#{mask})"' if mask else ""
+        if filt:
+            attrs += f' filter="url(#{filt})"'
+        body += f'<g class="{name}"{attrs}>' + "".join(items) + "</g>"
     return (
         f'<svg class="lattice" viewBox="0 0 {HERO_VIEW_W} {HERO_VIEW_H}" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{esc(caption)}">'
-        + _hero_defs()
+        + _hero_defs(air_blob)
         + body
         + "</svg>"
     )

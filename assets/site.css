@@ -93,53 +93,113 @@ body.over-hero .navbtn.active{color:#DBD5EF}
 /* Мягкий переход из чёрного в фарфор — без резкой смены фона */
 .hero-fade{position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(180deg,rgba(239,241,244,0) 0%,rgba(239,241,244,.55) 62%,var(--porcelain) 100%);pointer-events:none}
 
-/* КРИСТАЛЛИЧЕСКАЯ КОНСТЕЛЛЯЦИЯ — четыре плана глубины на чёрном поле:
-   .blooms — сиреневые туманности за плотными узлами;
-   .veil — дальняя пыль и волосяные рёбра, почти растворённые в чёрном;
-   .facets — стеклянные грани: большинство пустые, заливка только у 15–25 %
-     в трёх ярусах (f3…f1, pane — светящаяся панель), часть рёбер прерывиста;
-   .filaments + .ridges — ближний план: светящиеся хребты и ветви;
-   .sparks — точки света в узлах; .labels — годы по периферии */
+/* КРИСТАЛЛИЧЕСКАЯ КОНСТЕЛЛЯЦИЯ — планы глубины перечислены в порядке
+   отрисовки, каждый следующий перекрывает предыдущий; объём даёт именно
+   это наслоение, а не плотность линий:
+   .air — широкое сиреневое гало, тело света под всей структурой;
+   .dust — зерно дальнего фона, едва отличимое от чёрного;
+   .blooms — туманности за плотными узлами и за главными перекрестьями;
+   .veil-far — крупные дымные пелены с рваными краями (турбулентность);
+   .weave-far — дальний план: пыль, волосяные рёбра, самые тусклые грани и
+     ветви — уходит за пелену;
+   .ridges-far — расфокусированные хребты (за дымом);
+   .panes — стеклянные плоскости среднего плана вдоль хребтов;
+   .facets — грани: большинство пустые, заливка у меньшинства, часть рёбер
+     прерывиста, яркость падает от освещённых узлов;
+   .ridges-mid — хребты среднего плана;
+   .fog — карманы дыма перед средним планом: тёмные съедают сетку, светлые
+     подхватывают свет ствола;
+   .filaments — ближние ветви; .streaks — анизотропные блики по главным
+     диагоналям; .ridges — ближние хребты в резкости;
+   .sparks — точки света; .flares — местные вспышки в узлах;
+   .labels — годы по периферии */
 .hero-graph{position:relative;justify-self:end;width:100%;max-width:830px;margin:0}
 .hero-graph .lattice{display:block;width:100%;height:auto;overflow:visible}
-.lattice .bloom{fill:url(#lat-bloom)}
+/* Светящиеся планы складываются по screen: иначе полупрозрачная сирень
+   молочно замыливает чёрное поле вместо того, чтобы светиться */
+.lattice .halo{fill:url(#lat-halo);opacity:.44}
+.lattice .halo.halo-2{opacity:.3}
+.lattice .grain{fill:#B9BEE6;opacity:.26}
+.lattice .bloom{fill:url(#lat-bloom);mix-blend-mode:screen}
 .lattice .bloom.b1{opacity:.78}
 .lattice .bloom.b2{opacity:.55}
 .lattice .bloom.b3{opacity:.36}
 .lattice .bloom.bn{opacity:.55}
+.lattice .bloom.bc{opacity:.72}
+/* Пелены: у каждой свой градиент и своя плотность, чтобы планы не сливались.
+   Смешивание задаётся на слое, а не на фигуре: внутри группы с фильтром
+   mix-blend-mode смешивался бы только с содержимым самой группы */
+.lattice .veil-far,.lattice .veil-near{mix-blend-mode:screen}
+.lattice .vg{stroke:none}
+.lattice .vg.v1{fill:url(#lat-veil-a);opacity:.5}
+.lattice .vg.v2{fill:url(#lat-veil-b);opacity:.42}
+.lattice .vg.v3{fill:url(#lat-veil-c);opacity:.36}
+.lattice .weave-far{opacity:.5}
 .lattice .vl{fill:none;stroke:rgba(180,186,226,.075);stroke-width:.6}
 .lattice .vl.vl-dash{stroke-dasharray:2.5 5.5}
 .lattice .vp{fill:#C7CBEA}
 .lattice .vp.p1{opacity:.3}
 .lattice .vp.p2{opacity:.16}
+.lattice .vp.p3{opacity:.085}
+/* Плоскости среднего плана: широкие, размытые, с одним подсвеченным ребром */
+.lattice .panes{mix-blend-mode:screen}
+.lattice .pn{stroke:none}
+.lattice .pn.p1{fill:url(#lat-sheet-a);opacity:.5}
+.lattice .pn.p2{fill:url(#lat-sheet-b);opacity:.38}
+.lattice .pn-rim{fill:none;stroke:rgba(206,198,246,.1);stroke-width:.7;stroke-linecap:round}
+/* Светящаяся «плоть» в плетёных зонах — размытая подложка под гранями */
+.lattice .tissue{mix-blend-mode:screen;opacity:.8}
+.lattice .face.tis{fill:rgba(184,170,246,.24)}
+.lattice .tis-eg{stroke:rgba(206,194,252,.5);stroke-width:1.1}
 .lattice .face{stroke:none}
 .lattice .face.f1{fill:rgba(186,172,238,.11)}
 .lattice .face.f2{fill:rgba(180,170,232,.062)}
 .lattice .face.f3{fill:rgba(190,196,232,.032)}
 .lattice .face.pane{fill:url(#lat-pane)}
 .lattice .eg{fill:none;stroke-linecap:round}
-.lattice .e1{stroke:rgba(216,208,250,.3);stroke-width:.8}
-.lattice .e2{stroke:rgba(198,190,234,.145);stroke-width:.65}
-.lattice .e3{stroke:rgba(198,204,232,.07);stroke-width:.55}
+.lattice .e1{stroke:rgba(216,208,250,.72);stroke-width:.78}
+.lattice .e2{stroke:rgba(198,190,234,.32);stroke-width:.58}
+.lattice .e3{stroke:rgba(198,204,232,.18);stroke-width:.5}
 .lattice .d1,.lattice .d2{stroke-linecap:butt}
 .lattice .d1{stroke-dasharray:6 6}
 .lattice .d2{stroke-dasharray:2.2 5.5}
+/* Толщина и прозрачность ветвей задаются в разметке (падают от узлов света) */
 .lattice .br{fill:none;stroke-linecap:round;stroke-linejoin:round}
-.lattice .br.b-near{stroke:rgba(214,206,248,.34);stroke-width:.95}
-.lattice .br.b-far{stroke:rgba(202,196,238,.17);stroke-width:.75}
+.lattice .br.b-near{stroke:#D6CEF8}
+.lattice .br.b-far{stroke:rgba(202,196,238,.62)}
+/* Карманы дыма: тёмный — окклюдер, светлый подхватывает свет */
+.lattice .fg{stroke:none}
+.lattice .fg.fg-dark{fill:url(#lat-fog-dark);opacity:.96}
+.lattice .fg.fg-lit{fill:url(#lat-fog-lit);opacity:.85}
+.lattice .fog-lit{mix-blend-mode:screen}
+/* Дым перед ближними хребтами: смотрим на кристалл через воздух */
+.lattice .wp{fill:url(#lat-veil-c);stroke:none;opacity:.4}
+/* Анизотропные блики и вспышки — только по нескольким главным диагоналям */
+.lattice .streaks,.lattice .flares{mix-blend-mode:screen}
+.lattice .sk,.lattice .fl{fill:url(#lat-streak-g)}
+.lattice .sk.s1{opacity:.34}
+.lattice .sk.s2{opacity:.22}
+.lattice .sk.s3{opacity:.16}
+.lattice .fl.fl-a{opacity:.42}
+.lattice .fl.fl-b{opacity:.24}
+.lattice .fl-core{fill:url(#lat-core)}
 .lattice .rg{fill:none;stroke-linecap:round;stroke-linejoin:round}
-.lattice .rg-wide{stroke:rgba(148,132,214,.42);stroke-width:6}
-.lattice .rg-soft{stroke:rgba(198,184,244,.5);stroke-width:2.4}
-.lattice .rg-core{stroke:#EDE8FF;stroke-width:1.15;opacity:.92}
-.lattice .rg-wide.k2{stroke-width:5;opacity:.6}
-.lattice .rg-soft.k2{stroke-width:1.9;opacity:.62}
-.lattice .rg-core.k2{stroke-width:.95;opacity:.66}
+/* Ярусы яркости задаются через stroke-opacity: opacity остаётся свободной для
+   послойного проявления, иначе анимация сбивает планы глубины */
+.lattice .rg-halo{stroke:#7E6EC0;stroke-opacity:.3;stroke-width:14}
+.lattice .rg-wide{stroke:#9484D6;stroke-opacity:.42;stroke-width:6}
+.lattice .rg-soft{stroke:#C6B8F4;stroke-opacity:.5;stroke-width:2.4}
+.lattice .rg-core{stroke:#EDE8FF;stroke-opacity:.94;stroke-width:1.15}
+.lattice .rg-wide.k2{stroke-width:4.6;stroke-opacity:.24}
+.lattice .rg-soft.k2{stroke-width:1.8;stroke-opacity:.34}
+.lattice .rg-core.k2{stroke-width:.9;stroke-opacity:.56}
 .lattice .rg-core.rg-dash{stroke-dasharray:15 10;stroke-linecap:butt}
-.lattice .rg-wide.k3{stroke-width:4;opacity:.4}
-.lattice .rg-soft.k3{stroke-width:1.5;opacity:.45}
-.lattice .rg-core.k3{stroke-width:.8;opacity:.48}
+/* Дальние хребты — расфокус и низкая плотность: уходят за дым */
+.lattice .rg-wide.k3{stroke-width:3.4;stroke-opacity:.16}
+.lattice .rg-core.k3{stroke:#B7AEDC;stroke-width:1.1;stroke-opacity:.3}
+.lattice .rg-core.rg-blur{stroke-width:1.5;stroke-opacity:.36}
 .lattice .nd{fill:#DED7FA}
-.lattice .nd.dim{fill:#BFB8E4;opacity:.5}
+.lattice .nd.dim{fill:#BFB8E4}
 .lattice .nd.hot{fill:#F5F2FF;filter:drop-shadow(0 0 6px rgba(203,190,246,.95))}
 .lattice .nd.key{fill:#FCFAFF;filter:drop-shadow(0 0 8px rgba(206,194,248,.9))}
 .lattice .nd.key.approx{fill:var(--hero-bg);stroke:#DCD4F6;stroke-width:1.3}
@@ -268,22 +328,35 @@ footer b{color:var(--hero-ink)}
   .hero-copy>*:nth-child(3){animation-delay:.16s}
   /* Проявление слоями от дальнего к ближнему: opacity анимируется на группах,
      чтобы ярусы прозрачности внутри слоя не сбивались */
+  .lattice .air{opacity:0;animation:soft-in 2.4s ease-out forwards .2s}
+  .lattice .dust{opacity:0;animation:soft-in 2.2s ease-out forwards .35s}
   .lattice .blooms{opacity:0;animation:soft-in 2s ease-out forwards .3s}
-  .lattice .veil{opacity:0;animation:soft-in 1.8s ease-out forwards .5s}
+  .lattice .veil-far{opacity:0;animation:soft-in 2.2s ease-out forwards .45s}
+  .lattice .weave-far{opacity:0;animation:weave-in 1.9s ease-out forwards .5s}
+  .lattice .ridges-far{opacity:0;animation:soft-in 1.9s ease-out forwards .6s}
+  .lattice .panes{opacity:0;animation:soft-in 1.8s ease-out forwards .65s}
+  .lattice .tissue{opacity:0;animation:tissue-in 1.8s ease-out forwards .6s}
   .lattice .facets{opacity:0;animation:soft-in 1.6s ease-out forwards .7s}
+  .lattice .fog{opacity:0;animation:soft-in 2s ease-out forwards .8s}
   .lattice .filaments{opacity:0;animation:soft-in 1.4s ease-out forwards .9s}
+  .lattice .streaks{opacity:0;animation:soft-in 1.8s ease-out forwards 1s}
+  .lattice .veil-near{opacity:0;animation:soft-in 2s ease-out forwards 1.15s}
   .lattice .sparks{opacity:0;animation:soft-in 1s ease-out forwards 1.2s}
+  .lattice .flares{opacity:0;animation:soft-in 1.6s ease-out forwards 1.3s}
   .lattice .labels{opacity:0;animation:soft-in 1s ease-out forwards 1.5s}
-  .lattice .rg-wide,.lattice .rg-soft{opacity:0;animation:soft-in 1.8s ease-out forwards .8s}
+  .lattice .rg-halo,.lattice .rg-wide,.lattice .rg-soft{opacity:0;animation:soft-in 1.8s ease-out forwards .8s}
   /* Хребты прорисовываются от начала к вершине; прерывистые просто проявляются */
   .lattice .rg-core:not(.rg-dash){stroke-dasharray:1;stroke-dashoffset:1;animation:edge-draw 1.7s cubic-bezier(.5,0,.2,1) forwards .35s}
-  .lattice .rg-core.rg-dash{stroke-opacity:0;animation:stroke-in 1.4s ease-out forwards 1s}
+  .lattice .rg-core.rg-dash{opacity:0;animation:soft-in 1.4s ease-out forwards 1s}
   .lattice .nd.hot{animation:hot-pulse 7s ease-in-out 2.6s infinite}
 }
 @keyframes rise{to{opacity:1;transform:none}}
 @keyframes edge-draw{to{stroke-dashoffset:0}}
 @keyframes soft-in{to{opacity:1}}
-@keyframes stroke-in{to{stroke-opacity:1}}
+/* Дальний план и свечение плетения не догорают до полной непрозрачности —
+   иначе проявление сбивает плотность слоя */
+@keyframes weave-in{to{opacity:.5}}
+@keyframes tissue-in{to{opacity:.8}}
 @keyframes hot-pulse{0%,100%{opacity:1}50%{opacity:.55}}
 
 @media(max-width:980px){
@@ -293,10 +366,16 @@ footer b{color:var(--hero-ink)}
   .hero{min-height:0;padding:calc(var(--navh) + 56px) 0 130px}
   .hero-grid{grid-template-columns:1fr;gap:52px}
   .hero-graph{justify-self:center;max-width:520px}
-  /* Кристалл сжимается — годы и штрихи набираются крупнее в единицах viewBox */
+  /* Кристалл сжимается — годы, штрихи и линии набираются крупнее в единицах
+     viewBox, дымные планы приглушаются */
   .lattice .yr{font-size:19px}
   .lattice .tick{stroke-width:1}
   .lattice .vp.p2{display:none}
+  .lattice .halo{opacity:.38}
+  .lattice .rg-core{stroke-width:1.4}
+  .lattice .rg-core.k2{stroke-width:1.15}
+  .lattice .rg-soft{stroke-width:3}
+  .lattice .e1{stroke-width:.95}
   .pagehead .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:600px){
@@ -316,6 +395,26 @@ footer b{color:var(--hero-ink)}
   /* На узком экране кристалл разрежается: гаснут дальняя пыль, самый слабый
      ярус граней и тонкие веточки — хребты, узлы и годы остаются */
   .lattice .e3,.lattice .face.f3,.lattice .vp.p2,.lattice .br.b-far{display:none}
+  /* Кристалл вдвое меньше, а радиусы размытия те же — дымные планы гасим,
+     линии добираем в толщине, иначе структура тонет в дымке */
+  .lattice .dust,.lattice .panes,.lattice .veil-near{display:none}
+  .lattice .halo{opacity:.32}
+  .lattice .vg.v1{opacity:.36}
+  .lattice .vg.v2{opacity:.3}
+  .lattice .vg.v3{opacity:.24}
+  .lattice .tissue{opacity:.5}
+  .lattice .fg.fg-dark{opacity:.72}
+  .lattice .rg-halo{stroke-width:20}
+  .lattice .rg-wide{stroke-width:9}
+  .lattice .rg-soft{stroke-width:4}
+  .lattice .rg-core{stroke-width:2.1}
+  .lattice .rg-soft.k2{stroke-width:3}
+  .lattice .rg-core.k2{stroke-width:1.6}
+  .lattice .rg-core.rg-blur{stroke-width:2.2}
+  .lattice .e1{stroke-width:1.2;stroke:rgba(216,208,250,.72)}
+  .lattice .e2{stroke-width:.95}
+  .lattice .br.b-near{stroke-width:1.5}
+  .lattice .nd.hot{r:3.4}
   .lattice .yr{font-size:20px}
   .lattice .tick{stroke-width:1.1}
   .hero-fade{height:96px}
