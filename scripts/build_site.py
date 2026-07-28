@@ -44,26 +44,72 @@ ROW_H = 92
 TOP_PAD = 56
 LEFT_PAD = 18
 
-# Crystalline hero lattice: a hand-placed generation spine (labelled with real
-# birth years of the paternal line) inside a dense procedurally generated mesh.
-# The third value of a spine point picks the label side (1 = right, -1 = left).
-HERO_VIEW_W = 640
-HERO_VIEW_H = 680
-# Fixed seed keeps the generated mesh identical between builds.
+# Hero constellation: an ethereal branching crystal on a near-black field.
+# The silhouette is hand-authored as primary ridges (luminous polylines that
+# braid and fork like lightning); everything else — twigs, facets, the far
+# lattice — is grown procedurally around those ridges from a fixed seed.
+HERO_VIEW_W = 780
+HERO_VIEW_H = 720
+# Fixed seed keeps the generated crystal identical between builds.
 HERO_SEED = 1834
-HERO_SPINE = [
-    (520, 88, 1),
-    (360, 152, -1),
-    (508, 252, 1),
-    (322, 326, -1),
-    (462, 438, 1),
-    (276, 506, -1),
-    (400, 604, 1),
+# Primary ridges. Each polyline starts on an earlier ridge, so the structure
+# reads as one growing body: A is the trunk, B/C/D/E/F fork off it, G braids
+# across the top, H/I close loops, and the short arms fray the outline.
+HERO_RIDGES = [
+    # A — trunk, from the lower left up to the newest generation top right
+    [(352, 690), (378, 628), (340, 564), (392, 498), (372, 432), (436, 372),
+     (470, 306), (508, 240), (556, 176), (612, 132), (686, 96)],
+    # B — upper-left limb
+    [(436, 372), (398, 330), (356, 300), (322, 246), (300, 196), (268, 150)],
+    # C — long left reach down to the documentary anchor
+    [(392, 498), (344, 478), (296, 462), (232, 486), (176, 516), (124, 556),
+     (86, 588)],
+    # D — right limb
+    [(508, 240), (566, 262), (620, 272), (676, 306), (722, 346)],
+    # E — right descent
+    [(470, 306), (516, 352), (556, 404), (612, 468), (654, 522), (692, 570)],
+    # F — lower limb
+    [(378, 628), (428, 646), (486, 664), (548, 672), (596, 690)],
+    # G — braid across the top
+    [(556, 176), (508, 152), (452, 148), (404, 122), (352, 96), (312, 66)],
+    # H — braid closing the lower-left loop
+    [(232, 486), (286, 552), (352, 592), (428, 646)],
+    # I — braid closing the right loop
+    [(722, 346), (702, 402), (656, 438), (612, 468)],
+    # short frayed arms
+    [(268, 150), (222, 116), (198, 70)],
+    [(340, 564), (282, 596), (238, 640), (208, 686)],
+    [(620, 272), (650, 214), (694, 178), (734, 136)],
+    [(556, 404), (600, 388), (652, 372)],
+    [(296, 462), (262, 408), (246, 356)],
+]
+# Birth-year labels of the paternal line, newest first, pinned to points on the
+# ridges and scattered around the crystal. The third value is the label side
+# (1 = right of the node, -1 = left).
+HERO_YEAR_ANCHORS = [
+    (686, 96, 1),
+    (452, 148, -1),
+    (676, 306, 1),
+    (322, 246, -1),
+    (612, 468, 1),
+    (296, 462, -1),
+    (486, 664, 1),
 ]
 # Documentary anchor: the 1834 revision list of Mokroe (not a birth year) sits
-# next to the oldest cluster of the line — Fedot, Grigory and Ilya.
-HERO_ANCHOR = (152, 462, -1)
+# at the far end of the oldest reach — Fedot, Grigory and Ilya.
+HERO_ANCHOR = (124, 556, -1)
 HERO_ANCHOR_LABEL = "1834"
+# Nebula blooms behind the densest junctions: (cx, cy, r, opacity tier).
+HERO_BLOOMS = [
+    (392, 498, 168, 1),
+    (470, 306, 152, 1),
+    (300, 462, 132, 2),
+    (556, 176, 138, 2),
+    (620, 272, 120, 2),
+    (428, 646, 126, 2),
+    (640, 486, 108, 3),
+    (330, 250, 104, 3),
+]
 
 
 def load_content() -> dict[str, Any]:
@@ -713,7 +759,7 @@ def hero_graph_years(line: list[Person]) -> list[tuple[str, bool]]:
         if not year:
             continue
         years.append((year, person.has_derived_date))
-        if len(years) == len(HERO_SPINE):
+        if len(years) == len(HERO_YEAR_ANCHORS):
             break
     return years
 
@@ -729,41 +775,188 @@ def hero_graph_caption(hero: dict[str, Any], years: list[tuple[str, bool]]) -> s
     return f"{prefix} {oldest} — {newest}"
 
 
-def _hero_mesh_points(rng: random.Random) -> list[tuple[float, float]]:
-    """Satellite vertices for the crystalline facet field: clusters around
-    each spine node plus a looser background field, with a minimum vertex
-    distance tuned so Delaunay cells read as facets rather than dust."""
-    fixed = [(x, y) for x, y, _ in HERO_SPINE] + [(HERO_ANCHOR[0], HERO_ANCHOR[1])]
+Limb = tuple[list[tuple[float, float]], int]
+
+
+def _reflect_inside(
+    x: float, y: float, angle: float, margin: float = 22.0
+) -> tuple[float, float, float]:
+    """Bounce a growth direction off the viewBox margins so twigs stay inside."""
+    if x < margin:
+        x, angle = margin, math.pi - angle
+    elif x > HERO_VIEW_W - margin:
+        x, angle = HERO_VIEW_W - margin, math.pi - angle
+    if y < margin:
+        y, angle = margin, -angle
+    elif y > HERO_VIEW_H - margin:
+        y, angle = HERO_VIEW_H - margin, -angle
+    return x, y, angle
+
+
+def _grow_branch(
+    rng: random.Random,
+    x: float,
+    y: float,
+    angle: float,
+    length: float,
+    depth: int,
+    out: list[Limb],
+) -> None:
+    """Grow one kinked branch off the skeleton and fork it recursively.
+    Depth 1 sits directly on a primary ridge, deeper levels are twigs."""
+    steps = 3 if depth == 1 else 2
+    pts = [(round(x, 1), round(y, 1))]
+    for _ in range(steps):
+        angle += rng.uniform(-0.3, 0.3)
+        step = length / steps
+        x, y, angle = _reflect_inside(
+            x + math.cos(angle) * step, y + math.sin(angle) * step, angle
+        )
+        pts.append((round(x, 1), round(y, 1)))
+    out.append((pts, depth))
+    if depth >= 2:
+        return
+    for _ in range(2 if rng.random() < 0.4 else 1):
+        if rng.random() < 0.24:
+            continue
+        side = 1 if rng.random() < 0.5 else -1
+        _grow_branch(
+            rng,
+            x,
+            y,
+            angle + side * rng.uniform(0.4, 1.05),
+            length * rng.uniform(0.52, 0.74),
+            depth + 1,
+            out,
+        )
+
+
+def _hero_limbs(rng: random.Random) -> list[Limb]:
+    """Full skeleton of the crystal: the hand-authored primary ridges (depth 0)
+    plus the branches and twigs grown off them (depth 1–3)."""
+    limbs: list[Limb] = [(list(ridge), 0) for ridge in HERO_RIDGES]
+    for ridge in HERO_RIDGES:
+        for (x1, y1), (x2, y2) in zip(ridge, ridge[1:]):
+            base = math.atan2(y2 - y1, x2 - x1)
+            for _ in range(2):
+                if rng.random() > 0.58:
+                    continue
+                t = rng.uniform(0.12, 0.9)
+                side = 1 if rng.random() < 0.5 else -1
+                _grow_branch(
+                    rng,
+                    x1 + (x2 - x1) * t,
+                    y1 + (y2 - y1) * t,
+                    base + side * rng.uniform(0.45, 1.25),
+                    rng.uniform(34, 82),
+                    1,
+                    limbs,
+                )
+    return limbs
+
+
+class _SkeletonField:
+    """Grid of samples along the skeleton, for fast approximate distance from
+    any point to the nearest ridge or twig. Drives every density decision:
+    which facets survive, how bright an edge is, where the veil thins out."""
+
+    CELL = 22.0
+
+    def __init__(self, limbs: list[Limb]) -> None:
+        self.grid: dict[tuple[int, int], list[tuple[float, float]]] = {}
+        for pts, _ in limbs:
+            for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
+                steps = max(1, int(math.hypot(x2 - x1, y2 - y1) / 6))
+                for i in range(steps + 1):
+                    t = i / steps
+                    sx, sy = x1 + (x2 - x1) * t, y1 + (y2 - y1) * t
+                    key = (int(sx // self.CELL), int(sy // self.CELL))
+                    self.grid.setdefault(key, []).append((sx, sy))
+
+    def dist(self, x: float, y: float, rings: int = 4) -> float:
+        cx, cy = int(x // self.CELL), int(y // self.CELL)
+        best = math.inf
+        for ring in range(rings + 1):
+            for gx in range(cx - ring, cx + ring + 1):
+                for gy in range(cy - ring, cy + ring + 1):
+                    if ring and max(abs(gx - cx), abs(gy - cy)) != ring:
+                        continue
+                    for px, py in self.grid.get((gx, gy), ()):
+                        best = min(best, (px - x) ** 2 + (py - y) ** 2)
+            if best <= (ring * self.CELL) ** 2:
+                break
+        return math.sqrt(best) if best < math.inf else math.inf
+
+
+def _hero_facet_points(rng: random.Random, limbs: list[Limb]) -> list[tuple[float, float]]:
+    """Facet vertices sown along the skeleton — never over the whole frame — so
+    the triangulated body follows the branching silhouette instead of filling a
+    hull. Reach falls with branch depth: wide panes hug the trunk, fine chips
+    cling to the twigs."""
+    cell = 18.0
+    grid: dict[tuple[int, int], list[tuple[float, float]]] = {}
     pts: list[tuple[float, float]] = []
 
-    def fits(x: float, y: float, min_d: float) -> bool:
-        if not (22 <= x <= HERO_VIEW_W - 22 and 32 <= y <= HERO_VIEW_H - 28):
-            return False
-        return all((px - x) ** 2 + (py - y) ** 2 >= min_d**2 for px, py in fixed + pts)
+    def place(x: float, y: float, min_d: float) -> None:
+        if not (14 <= x <= HERO_VIEW_W - 14 and 18 <= y <= HERO_VIEW_H - 14):
+            return
+        gx, gy = int(x // cell), int(y // cell)
+        for ax in range(gx - 1, gx + 2):
+            for ay in range(gy - 1, gy + 2):
+                for px, py in grid.get((ax, ay), ()):
+                    if (px - x) ** 2 + (py - y) ** 2 < min_d**2:
+                        return
+        grid.setdefault((gx, gy), []).append((x, y))
+        pts.append((round(x, 1), round(y, 1)))
 
-    for sx, sy in fixed:
-        placed, attempts = 0, 0
-        while placed < 12 and attempts < 240:
-            attempts += 1
-            angle = rng.uniform(0, math.tau)
-            radius = rng.uniform(28, 150)
-            x = sx + math.cos(angle) * radius
-            y = sy + math.sin(angle) * radius * 0.92
-            if fits(x, y, 27):
-                pts.append((round(x, 1), round(y, 1)))
-                placed += 1
-
-    # Background field stays close to the main mass so the crystal reads as
-    # one faceted body without stray islands near the headline.
-    placed, attempts = 0, 0
-    while placed < 46 and attempts < 1600:
-        attempts += 1
-        x = rng.uniform(72, HERO_VIEW_W - 24)
-        y = rng.uniform(36, HERO_VIEW_H - 32)
-        if fits(x, y, 31):
-            pts.append((round(x, 1), round(y, 1)))
-            placed += 1
+    reach_by_depth = (25.0, 17.0, 11.0, 9.0)
+    for poly, depth in limbs:
+        for px, py in poly:
+            place(px, py, 10.0)
+        # Per-limb jitter keeps facet size uneven: chunky panes along one limb,
+        # fine chips along the next.
+        reach = reach_by_depth[min(depth, 3)] * rng.uniform(0.72, 1.3)
+        min_d = rng.uniform(12.0, 18.0)
+        for (x1, y1), (x2, y2) in zip(poly, poly[1:]):
+            seg = math.hypot(x2 - x1, y2 - y1) or 1.0
+            nx, ny = -(y2 - y1) / seg, (x2 - x1) / seg
+            stations = max(1, int(seg / 13))
+            for i in range(stations):
+                t = (i + rng.uniform(0.2, 0.8)) / stations
+                bx, by = x1 + (x2 - x1) * t, y1 + (y2 - y1) * t
+                for _ in range(2):
+                    off = rng.uniform(6, reach) * (1 if rng.random() < 0.5 else -1)
+                    place(bx + nx * off + rng.uniform(-3, 3), by + ny * off + rng.uniform(-3, 3), min_d)
     return pts
+
+
+def _hero_veil(
+    rng: random.Random, field: _SkeletonField
+) -> tuple[list[tuple[float, float, int]], list[tuple[float, float, float, float, bool]]]:
+    """Far field: a dotted micro-lattice and long hairline edges that fade out
+    of the black. Density decays exponentially with distance from the skeleton,
+    so the crystal keeps an atmosphere instead of a hard edge."""
+    dots: list[tuple[float, float, int]] = []
+    for _ in range(4200):
+        if len(dots) >= 420:
+            break
+        x = rng.uniform(24, HERO_VIEW_W - 20)
+        y = rng.uniform(22, HERO_VIEW_H - 18)
+        dist = field.dist(x, y, rings=7)
+        if dist > 170 or rng.random() > math.exp(-dist / 74):
+            continue
+        dots.append((round(x, 1), round(y, 1), 1 if dist < 62 else 2))
+
+    lines: list[tuple[float, float, float, float, bool]] = []
+    attempts = 0
+    while len(lines) < 96 and attempts < 2600:
+        attempts += 1
+        (x1, y1, _), (x2, y2, _) = rng.choice(dots), rng.choice(dots)
+        span = math.hypot(x2 - x1, y2 - y1)
+        if not 58 <= span <= 210:
+            continue
+        lines.append((x1, y1, x2, y2, rng.random() < 0.45))
+    return dots, lines
 
 
 def _delaunay(points: list[tuple[float, float]]) -> list[tuple[int, int, int]]:
@@ -808,180 +1001,239 @@ def _delaunay(points: list[tuple[float, float]]) -> list[tuple[int, int, int]]:
     return sorted(t for t in tris if all(v < n for v in t))
 
 
-def _spine_distance(x: float, y: float) -> float:
-    return min(math.hypot(x - sx, y - sy) for sx, sy, _ in HERO_SPINE)
+def _hero_defs() -> str:
+    """Gradients and blur filters for the blooms and the ridge glow."""
+    return (
+        "<defs>"
+        '<radialGradient id="lat-bloom">'
+        '<stop offset="0" stop-color="#9A8CD8" stop-opacity=".42"/>'
+        '<stop offset=".45" stop-color="#7466B4" stop-opacity=".16"/>'
+        '<stop offset="1" stop-color="#5B4E96" stop-opacity="0"/>'
+        "</radialGradient>"
+        '<linearGradient id="lat-pane" x1="0" y1="0" x2="1" y2="1">'
+        '<stop offset="0" stop-color="#DCD5FF" stop-opacity=".17"/>'
+        '<stop offset="1" stop-color="#A497DE" stop-opacity=".015"/>'
+        "</linearGradient>"
+        '<filter id="lat-soft" x="-70%" y="-70%" width="240%" height="240%">'
+        '<feGaussianBlur stdDeviation="3.2"/>'
+        "</filter>"
+        '<filter id="lat-wide" x="-90%" y="-90%" width="280%" height="280%">'
+        '<feGaussianBlur stdDeviation="13"/>'
+        "</filter>"
+        # The mesh and the far field dissolve towards the periphery, so the
+        # crystal has no hard outline — only the ridges stay crisp to the tips.
+        '<radialGradient id="lat-fade">'
+        '<stop offset=".42" stop-color="#fff" stop-opacity="1"/>'
+        '<stop offset=".74" stop-color="#fff" stop-opacity=".62"/>'
+        '<stop offset="1" stop-color="#fff" stop-opacity="0"/>'
+        "</radialGradient>"
+        '<mask id="lat-mask">'
+        f'<ellipse cx="{HERO_VIEW_W * 0.52:.0f}" cy="{HERO_VIEW_H * 0.53:.0f}" '
+        f'rx="{HERO_VIEW_W * 0.62:.0f}" ry="{HERO_VIEW_H * 0.58:.0f}" fill="url(#lat-fade)"/>'
+        "</mask>"
+        "</defs>"
+    )
+
+
+def _path_d(poly: list[tuple[float, float]]) -> str:
+    return "M" + " L".join(f"{x} {y}" for x, y in poly)
 
 
 def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
-    """Crystalline facet-field SVG: Delaunay faces filled with lilac washes in
-    four intensity tiers plus a few luminous panes, seeded voids that break
-    the crystal open, facet edges mixed solid/dashed, and a luminous
-    generation spine labelled with documented years and the 1834 anchor."""
+    """Ethereal crystalline constellation. Four layers of depth on the black
+    field: nebula blooms, a dotted far lattice fading out, a mid layer of
+    mostly unfilled glass facets with interrupted edges, and near luminous
+    ridges braiding through the structure — with pinpoint lights at the
+    junctions and the documented years of the paternal line floating around
+    the periphery."""
     rng = random.Random(HERO_SEED)
-    spine_pts = [(x, y) for x, y, _ in HERO_SPINE]
-    anchor_pt = (HERO_ANCHOR[0], HERO_ANCHOR[1])
-    satellites = _hero_mesh_points(rng)
-    points = spine_pts + [anchor_pt] + satellites
+    limbs = _hero_limbs(rng)
+    field = _SkeletonField(limbs)
+    points = _hero_facet_points(rng, limbs)
+    veil_dots, veil_lines = _hero_veil(rng, field)
 
-    def edge_len(a: int, b: int) -> float:
-        (x1, y1), (x2, y2) = points[a], points[b]
-        return math.hypot(x1 - x2, y1 - y2)
-
-    def tri_area(t: tuple[int, int, int]) -> float:
-        (x1, y1), (x2, y2), (x3, y3) = (points[v] for v in t)
-        return abs((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1)) / 2
-
-    # Trim oversized hull-spanning cells and paper-thin slivers so the
-    # outline of the crystal stays organic and ragged.
-    faces = [
-        t
-        for t in _delaunay(points)
-        if max(edge_len(t[0], t[1]), edge_len(t[1], t[2]), edge_len(t[0], t[2])) <= 168
-        and tri_area(t) >= 90
-    ]
-
-    # Fill intensity: distance from the spine sets the base tier, a seeded
-    # jitter breaks the smooth gradient into a mosaic of uneven panes.
-    face_tier: list[int] = []
-    for t in faces:
-        cx = sum(points[v][0] for v in t) / 3
-        cy = sum(points[v][1] for v in t) / 3
-        dist = _spine_distance(cx, cy)
-        tier = 1 if dist < 70 else 2 if dist < 132 else 3 if dist < 196 else 4
-        roll = rng.random()
-        if roll < 0.18 and tier > 1:
-            tier -= 1
-        elif roll > 0.82 and tier < 4:
-            tier += 1
-        face_tier.append(tier)
-
-    # Seeded voids: some cells are left unfilled so the crystal reads as
-    # broken, with cavities. Faces touching the spine stay solid.
-    spine_verts = set(range(len(HERO_SPINE)))
-    eligible = [i for i, t in enumerate(faces) if not (set(t) & spine_verts)]
-    voids = set(rng.sample(eligible, round(len(eligible) * 0.21)))
-
-    # A few luminous panes among the inner faces.
-    inner = [i for i, tier in enumerate(face_tier) if tier <= 2 and i not in voids]
-    lum = set(rng.sample(inner, min(7, len(inner))))
-
-    parts: list[str] = [
-        '<defs>'
-        '<radialGradient id="lat-halo">'
-        '<stop offset="0" stop-color="#A79DC8" stop-opacity=".20"/>'
-        '<stop offset="1" stop-color="#A79DC8" stop-opacity="0"/>'
-        '</radialGradient>'
-        '<filter id="lat-glow" x="-60%" y="-60%" width="220%" height="220%">'
-        '<feGaussianBlur stdDeviation="4.5"/>'
-        '</filter>'
-        '<filter id="lat-glow-wide" x="-80%" y="-80%" width="260%" height="260%">'
-        '<feGaussianBlur stdDeviation="12"/>'
-        '</filter>'
-        '</defs>'
-    ]
-
-    # Soft luminosity hotspots behind the clusters of the crystal.
-    halo_r = {0: 92, 1: 62, 2: 80, 3: 66, 4: 96, 5: 64, 6: 74}
-    for idx, radius in halo_r.items():
-        x, y, _ = HERO_SPINE[idx]
-        parts.append(f'<circle class="halo" cx="{x}" cy="{y}" r="{radius}"/>')
-    parts.append(f'<circle class="halo" cx="{anchor_pt[0]}" cy="{anchor_pt[1]}" r="66"/>')
-
-    # Faces first, faintest tier to brightest, luminous panes on top.
-    face_layers: dict[int, list[str]] = {4: [], 3: [], 2: [], 1: [], 0: []}
-    for i, t in enumerate(faces):
-        if i in voids:
-            continue
-        pts_attr = " ".join(f"{points[v][0]},{points[v][1]}" for v in t)
-        if i in lum:
-            face_layers[0].append(f'<polygon class="face lum" points="{pts_attr}"/>')
-        else:
-            face_layers[face_tier[i]].append(
-                f'<polygon class="face f{face_tier[i]}" points="{pts_attr}"/>'
-            )
-    for layer in (4, 3, 2, 1, 0):
-        parts.extend(face_layers[layer])
-
-    # Facet boundaries on top of the fills. Void cells keep their edges, so
-    # cavities stay outlined. A seeded subset of edges is interrupted
-    # (dashed) — more often around voids — the rest are solid ridges.
-    spine_pairs = {(a, a + 1) for a in range(len(HERO_SPINE) - 1)}
-    edge_faces: dict[tuple[int, int], list[int]] = {}
-    for i, (a, b, c) in enumerate(faces):
-        for edge in ((a, b), (b, c), (a, c)):
-            edge_faces.setdefault(edge, []).append(i)
-
-    edge_layers: dict[str, list[str]] = {"e3": [], "e2": [], "e1": []}
-    ridge_candidates: list[tuple[int, int]] = []
-    for (i, j), adjacent in edge_faces.items():
-        if (i, j) in spine_pairs:
-            continue  # drawn separately as the luminous spine
-        (x1, y1), (x2, y2) = points[i], points[j]
-        dist = _spine_distance((x1 + x2) / 2, (y1 + y2) / 2)
-        tier = "e1" if dist < 78 else "e2" if dist < 148 else "e3"
-        near_void = any(f in voids for f in adjacent)
-        dash_p = 0.66 if near_void else 0.36
-        if rng.random() < dash_p:
-            dash = "d1" if rng.random() < 0.6 else "d2"
-            cls = f"eg {tier} {dash}"
-        else:
-            cls = f"eg {tier}"
-            if tier == "e1":
-                ridge_candidates.append((i, j))
-        edge_layers[tier].append(
-            f'<line class="{cls}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>'
+    # Facets survive only near the skeleton, and only if they are compact —
+    # so the mesh is a branching crystal, not a triangulated hull.
+    faces: list[tuple[tuple[int, int, int], float]] = []
+    for tri in _delaunay(points):
+        (x1, y1), (x2, y2), (x3, y3) = (points[v] for v in tri)
+        longest = max(
+            math.hypot(x1 - x2, y1 - y2),
+            math.hypot(x2 - x3, y2 - y3),
+            math.hypot(x1 - x3, y1 - y3),
         )
-    for tier in ("e3", "e2", "e1"):
-        parts.extend(edge_layers[tier])
+        area = abs((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1)) / 2
+        dist = field.dist((x1 + x2 + x3) / 3, (y1 + y2 + y3) / 3)
+        if dist > 24 or longest > 54 or area < 28:
+            continue
+        faces.append((tri, dist))
 
-    # A handful of bright solid ridges catch the light near the spine.
-    for i, j in rng.sample(ridge_candidates, min(9, len(ridge_candidates))):
+    blooms: list[str] = []
+    veil: list[str] = []
+    facets: list[str] = []
+    filaments: list[str] = []
+    ridges: list[str] = []
+    sparks: list[str] = []
+    labels: list[str] = []
+
+    # 1. Atmosphere: nebula blooms behind the densest junctions.
+    for cx, cy, radius, tier in HERO_BLOOMS:
+        blooms.append(f'<circle class="bloom b{tier}" cx="{cx}" cy="{cy}" r="{radius}"/>')
+
+    # 2. Far field: hairline edges and a dotted micro-lattice, barely there.
+    for x1, y1, x2, y2, dashed in veil_lines:
+        cls = "vl vl-dash" if dashed else "vl"
+        veil.append(f'<line class="{cls}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>')
+    for x, y, tier in veil_dots:
+        veil.append(f'<circle class="vp p{tier}" cx="{x}" cy="{y}" r="{0.9 if tier == 1 else 0.7}"/>')
+
+    # 3. Mid field: glass panes. Most facets stay void — only a minority get a
+    # wash, in three intensity tiers, brightest close to the ridges.
+    fills: dict[str, list[str]] = {"f3": [], "f2": [], "f1": [], "pane": []}
+    for tri, dist in faces:
+        roll = rng.random()
+        if dist < 10:
+            cls = "pane" if roll < 0.1 else "f1" if roll < 0.28 else None
+        elif dist < 18:
+            cls = "f1" if roll < 0.04 else "f2" if roll < 0.2 else None
+        else:
+            cls = "f3" if roll < 0.14 else None
+        if cls is None:
+            continue
+        pts_attr = " ".join(f"{points[v][0]},{points[v][1]}" for v in tri)
+        fills[cls].append(f'<polygon class="face {cls}" points="{pts_attr}"/>')
+    for key in ("f3", "f2", "f1", "pane"):
+        facets.extend(fills[key])
+
+    # 4. Facet edges. Brightness follows the distance from the ridges and a
+    # large share is interrupted, so the mesh flickers instead of reading as
+    # a continuous wireframe.
+    edge_dist: dict[tuple[int, int], float] = {}
+    for tri, dist in faces:
+        a, b, c = tri
+        for edge in ((a, b), (b, c), (a, c)):
+            edge_dist[edge] = min(edge_dist.get(edge, math.inf), dist)
+    edges: dict[str, list[str]] = {"e3": [], "e2": [], "e1": []}
+    for (i, j), dist in edge_dist.items():
+        tier = "e1" if dist < 9 else "e2" if dist < 17 else "e3"
+        # Whole edges go missing, so the facets read as chipped glass rather
+        # than a complete wireframe net.
+        keep = 0.9 if tier == "e1" else 0.66 if tier == "e2" else 0.44
+        if rng.random() > keep:
+            continue
         (x1, y1), (x2, y2) = points[i], points[j]
-        parts.append(f'<line class="eg ridge" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>')
+        cls = f"eg {tier}"
+        if rng.random() < (0.24 if tier == "e1" else 0.5):
+            cls += " d1" if rng.random() < 0.55 else " d2"
+        edges[tier].append(f'<line class="{cls}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"/>')
+    for tier in ("e3", "e2", "e1"):
+        facets.extend(edges[tier])
 
-    # Luminous spine: wide nebula underlay, tight glow, then crisp edges.
-    spine_d = "M" + " L".join(f"{x} {y}" for x, y in spine_pts)
-    parts.append(f'<path class="spine-glow-wide" d="{spine_d}" filter="url(#lat-glow-wide)"/>')
-    parts.append(f'<path class="spine-glow" d="{spine_d}" filter="url(#lat-glow)"/>')
-    for a in range(len(spine_pts) - 1):
-        (x1, y1), (x2, y2) = spine_pts[a], spine_pts[a + 1]
-        parts.append(f'<line class="eg em" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" pathLength="1"/>')
+    # 5. Twigs and branches: thin filaments, many of them interrupted.
+    for poly, depth in limbs:
+        if depth == 0:
+            continue
+        cls = "br b-near" if depth == 1 else "br b-far"
+        if rng.random() < (0.3 if depth == 1 else 0.5):
+            cls += " d1" if rng.random() < 0.5 else " d2"
+        filaments.append(f'<path class="{cls}" d="{_path_d(poly)}"/>')
 
-    # Vertices stay almost invisible — only a few "hot" glow points near the
-    # spine, so the crystal reads as planes and cavities, not dots.
-    bright = [
-        idx for idx, (x, y) in enumerate(satellites) if _spine_distance(x, y) < 85
-    ]
-    for idx in rng.sample(bright, min(9, len(bright))):
-        x, y = satellites[idx]
-        parts.append(f'<circle class="nd hot" cx="{x}" cy="{y}" r="2.4"/>')
+    # 6. Near field: the luminous ridges — a wide bloom, a tight glow and a
+    # crisp near-white core, so the paths braid through the crystal. The trunk
+    # and its main limbs (k1) burn brightest, the braids (k2) and the frayed
+    # arms (k3) fall back into the mesh.
+    ridge_tiers = [(i, 1 if i < 6 else 2 if i < 9 else 3) for i in range(len(HERO_RIDGES))]
+    ridge_paths = [_path_d(list(ridge)) for ridge in HERO_RIDGES]
+    # Part of the fainter ridges is interrupted, like a light path breaking up.
+    dashed_ridges = {i for i, tier in ridge_tiers if tier > 1 and rng.random() < 0.5}
+    for layer, extra in (
+        ("rg-wide", ' filter="url(#lat-wide)"'),
+        ("rg-soft", ' filter="url(#lat-soft)"'),
+        ("rg-core", ""),
+    ):
+        for i, tier in ridge_tiers:
+            cls = f"rg {layer} k{tier}"
+            attrs = extra
+            if layer == "rg-core":
+                if i in dashed_ridges:
+                    cls += " rg-dash"
+                else:
+                    attrs = ' pathLength="1"'
+            ridges.append(f'<path class="{cls}" d="{ridge_paths[i]}"{attrs}/>')
 
-    # Documentary anchor node (1834 revision list) — ring, not a birth year.
+    # 7. Pinpoint lights: dim sparks on the twigs, brighter ones on the ridge
+    # junctions, a handful of hot cores with a bloom.
+    label_pts = {(x, y) for x, y, _ in HERO_YEAR_ANCHORS} | {HERO_ANCHOR[:2]}
+    twig_tips = [poly[-1] for poly, depth in limbs if depth >= 2]
+    for x, y in rng.sample(twig_tips, min(46, len(twig_tips))):
+        sparks.append(f'<circle class="nd dim" cx="{x}" cy="{y}" r="0.9"/>')
+    # Pinpoint lights strung along the ridges themselves, between the junctions.
+    for ridge in HERO_RIDGES:
+        for (x1, y1), (x2, y2) in zip(ridge, ridge[1:]):
+            span = math.hypot(x2 - x1, y2 - y1)
+            for _ in range(max(1, int(span / 34))):
+                if rng.random() < 0.32:
+                    continue
+                t = rng.uniform(0.18, 0.82)
+                sx, sy = round(x1 + (x2 - x1) * t, 1), round(y1 + (y2 - y1) * t, 1)
+                radius = 1.5 if rng.random() < 0.3 else 1.0
+                sparks.append(f'<circle class="nd" cx="{sx}" cy="{sy}" r="{radius}"/>')
+    ridge_verts = sorted({p for ridge in HERO_RIDGES for p in ridge if p not in label_pts})
+    hot = set(rng.sample(ridge_verts, min(13, len(ridge_verts))))
+    # Soft halos sit in the bloom layer under the brightest junctions.
+    for x, y in sorted(hot | label_pts):
+        blooms.append(f'<circle class="bloom bn" cx="{x}" cy="{y}" r="{rng.choice((28, 34, 42))}"/>')
+    for x, y in ridge_verts:
+        if (x, y) in hot:
+            sparks.append(f'<circle class="nd hot" cx="{x}" cy="{y}" r="2.5"/>')
+        else:
+            sparks.append(f'<circle class="nd" cx="{x}" cy="{y}" r="1.5"/>')
+
+    # 8. Year labels floating around the periphery of the crystal, each pinned
+    # to a ridge junction by a hairline tick. Approximate years keep a hollow
+    # node; the 1834 revision list is a dashed documentary ring.
+    def pin(x: float, y: float, side: int, text: str, node_class: str, radius: float) -> None:
+        labels.append(f'<circle class="{node_class}" cx="{x}" cy="{y}" r="{radius}"/>')
+        labels.append(
+            f'<line class="tick" x1="{x + side * (radius + 3)}" y1="{y}" '
+            f'x2="{x + side * (radius + 10)}" y2="{y}"/>'
+        )
+        labels.append(
+            f'<text class="yr" x="{x + side * (radius + 15)}" y="{y + 4.6}" '
+            f'text-anchor="{"start" if side > 0 else "end"}">{esc(text)}</text>'
+        )
+
+    for (x, y, side), year in zip(HERO_YEAR_ANCHORS, years):
+        value, approximate = year
+        pin(
+            x,
+            y,
+            side,
+            f"ок. {value}" if approximate else value,
+            "nd key approx" if approximate else "nd key",
+            3.6,
+        )
     ax, ay, aside = HERO_ANCHOR
-    anchor_align = "start" if aside > 0 else "end"
-    parts.append(f'<circle class="nd doc" cx="{ax}" cy="{ay}" r="3.6"/>')
-    parts.append(
-        f'<text class="yr" x="{ax + aside * 17}" y="{ay + 5}" '
-        f'text-anchor="{anchor_align}">{esc(HERO_ANCHOR_LABEL)}</text>'
+    pin(ax, ay, aside, HERO_ANCHOR_LABEL, "nd key doc", 3.6)
+
+    layers = (
+        ("blooms", blooms, False),
+        ("veil", veil, True),
+        ("facets", facets, True),
+        ("filaments", filaments, True),
+        ("ridges", ridges, False),
+        ("sparks", sparks, False),
+        ("labels", labels, False),
     )
-
-    # Generation spine nodes with year labels.
-    for idx, (x, y, side) in enumerate(HERO_SPINE):
-        year = years[idx] if idx < len(years) else None
-        node_class = "nd approx" if year and year[1] else "nd"
-        parts.append(f'<circle class="{node_class}" cx="{x}" cy="{y}" r="4.5"/>')
-        if year:
-            label = f"ок. {year[0]}" if year[1] else year[0]
-            align = "start" if side > 0 else "end"
-            parts.append(
-                f'<text class="yr" x="{x + side * 17}" y="{y + 5}" '
-                f'text-anchor="{align}">{esc(label)}</text>'
-            )
-
+    body = ""
+    for name, items, masked in layers:
+        mask_attr = ' mask="url(#lat-mask)"' if masked else ""
+        body += f'<g class="{name}"{mask_attr}>' + "".join(items) + "</g>"
     return (
         f'<svg class="lattice" viewBox="0 0 {HERO_VIEW_W} {HERO_VIEW_H}" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{esc(caption)}">'
-        + "".join(parts)
+        + _hero_defs()
+        + body
         + "</svg>"
     )
 
@@ -1027,11 +1279,11 @@ def render_hero_section(
     export_date: str,
     father_line: list[Person],
 ) -> str:
-    """Near-black hero kept to the mock's composition: title over a thin lilac
-    hairline, the subtitle line, a text-link CTA and the dense luminous
-    lattice — nothing else. Provenance (export date), the factual two-lines
-    sentence, key figures and the privacy line follow in a light facts strip
-    below the first viewport; the lattice caption lives in its aria-label."""
+    """Black hero kept to the mock's composition: title over a thin lilac
+    hairline, the two-line subtitle, a text-link CTA and the luminous crystal —
+    nothing else. Provenance (export date), the factual sentence, key figures
+    and the privacy line follow in a light facts strip below the first
+    viewport; the crystal's caption lives in its aria-label."""
     years = hero_graph_years(father_line)
     caption = hero_graph_caption(hero, years)
     graph_svg = render_hero_graph(years, caption)
