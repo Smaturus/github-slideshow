@@ -72,14 +72,13 @@ body.over-hero .navbtn.active{background:rgba(167,157,200,.18);color:#CFC8E4}
 .page{display:none}
 .page.visible{display:block}
 
-/* HERO — почти чёрное поле: заголовок над тонкой сиреневой линейкой,
-   строка-подзаголовок, текстовая CTA и плотная светящаяся решётка справа */
-.hero{position:relative;background:linear-gradient(168deg,var(--hero-bg) 0%,var(--hero-bg-2) 56%,var(--hero-bg-3) 100%);color:var(--hero-ink);margin-top:calc(var(--navh) * -1);padding:calc(var(--navh) + 64px) 0 150px;min-height:min(96vh,1000px);min-height:min(96svh,1000px);display:flex;align-items:center}
-.hero .wrap{width:100%}
-.hero-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:64px;align-items:center}
-.hero .label{color:var(--hero-lilac)}
-.hero .label::before{background:var(--hero-lilac)}
-.hero h1{font-size:clamp(48px,6vw,86px);line-height:1.05;color:var(--hero-ink);margin:28px 0 0;letter-spacing:-.015em}
+/* HERO — почти чёрное поле, состав строго по макету: заголовок над тонкой
+   сиреневой линейкой, строка-подзаголовок, текстовая CTA и плотная
+   светящаяся решётка, занимающая правую половину экрана */
+.hero{position:relative;background:linear-gradient(168deg,var(--hero-bg) 0%,var(--hero-bg-2) 56%,var(--hero-bg-3) 100%);color:var(--hero-ink);margin-top:calc(var(--navh) * -1);padding:calc(var(--navh) + 56px) 0 140px;min-height:min(96vh,1000px);min-height:min(96svh,1000px);display:flex;align-items:center}
+.hero .wrap{width:100%;max-width:1260px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:56px;align-items:center}
+.hero h1{font-size:clamp(48px,6vw,86px);line-height:1.05;color:var(--hero-ink);margin:0;letter-spacing:-.015em}
 /* Тонкая сиреневая линейка под заголовком — как в утверждённом макете */
 .hero h1::after{content:"";display:block;width:86px;height:1px;background:var(--hero-lilac);opacity:.6;margin-top:30px}
 .hero .sub{font-size:clamp(19px,1.7vw,22px);line-height:1.55;font-weight:400;letter-spacing:.012em;color:var(--hero-ink-2);max-width:520px;margin:26px 0 44px}
@@ -92,30 +91,33 @@ body.over-hero .navbtn.active{background:rgba(167,157,200,.18);color:#CFC8E4}
 /* Мягкий переход из чёрного в фарфор — без резкой смены фона */
 .hero-fade{position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(180deg,rgba(239,241,244,0) 0%,rgba(239,241,244,.55) 62%,var(--porcelain) 100%);pointer-events:none}
 
-/* Кристаллическая решётка: плотная сетка фасетов в трёх ярусах яркости,
-   светящийся «хребет» отцовской линии с годами, мягкие пятна света */
-.hero-graph{position:relative;justify-self:end;width:100%;max-width:620px;margin:0}
+/* Кристаллическая решётка: сотни фасетов в трёх ярусах яркости — дальний
+   ярус почти атмосфера, ближний — «электрическая» сирень; светящийся
+   «хребет» отцовской линии с годами и мягкие пятна света за кластерами */
+.hero-graph{position:relative;justify-self:end;width:100%;max-width:680px;margin:0}
 .hero-graph .lattice{display:block;width:100%;height:auto}
-.hero-graph figcaption{margin-top:14px;font-size:13.5px;color:var(--hero-ink-2);font-variant-numeric:tabular-nums}
 .lattice .halo{fill:url(#lat-halo)}
-.lattice .eg{fill:none;stroke-width:1}
-.lattice .e1{stroke:rgba(191,181,226,.50)}
-.lattice .e2{stroke:rgba(191,181,226,.28)}
-.lattice .e3{stroke:rgba(206,212,232,.13)}
-.lattice .em{stroke:var(--hero-lilac);stroke-width:1.7}
-.lattice .spine-glow{fill:none;stroke:rgba(175,164,212,.55);stroke-width:3.6}
-.lattice .nd{fill:#D3CAF0;filter:drop-shadow(0 0 6px rgba(185,173,226,.85))}
-.lattice .nd.approx{fill:var(--hero-bg-2);stroke:#C6BCE8;stroke-width:1.5}
-.lattice .nd.doc{fill:var(--hero-bg-2);stroke:rgba(198,188,232,.8);stroke-width:1.3;stroke-dasharray:2.6 2.2;filter:drop-shadow(0 0 5px rgba(185,173,226,.5))}
+.lattice .eg{fill:none}
+.lattice .e1{stroke:rgba(199,189,236,.55);stroke-width:1}
+.lattice .e2{stroke:rgba(193,184,230,.30);stroke-width:.9}
+.lattice .e3{stroke:rgba(206,212,235,.11);stroke-width:.8}
+.lattice .em{stroke:#BEB2E6;stroke-width:1.8}
+.lattice .spine-glow{fill:none;stroke:rgba(190,178,228,.7);stroke-width:2.8}
+.lattice .spine-glow-wide{fill:none;stroke:rgba(172,160,214,.45);stroke-width:8}
+.lattice .nd{fill:#D8CFF4;filter:drop-shadow(0 0 7px rgba(193,182,234,.95))}
+.lattice .nd.approx{fill:var(--hero-bg-2);stroke:#CBC1EC;stroke-width:1.5}
+.lattice .nd.doc{fill:var(--hero-bg-2);stroke:rgba(203,193,236,.85);stroke-width:1.3;stroke-dasharray:2.6 2.2;filter:drop-shadow(0 0 5px rgba(185,173,226,.55))}
 .lattice .nd.sat{filter:none}
-.lattice .sat.s1{fill:rgba(213,207,236,.62)}
-.lattice .sat.s2{fill:rgba(213,207,236,.38)}
-.lattice .sat.s3{fill:rgba(216,222,240,.20)}
-.lattice .nd.hot{fill:#E2DAF8;filter:drop-shadow(0 0 9px rgba(199,188,238,.95))}
+.lattice .sat.s1{fill:rgba(216,210,240,.65)}
+.lattice .sat.s2{fill:rgba(214,208,238,.40)}
+.lattice .sat.s3{fill:rgba(216,222,240,.18)}
+.lattice .nd.hot{fill:#E8E1FB;filter:drop-shadow(0 0 11px rgba(205,194,243,1))}
 .lattice .yr{fill:var(--hero-ink);font-family:var(--sans);font-size:15px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 
-/* Полоса фактов сразу под героем: две линии рода, цифры и строка о приватности */
+/* Полоса фактов сразу под героем: происхождение данных, две линии рода,
+   цифры и строка о приватности */
 .facts{background:var(--porcelain);border-bottom:1px solid var(--line-soft);padding:52px 0 46px}
+.facts .label{margin-bottom:18px}
 .facts-lead{font-size:19px;line-height:1.6;color:var(--ink-2);max-width:720px;margin-bottom:38px}
 .facts-lead b{color:var(--ink)}
 .facts-note{margin-top:32px;padding-top:20px;border-top:1px solid var(--line);font-size:15px;color:var(--ink-3);max-width:640px}
@@ -231,14 +233,12 @@ footer b{color:var(--hero-ink)}
   .hero-copy>*{opacity:0;transform:translateY(14px);animation:rise .7s cubic-bezier(.2,.6,.2,1) forwards}
   .hero-copy>*:nth-child(2){animation-delay:.08s}
   .hero-copy>*:nth-child(3){animation-delay:.16s}
-  .hero-copy>*:nth-child(4){animation-delay:.24s}
   .lattice .eg{stroke-dasharray:1;stroke-dashoffset:1;animation:edge-draw 1.3s cubic-bezier(.55,0,.2,1) forwards .45s}
   .lattice .em{animation-delay:.2s;animation-duration:1.5s}
-  .lattice .halo,.lattice .spine-glow{opacity:0;animation:soft-in 1.6s ease-out forwards .9s}
+  .lattice .halo,.lattice .spine-glow,.lattice .spine-glow-wide{opacity:0;animation:soft-in 1.6s ease-out forwards .9s}
   .lattice .nd{opacity:0;animation:soft-in .7s ease-out forwards 1.1s}
   .lattice .nd.hot{animation:soft-in .7s ease-out forwards 1.1s,hot-pulse 6s ease-in-out 2.4s infinite}
   .lattice .yr{opacity:0;animation:soft-in .8s ease-out forwards 1.4s}
-  .hero-graph figcaption{opacity:0;animation:soft-in .8s ease-out forwards 1.6s}
 }
 @keyframes rise{to{opacity:1;transform:none}}
 @keyframes edge-draw{to{stroke-dashoffset:0}}
@@ -264,7 +264,6 @@ footer b{color:var(--hero-ink)}
   .navbtn{padding:8px 12px;font-size:14px}
   .hero{padding:calc(var(--navh) + 44px) 0 140px;overflow:visible}
   .hero-grid{padding-bottom:8px}
-  .hero h1{margin:20px 0 0}
   .hero h1::after{width:64px;margin-top:22px}
   .hero .sub{font-size:18px;margin:20px 0 34px}
   .hero-grid{gap:44px}

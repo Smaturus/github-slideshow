@@ -52,17 +52,17 @@ HERO_VIEW_H = 680
 # Fixed seed keeps the generated mesh identical between builds.
 HERO_SEED = 1834
 HERO_SPINE = [
-    (508, 92, 1),
-    (378, 158, -1),
-    (498, 258, 1),
-    (342, 330, -1),
-    (452, 442, 1),
-    (296, 508, -1),
-    (396, 602, 1),
+    (520, 88, 1),
+    (360, 152, -1),
+    (508, 252, 1),
+    (322, 326, -1),
+    (462, 438, 1),
+    (276, 506, -1),
+    (400, 604, 1),
 ]
 # Documentary anchor: the 1834 revision list of Mokroe (not a birth year) sits
 # next to the oldest cluster of the line — Fedot, Grigory and Ilya.
-HERO_ANCHOR = (168, 464, -1)
+HERO_ANCHOR = (152, 462, -1)
 HERO_ANCHOR_LABEL = "1834"
 
 
@@ -730,37 +730,37 @@ def hero_graph_caption(hero: dict[str, Any], years: list[tuple[str, bool]]) -> s
 
 
 def _hero_mesh_points(rng: random.Random) -> list[tuple[float, float]]:
-    """Satellite nodes for the crystalline mesh: clusters around each spine
-    node plus a sparse background field, with a minimum node distance so the
-    mesh reads as a lattice rather than noise."""
+    """Satellite nodes for the crystalline mesh: dense clusters around each
+    spine node plus an atmospheric background field, with a minimum node
+    distance so the mesh reads as a lattice rather than noise."""
     fixed = [(x, y) for x, y, _ in HERO_SPINE] + [(HERO_ANCHOR[0], HERO_ANCHOR[1])]
     pts: list[tuple[float, float]] = []
 
     def fits(x: float, y: float, min_d: float) -> bool:
-        if not (22 <= x <= HERO_VIEW_W - 22 and 34 <= y <= HERO_VIEW_H - 30):
+        if not (22 <= x <= HERO_VIEW_W - 22 and 32 <= y <= HERO_VIEW_H - 28):
             return False
         return all((px - x) ** 2 + (py - y) ** 2 >= min_d**2 for px, py in fixed + pts)
 
     for sx, sy in fixed:
         placed, attempts = 0, 0
-        while placed < 9 and attempts < 90:
+        while placed < 17 and attempts < 240:
             attempts += 1
             angle = rng.uniform(0, math.tau)
-            radius = rng.uniform(28, 126)
+            radius = rng.uniform(24, 150)
             x = sx + math.cos(angle) * radius
             y = sy + math.sin(angle) * radius * 0.92
-            if fits(x, y, 27):
+            if fits(x, y, 20):
                 pts.append((round(x, 1), round(y, 1)))
                 placed += 1
 
     # Background field stays close to the main mass so the mesh reads as one
     # crystalline body without stray islands near the headline.
     placed, attempts = 0, 0
-    while placed < 22 and attempts < 500:
+    while placed < 62 and attempts < 1600:
         attempts += 1
-        x = rng.uniform(104, HERO_VIEW_W - 26)
-        y = rng.uniform(40, HERO_VIEW_H - 36)
-        if fits(x, y, 32):
+        x = rng.uniform(72, HERO_VIEW_W - 24)
+        y = rng.uniform(36, HERO_VIEW_H - 32)
+        if fits(x, y, 23):
             pts.append((round(x, 1), round(y, 1)))
             placed += 1
     return pts
@@ -769,10 +769,11 @@ def _hero_mesh_points(rng: random.Random) -> list[tuple[float, float]]:
 def _hero_mesh_edges(
     points: list[tuple[float, float]],
     k: int = 3,
-    max_len: float = 175.0,
+    max_len: float = 150.0,
 ) -> list[tuple[int, int]]:
     """Facet edges: each node links to its k nearest neighbours within
-    max_len, deduplicated, spine-path pairs excluded (drawn separately)."""
+    max_len (every third node gets one extra link so facets intersect),
+    deduplicated, spine-path pairs excluded (drawn separately)."""
     spine_pairs = {(a, a + 1) for a in range(len(HERO_SPINE) - 1)}
     edges: set[tuple[int, int]] = set()
     for i, (x, y) in enumerate(points):
@@ -781,9 +782,10 @@ def _hero_mesh_edges(
             for j, (px, py) in enumerate(points)
             if j != i
         )
+        limit = k + 1 if i % 3 == 0 else k
         linked = 0
         for dist, j in neighbours:
-            if dist > max_len or linked == k:
+            if dist > max_len or linked == limit:
                 break
             pair = (min(i, j), max(i, j))
             if pair not in spine_pairs:
@@ -810,36 +812,40 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
     parts: list[str] = [
         '<defs>'
         '<radialGradient id="lat-halo">'
-        '<stop offset="0" stop-color="#A79DC8" stop-opacity=".16"/>'
+        '<stop offset="0" stop-color="#A79DC8" stop-opacity=".20"/>'
         '<stop offset="1" stop-color="#A79DC8" stop-opacity="0"/>'
         '</radialGradient>'
         '<filter id="lat-glow" x="-60%" y="-60%" width="220%" height="220%">'
-        '<feGaussianBlur stdDeviation="6"/>'
+        '<feGaussianBlur stdDeviation="4.5"/>'
+        '</filter>'
+        '<filter id="lat-glow-wide" x="-80%" y="-80%" width="260%" height="260%">'
+        '<feGaussianBlur stdDeviation="12"/>'
         '</filter>'
         '</defs>'
     ]
 
-    # Soft luminosity hotspots behind the densest clusters.
-    halo_r = {0: 84, 2: 76, 4: 90, 6: 68}
+    # Soft luminosity hotspots behind the clusters of the mesh.
+    halo_r = {0: 92, 1: 62, 2: 80, 3: 66, 4: 96, 5: 64, 6: 74}
     for idx, radius in halo_r.items():
         x, y, _ = HERO_SPINE[idx]
         parts.append(f'<circle class="halo" cx="{x}" cy="{y}" r="{radius}"/>')
-    parts.append(f'<circle class="halo" cx="{anchor_pt[0]}" cy="{anchor_pt[1]}" r="62"/>')
+    parts.append(f'<circle class="halo" cx="{anchor_pt[0]}" cy="{anchor_pt[1]}" r="66"/>')
 
     # Mesh facets, faintest tier first so brighter edges layer on top.
     tiers = {"e3": [], "e2": [], "e1": []}
     for i, j in edges:
         (x1, y1), (x2, y2) = points[i], points[j]
         dist = _spine_distance((x1 + x2) / 2, (y1 + y2) / 2)
-        tier = "e1" if dist < 80 else "e2" if dist < 150 else "e3"
+        tier = "e1" if dist < 78 else "e2" if dist < 148 else "e3"
         tiers[tier].append(
             f'<line class="eg {tier}" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" pathLength="1"/>'
         )
     for tier in ("e3", "e2", "e1"):
         parts.extend(tiers[tier])
 
-    # Luminous spine: blurred underlay plus crisp edges through generations.
+    # Luminous spine: wide nebula underlay, tight glow, then crisp edges.
     spine_d = "M" + " L".join(f"{x} {y}" for x, y in spine_pts)
+    parts.append(f'<path class="spine-glow-wide" d="{spine_d}" filter="url(#lat-glow-wide)"/>')
     parts.append(f'<path class="spine-glow" d="{spine_d}" filter="url(#lat-glow)"/>')
     for a in range(len(spine_pts) - 1):
         (x1, y1), (x2, y2) = spine_pts[a], spine_pts[a + 1]
@@ -851,14 +857,14 @@ def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
     for idx, (x, y) in enumerate(satellites):
         dist = _spine_distance(x, y)
         tier = "s1" if dist < 85 else "s2" if dist < 160 else "s3"
-        radius = 2.4 if tier == "s1" else 1.9 if tier == "s2" else 1.5
+        radius = 2.2 if tier == "s1" else 1.7 if tier == "s2" else 1.3
         sat_render.append((x, y, tier, radius))
         if tier == "s1":
             bright.append(idx)
-    hot = set(rng.sample(bright, min(6, len(bright))))
+    hot = set(rng.sample(bright, min(10, len(bright))))
     for idx, (x, y, tier, radius) in enumerate(sat_render):
         if idx in hot:
-            parts.append(f'<circle class="nd hot" cx="{x}" cy="{y}" r="2.8"/>')
+            parts.append(f'<circle class="nd hot" cx="{x}" cy="{y}" r="2.9"/>')
         else:
             parts.append(f'<circle class="nd sat {tier}" cx="{x}" cy="{y}" r="{radius}"/>')
 
@@ -933,24 +939,23 @@ def render_hero_section(
     export_date: str,
     father_line: list[Person],
 ) -> str:
-    """Near-black hero: title over a thin lilac hairline, the mock's subtitle,
-    a text-link CTA and the dense crystalline lattice of the paternal line.
-    The factual two-lines sentence, key figures and the privacy line follow in
-    a light facts strip below the first viewport."""
+    """Near-black hero kept to the mock's composition: title over a thin lilac
+    hairline, the subtitle line, a text-link CTA and the dense luminous
+    lattice — nothing else. Provenance (export date), the factual two-lines
+    sentence, key figures and the privacy line follow in a light facts strip
+    below the first viewport; the lattice caption lives in its aria-label."""
     years = hero_graph_years(father_line)
     caption = hero_graph_caption(hero, years)
     graph_svg = render_hero_graph(years, caption)
     return f"""<header class="hero">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <div class="label">{esc(hero["label_prefix"])} {esc(export_date)}</div>
       <h1>{esc(hero["h1"])}</h1>
       <p class="sub">{rich(hero["sub"])}</p>
       <button class="cta-link" onclick="showPage(2)">{esc(hero["cta"])}</button>
     </div>
     <figure class="hero-graph">
       {graph_svg}
-      <figcaption>{esc(caption)}</figcaption>
     </figure>
   </div>
   <div class="hero-fade" aria-hidden="true"></div>
@@ -958,6 +963,7 @@ def render_hero_section(
 
 <div class="facts">
   <div class="wrap">
+    <div class="label">{esc(hero["label_prefix"])} {esc(export_date)} · {esc(caption)}</div>
     <p class="facts-lead">{rich(hero["facts_line"])}</p>
     <div class="stats">
       <div><b>{documented_gens}</b><span>{plural(documented_gens, ('поколение', 'поколения', 'поколений'))} {esc(hero["stats"]["generations"])}</span></div>
