@@ -22,6 +22,7 @@ from parse_gedcom import (
     parse_gedcom,
     plural,
     stats,
+    year_only,
 )
 
 ROOT_ID = "@I1@"
@@ -40,6 +41,35 @@ COL_W = 242
 ROW_H = 92
 TOP_PAD = 56
 LEFT_PAD = 18
+
+# Crystalline hero lattice: a fixed geometric layout whose spine nodes are
+# labelled with real birth years of the paternal line. The third value of a
+# spine point picks the label side (1 = right of the node, -1 = left).
+HERO_SPINE = [
+    (452, 78, 1),
+    (336, 150, -1),
+    (452, 250, 1),
+    (306, 318, -1),
+    (398, 436, 1),
+    (252, 492, -1),
+    (350, 584, 1),
+]
+HERO_SATELLITES = [
+    (196, 96),
+    (532, 170),
+    (150, 246),
+    (532, 366),
+    (128, 408),
+    (508, 520),
+    (196, 574),
+]
+# Facet edges as index pairs: spine nodes are 0–6, satellites 7–13.
+HERO_FACETS = [
+    (0, 7), (0, 8), (1, 7), (1, 9), (7, 9),
+    (2, 8), (2, 10), (8, 10), (3, 9), (3, 11), (9, 11),
+    (4, 10), (4, 12), (10, 12), (5, 11), (5, 13), (11, 13),
+    (6, 12), (6, 13),
+]
 
 
 def load_content() -> dict[str, Any]:
@@ -120,12 +150,10 @@ def validate_content(content: Any) -> None:
         [
             "label_prefix",
             "h1",
-            "sub_lead",
-            "sub_scope_prefix",
-            "sub_stats_people_suffix",
-            "sub_stats_gens_suffix",
-            "privacy_note",
+            "sub",
             "cta",
+            "privacy_note",
+            "graph_caption_prefix",
             "stats",
         ],
     )
@@ -678,12 +706,63 @@ def build_goals_html(
     return goals_html
 
 
-def hero_stats_text(hero: dict[str, Any], st: dict[str, Any], documented_gens: int) -> str:
-    """Compose hero subtitle statistics line."""
+def hero_graph_years(line: list[Person]) -> list[tuple[str, bool]]:
+    """Birth years of the paternal line for the hero lattice: (year, is_approximate).
+
+    Only year precision is used, so the entry for a living root person stays
+    within the privacy policy (same as public_years).
+    """
+    years: list[tuple[str, bool]] = []
+    for person in line:
+        year = year_only(person.birt)
+        if not year:
+            continue
+        years.append((year, person.has_derived_date))
+        if len(years) == len(HERO_SPINE):
+            break
+    return years
+
+
+def hero_graph_caption(hero: dict[str, Any], years: list[tuple[str, bool]]) -> str:
+    """Factual caption under the lattice: 'Отцовская линия…, ок. 1768 — 1971'."""
+    prefix = hero["graph_caption_prefix"]
+    if not years:
+        return prefix
+    newest = years[0][0]
+    oldest_year, oldest_approx = years[-1]
+    oldest = f"ок. {oldest_year}" if oldest_approx else oldest_year
+    return f"{prefix} {oldest} — {newest}"
+
+
+def render_hero_graph(years: list[tuple[str, bool]], caption: str) -> str:
+    """Crystalline lattice SVG: facet edges, a labelled spine and satellite nodes."""
+    points = [(x, y) for x, y, _ in HERO_SPINE] + HERO_SATELLITES
+    parts: list[str] = []
+
+    for i, j in HERO_FACETS:
+        (x1, y1), (x2, y2) = points[i], points[j]
+        parts.append(f'<line class="eg" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" pathLength="1"/>')
+    for a in range(len(HERO_SPINE) - 1):
+        (x1, y1), (x2, y2) = points[a], points[a + 1]
+        parts.append(f'<line class="eg em" x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" pathLength="1"/>')
+
+    for idx, (x, y, side) in enumerate(HERO_SPINE):
+        year = years[idx] if idx < len(years) else None
+        node_class = "nd approx" if year and year[1] else "nd"
+        parts.append(f'<circle class="{node_class}" cx="{x}" cy="{y}" r="4.5"/>')
+        if year:
+            label = f"ок. {year[0]}" if year[1] else year[0]
+            anchor = "start" if side > 0 else "end"
+            parts.append(
+                f'<text class="yr" x="{x + side * 16}" y="{y + 4}" '
+                f'text-anchor="{anchor}">{esc(label)}</text>'
+            )
+    for x, y in HERO_SATELLITES:
+        parts.append(f'<circle class="nd sat" cx="{x}" cy="{y}" r="2.2"/>')
+
     return (
-        f'{counted(st["people"], ("человек", "человека", "человек"))} {esc(hero["sub_stats_people_suffix"])} '
-        f'{counted(st["surnames"], ("фамилия", "фамилии", "фамилий"))}, '
-        f'{counted(documented_gens, ("поколение", "поколения", "поколений"))} {esc(hero["sub_stats_gens_suffix"])}'
+        f'<svg class="lattice" viewBox="0 0 560 620" xmlns="http://www.w3.org/2000/svg" '
+        f'role="img" aria-label="{esc(caption)}">' + "".join(parts) + "</svg>"
     )
 
 
@@ -726,22 +805,39 @@ def render_hero_section(
     st: dict[str, Any],
     documented_gens: int,
     export_date: str,
+    father_line: list[Person],
 ) -> str:
-    """Landing hero with stats and privacy note."""
-    hero_stats = hero_stats_text(hero, st, documented_gens)
-    return f"""<div class="hero">
+    """Dark graphite hero: title, one supporting line, CTA and the crystalline
+    lattice of the paternal line. Key figures and the privacy line follow in a
+    light facts strip below the first viewport."""
+    years = hero_graph_years(father_line)
+    caption = hero_graph_caption(hero, years)
+    graph_svg = render_hero_graph(years, caption)
+    return f"""<header class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <div class="label">{esc(hero["label_prefix"])} {esc(export_date)}</div>
+      <h1>{esc(hero["h1"])}</h1>
+      <p class="sub">{rich(hero["sub"])}</p>
+      <button class="btn" onclick="showPage(2)">{esc(hero["cta"])}</button>
+    </div>
+    <figure class="hero-graph">
+      {graph_svg}
+      <figcaption>{esc(caption)}</figcaption>
+    </figure>
+  </div>
+  <div class="hero-fade" aria-hidden="true"></div>
+</header>
+
+<div class="facts">
   <div class="wrap">
-    <div class="label">{esc(hero["label_prefix"])} {esc(export_date)}</div>
-    <h1>{esc(hero["h1"])}</h1>
-    <p class="sub">{rich(hero["sub_lead"])} {esc(hero["sub_scope_prefix"])} {hero_stats}</p>
-    <p class="sub note">{rich(hero["privacy_note"])}</p>
-    <button class="btn" onclick="showPage(2)">{esc(hero["cta"])}</button>
     <div class="stats">
-      <div><b>{documented_gens}</b><span>{plural(documented_gens, ('ПОКОЛЕНИЕ', 'ПОКОЛЕНИЯ', 'ПОКОЛЕНИЙ'))} {esc(hero["stats"]["generations"])}</span></div>
-      <div><b>{st['people']}</b><span>{plural(st['people'], ('ЧЕЛОВЕК', 'ЧЕЛОВЕКА', 'ЧЕЛОВЕК'))} {esc(hero["stats"]["people"])}</span></div>
+      <div><b>{documented_gens}</b><span>{plural(documented_gens, ('поколение', 'поколения', 'поколений'))} {esc(hero["stats"]["generations"])}</span></div>
+      <div><b>{st['people']}</b><span>{plural(st['people'], ('человек', 'человека', 'человек'))} {esc(hero["stats"]["people"])}</span></div>
       <div><b>{st['surnames']}</b><span>{esc(hero["stats"]["surnames"])}</span></div>
       <div><b>{st['earliest_year'] or esc(hero["stats"]["earliest_fallback"])}</b><span>{esc(hero["stats"]["earliest_birth"])}</span></div>
     </div>
+    <p class="facts-note">{rich(hero["privacy_note"])}</p>
   </div>
 </div>
 
@@ -970,7 +1066,7 @@ def render_chronicle_page(
     timeline_html = build_timeline_html(content["timeline"], timeline_people, family.root.id)
     return (
         '<div class="page visible" id="page1">\n'
-        + render_hero_section(content["hero"], st, documented_gens, export_date)
+        + render_hero_section(content["hero"], st, documented_gens, export_date, timeline_people)
         + render_lines_section(
             content["lines"],
             father_line,
@@ -1005,7 +1101,7 @@ def render_tree_page(
     """Second page: SVG pedigree chart and search goals."""
     goals_text = tree["goals"]
     return f"""<div class="page" id="page2">
-<section class="hero hero-compact">
+<section class="pagehead">
   <div class="wrap">
     <div class="label">{esc(tree["label"])}</div>
     <h1>{esc(tree["h1"])}</h1>
@@ -1054,7 +1150,8 @@ def render_footer(footer: dict[str, Any], export_date: str) -> str:
 
 
 def render_page_script() -> str:
-    """Client-side tab switcher between chronicle and tree pages."""
+    """Client-side tab switcher plus nav context: the sticky nav turns graphite
+    while the dark hero is in view and porcelain everywhere else."""
     return """<script>
 function showPage(n) {
   document.getElementById('page1').classList.toggle('visible', n===1);
@@ -1062,6 +1159,12 @@ function showPage(n) {
   document.getElementById('nb1').classList.toggle('active', n===1);
   document.getElementById('nb2').classList.toggle('active', n===2);
   window.scrollTo({top:0});
+}
+var heroEl = document.querySelector('#page1 .hero');
+if (heroEl && 'IntersectionObserver' in window) {
+  new IntersectionObserver(function(entries) {
+    document.body.classList.toggle('over-hero', entries[0].isIntersecting);
+  }, {rootMargin: '-72px 0px 0px 0px'}).observe(heroEl);
 }
 </script>
 </body>
