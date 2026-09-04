@@ -1,0 +1,383 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian,english]{babel}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\DeclareMathOperator{\E}{\mathbb{E}}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\newcommand{\phiz}{\varphi_0}
+\newcommand{\nuz}{\nu_0}
+
+\title{%
+  Стационарные флуктуации угловой скорости\\[0.3em]
+  в задаче Суслова при $I_{13}>0$:\\
+  усреднение и поправки Чепмена--Энскога
+}
+
+\author{%
+  С.\,А.~Матюхин\\[0.2em]
+  \small Independent Researcher\\
+  \small ORCID: 0009-0005-1704-8371
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Рассмотрена задача Суслова с произведением инерции $I_{13}=D>0$ при вязком трении
+$\Phi=\phiz I$ и аддитивном гауссовом шуме в редуцированных уравнениях для $\bm{\omega}$
+с $\sigma=\sqrt{\nuz/A}$. В отличие от случая главной оси связи~\cite{MatSin1996}, больцмановская
+плотность на плоскости связи при $D>0$ не стационарна. Точно найдены одномерный закон
+кинетической энергии (диффузия Феллера), маргинальный закон Рэлея для $r=|\bm{\omega}|$
+и моментное тождество, связывающее $\E[\omega_2]$ с $\E[\omega_1^2]$.
+
+Ведущее двумерное приближение стационарной плотности получено методом усреднения по быстрому
+углу $\theta$ (Хасминский): $p^{(0)}=p_r(r)\,p(\theta|r)$ с точным Рэлеем по $r$ и законом
+фон~Мизеса по $\theta$; при $D=0$ оно совпадает с гауссовым стационаром. Систематические
+поправки порядков $\varepsilon^2$ и $\varepsilon^4$ выписаны разложением Чепмена--Энскога;
+поправка $\varepsilon^2$ устраняет главный член невязки больцмановского анзаца $(D/A)\omega_2$.
+Линеаризация $p^{(0)}$ при $\lambda(r)\gg1$ даёт профиль $f^*$ (условный гауссов слой по
+$\omega_1$ и Рэлей по $\omega_2>0$). Сходимость плотностей в строгом смысле не утверждается;
+приведены моменты приближений, сравнение с нормальной аппроксимацией и численная иллюстрация.
+
+\medskip
+\noindent\textbf{Ключевые слова:} задача Суслова, неголономная связь, уравнение Фоккера--Планка,
+стационарные флуктуации, усреднение, слабый шум.
+\end{abstract}
+
+\section{Введение}
+
+Задача Суслова~\cite{Suslov1946,BorisovMamaev2001} --- образец линейной неголономной связи.
+Общие основы неголономной механики изложены в~\cite{Bloch2003}. В настоящей работе поле
+тяжести не рассматривается: свободное тело с неподвижной точкой и связью $\omega_3=0$.
+Уравнения для ориентации $\bm{\gamma}$ не входят в статистику угловой скорости.
+
+При $I_{13}\neq0$ ось связи не главная~\cite{Kozlov1985,Fedorov2009}. В~\cite{MatSin1996}
+при $I_{11}=I_{22}$ и $\Phi=\phiz I$, $\nu=\nuz I$ получен точный гауссов стационар.
+Настоящая работа разбирает тот же тип трения и шума при $I_{13}=D>0$. Гауссов анзац
+\begin{equation}\label{eq:gauss}
+  f_B(\omega_1,\omega_2)\propto\exp\bigl(-\alpha(\omega_1^2+\omega_2^2)\bigr),
+  \qquad \alpha=\frac{A\phiz}{\nuz},
+\end{equation}
+даёт невязку уравнения Фоккера--Планка (ФПК), пропорциональную $\omega_2$.
+
+\textbf{Основные результаты.}
+\begin{enumerate}
+  \item $T$ --- точная диффузия Феллера; $D$ из закона $T$ выпадает. Маргиналь $r$ --- Рэлей~\eqref{eq:rayleigh}.
+  \item Тождество $\E[\omega_2]=(D/(A\phiz))\E[\omega_1^2]$~\eqref{eq:moment}.
+  \item Ведущее $p^{(0)}$ --- усреднение по $\theta$ (§4); при $D=0$ --- гаусс~\eqref{eq:gauss}.
+  \item Поправки CE: $p_1=-(D/A)p_0/r$, $p_2$ с $\cos\theta$ (§5).
+  \item $f^*$ --- линеаризация $p^{(0)}$ при $\lambda\gg1$; численно $p^{(0)}$ ближе к МК, чем $f^*$.
+\end{enumerate}
+
+\section{Модель}
+
+\subsection{Тензор инерции и связь}
+
+Принимаем $I_{11}=I_{22}=A$, $I_{12}=0$; поворотом $I_{23}=0$, $I_{13}=D>0$:
+\begin{equation}\label{eq:tensor}
+  I=\begin{pmatrix} A&0&D\\ 0&A&0\\ D&0&C \end{pmatrix},
+  \quad A>0,\; C>0,\; AC>D^2.
+\end{equation}
+Связь Суслова: $\omega_3=0$. На связи $T=\frac{A}{2}(\omega_1^2+\omega_2^2)$.
+
+\subsection{Диссипация, шум и уравнения}
+
+$\Phi=\phiz I$, $\nuz>0$. Редуцированные уравнения (приложение~A):
+\begin{align}
+  \dd\omega_1 &= \Bigl(-\frac{D}{A}\omega_1\omega_2-\phiz\omega_1\Bigr)\dd t+\sigma\dd W_1,
+  \label{eq:sde}\\
+  \dd\omega_2 &= \Bigl(\frac{D}{A}\omega_1^2-\phiz\omega_2\Bigr)\dd t+\sigma\dd W_2,
+  \notag
+\end{align}
+$\sigma=\sqrt{\nuz/A}$. Стационарное ФПК $\mathcal{L}^*f=0$,
+\begin{equation}\label{eq:fpk}
+  a_1=-\frac{D}{A}\omega_1\omega_2-\phiz\omega_1,\quad
+  a_2=\frac{D}{A}\omega_1^2-\phiz\omega_2,\quad
+  \mathcal{L}^*f=-\pd{(\omega_1)}{}(a_1 f)-\pd{(\omega_2)}{}(a_2 f)+\frac{\sigma^2}{2}\Delta f.
+\end{equation}
+Режим слабого шума и трения:
+\begin{equation}\label{eq:scaling}
+  \phiz=\varepsilon^2\hat\phiz,\quad \nuz=\varepsilon^2\hat\nuz,\quad
+  \sigma=\varepsilon\sqrt{\hat\nuz/A},\quad \varepsilon\in(0,1].
+\end{equation}
+Обозначим $\kappa=D/A$.
+
+\subsection{Полярные координаты}
+
+$\omega_1=r\sin\theta$, $\omega_2=r\cos\theta$, $r\ge0$.
+
+\begin{lemma}\label{lem:polar}
+Процесс \eqref{eq:sde} эквивалентен
+\begin{align}
+  \dd r &= \Bigl(-\phiz r+\frac{\sigma^2}{2r}\Bigr)\dd t+\sigma\dd W_r,
+  \label{eq:polar-r}\\
+  \dd\theta &= -\frac{D}{A}\,r\sin\theta\,\dd t+\frac{\sigma}{r}\dd W_\theta,
+  \label{eq:polar-theta}
+\end{align}
+где $W_r$, $W_\theta$ независимы. Процесс $r$ (и $T$) марковский и \emph{не содержит} $D$.
+\end{lemma}
+
+\section{Точные результаты}
+
+\subsection{Энергия}
+
+\begin{proposition}\label{prop:feller}
+$T=Ar^2/2$ удовлетворяет
+\begin{equation}\label{eq:feller}
+  \dd T=(-2\phiz T+\nuz)\dd t+\sqrt{2\nuz T}\,\dd W.
+\end{equation}
+$D$ в \eqref{eq:feller} отсутствует.
+\end{proposition}
+
+\begin{proposition}\label{prop:energy}
+Стационарная плотность $T$ на $(0,\infty)$:
+\begin{equation}\label{eq:fT}
+  f_T(T)=\frac{2\phiz}{\nuz}\exp\Bigl(-\frac{2\phiz}{\nuz}T\Bigr),
+  \quad \E[T]=\frac{\nuz}{2\phiz}.
+\end{equation}
+Эквивалентно,
+\begin{equation}\label{eq:rayleigh}
+  p_r(r)=2\alpha r\,\exp(-\alpha r^2),\quad \alpha=\frac{A\phiz}{\nuz},\quad r>0.
+\end{equation}
+\end{proposition}
+
+\subsection{Моментное тождество и невязка больцмана}
+
+\begin{proposition}\label{prop:moment}
+Для стационарной меры $\mu$ процесса \eqref{eq:sde}:
+\begin{equation}\label{eq:moment}
+  \E_\mu[\omega_2]=\frac{D}{A\phiz}\,\E_\mu[\omega_1^2].
+\end{equation}
+\end{proposition}
+
+\begin{proposition}\label{prop:defect}
+Для $f_B=c\exp(-\alpha(\omega_1^2+\omega_2^2))$:
+\begin{equation}\label{eq:defect}
+  \frac{\mathcal{L}^*f_B}{f_B}=\frac{D}{A}\,\omega_2.
+\end{equation}
+\end{proposition}
+
+\subsection{Существование стационара}
+
+\begin{proposition}\label{prop:exist}
+При $\phiz,\nuz>0$ существует единственная стационарная плотность $f\in C^\infty(\mathbb{R}^2)$,
+$f>0$. Существование следует из~\cite{Khasminskii2012} ($V=1+T$).
+\end{proposition}
+
+\section{Ведущее приближение: усреднение по быстрому углу}
+
+\subsection{Разделение масштабов}
+
+Из \eqref{eq:polar-theta}--\eqref{eq:scaling}: $\theta$ --- быстрая ($O(1)$), $r$ --- медленная ($O(1/\varepsilon^2)$).
+
+\subsection{Утверждение об усреднении}
+
+По методу усреднения~\cite{Khasminskii2012,FreidlinWentzell} на ведущем порядке
+\begin{equation}\label{eq:leading}
+  f^\varepsilon(r,\theta)=p^{(0)}(r,\theta)+O(\varepsilon^2),\quad r>0,
+\end{equation}
+\begin{equation}\label{eq:p0}
+  p^{(0)}(r,\theta)=\frac{p_r(r)\,p(\theta|r)}{r}
+  =\frac{\alpha}{\pi}\,\exp(-\alpha r^2)\,
+  \frac{\exp(\lambda(r)\cos\theta)}{I_0(\lambda(r))},
+\end{equation}
+\begin{equation}\label{eq:vonmises}
+  p(\theta|r)=\frac{\exp(\lambda(r)\cos\theta)}{2\pi I_0(\lambda(r))},\quad
+  \lambda(r)=\frac{2Dr^3}{A\sigma^2}=\frac{2Dr^3}{\nuz}.
+\end{equation}
+При $D=0$: $p^{(0)}=(\alpha/\pi)\exp(-\alpha(\omega_1^2+\omega_2^2))$ --- гаусс~\eqref{eq:gauss}.
+В декартовых координатах ($s=\omega_1^2+\omega_2^2$):
+\begin{equation}\label{eq:p0cart}
+  p^{(0)}(\omega_1,\omega_2)=\frac{\alpha}{\pi}\,
+  \exp(-\alpha s)\,
+  \frac{\exp(2D\omega_2 s/\nuz)}{I_0(2Ds^{3/2}/\nuz)},\quad s>0.
+\end{equation}
+
+\begin{remark}\label{rem:defect}
+Невязка $\mathcal{L}^*p^{(0)}$ при $D>0$ связана с $\lambda'(r)$. Это остаток $O(\varepsilon^2)$;
+поправка $p_1$ (§5) снимает главный член~\eqref{eq:defect}.
+\end{remark}
+
+\section{Поправки Чепмена--Энскога}
+
+\begin{equation}\label{eq:ce-expansion}
+  f^\varepsilon=p^{(0)}+\varepsilon^2 p_1+\varepsilon^4 p_2+O(\varepsilon^6).
+\end{equation}
+Сходимость ряда \emph{не утверждается}.
+
+\subsection{Поправка $O(\varepsilon^2)$}
+
+$p_0=(\alpha/\pi)\exp(-\alpha r^2)$. Источник $G(p_0)=\nabla\cdot(\bm b_D p_0)=\kappa\omega_2 p_0$ совпадает с~\eqref{eq:defect}.
+\begin{equation}\label{eq:p1}
+  p_1(\omega_1,\omega_2)=-\kappa\,\frac{p_0}{r}
+  =-\frac{D}{A}\,\frac{\alpha}{\pi}\,
+  \frac{\exp(-\alpha(\omega_1^2+\omega_2^2))}{\sqrt{\omega_1^2+\omega_2^2}}.
+\end{equation}
+
+\subsection{Поправка $O(\varepsilon^4)$}
+
+\begin{equation}\label{eq:p2}
+  p_2(r,\theta)=p_0(r)\Bigl[\frac{\kappa^2}{2r^2}+\frac{\kappa^2\cos\theta}{2\hat\phiz}\Bigr],
+  \quad \hat\phiz=\phiz/\varepsilon^2=\mathrm{const}.
+\end{equation}
+
+\subsection{Единая формула}
+
+\begin{equation}\label{eq:unified}
+  f_{\mathrm{approx}}=p^{(0)}-\varepsilon^2\frac{D}{A}\,\frac{p_0}{r}
+  +\varepsilon^4 p_0\Bigl[\frac{(D/A)^2}{2r^2}+\frac{(D/A)^2\cos\theta}{2\hat\phiz}\Bigr].
+\end{equation}
+Опционально: $f^\varepsilon\approx f_{\mathrm{approx}}/Z(\varepsilon)$,
+$Z(\varepsilon)=1-\varepsilon^2\kappa\sqrt{\alpha\pi}+O(\varepsilon^4)$.
+
+\section{Линеаризация: профиль $f^*$}
+
+При $\lambda(r)\gg1$:
+\begin{equation}\label{eq:layer}
+  p(\theta|r)\approx\sqrt{\frac{\lambda}{2\pi}}\,\exp\Bigl(-\frac{\lambda\theta^2}{2}\Bigr),\quad
+  \omega_1|\,\omega_2\sim\mathcal{N}\Bigl(0,\frac{\nuz}{2D\omega_2}\Bigr),\;\omega_2>0.
+\end{equation}
+\begin{equation}\label{eq:fstar}
+  f^*(\omega_1,\omega_2)=\sqrt{\frac{D\omega_2}{\pi\nuz}}\,
+  \exp\Bigl(-\frac{D\omega_2}{\nuz}\omega_1^2\Bigr)\,
+  2\alpha\omega_2\,\exp(-\alpha\omega_2^2),\quad \omega_2>0.
+\end{equation}
+$f^*$ --- линеаризация $p^{(0)}$, не отдельный анзац. Тождество~\eqref{eq:moment} на $f^*$ выполняется точно.
+
+\section{Моменты и механический смысл}
+
+По построению $p^{(0)}$: $\E[T]=\nuz/(2\phiz)$, $\E[\omega_1]=0$.
+Для $f^*$: $\E[\omega_2]=\frac{1}{2}\sqrt{\pi\nuz/(A\phiz)}$,
+$\Var(\omega_1)=O(\varepsilon^2)$, $\Var(\omega_2)=O(1)$ в режиме~\eqref{eq:scaling}.
+
+Сдвиг $\E[\omega_2]>0$ возникает только при связи $\omega_3=0$ \emph{и} $D>0$~\cite{MatSin1996}.
+
+\section{Численная проверка}
+
+Эйлер--Маруяма: $A=1$, $D=0{,}5$, $\phiz=\nuz=0{,}02$ ($\varepsilon\approx0{,}14$),
+48 траекторий, $\Delta t=5\cdot10^{-4}$.
+
+\begin{table}[h]
+\centering
+\caption{Моменты при $\phiz=\nuz=0{,}02$}
+\begin{tabular}{lccc}
+\toprule
+ & $p^{(0)}$ & $f^*$ & МК \\
+\midrule
+$\E[T]$ & $1/2$ & $1/2$ & $0{,}50\pm0{,}02$ \\
+$\E[\omega_2]$ & $0{,}856$ & $0{,}886$ & $0{,}83\pm0{,}02$ \\
+$\Var(\omega_1)$ & $0{,}018$ & $0{,}035$ & $0{,}033\pm0{,}001$ \\
+$\Var(\omega_2)$ & $0{,}25$ & $0{,}215$ & $0{,}26\pm0{,}01$ \\
+$\Prob(\omega_2\le0)$ & $\ll1$ & $0$ & $0{,}049\pm0{,}004$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Полярные моменты (тот же прогон)}
+\begin{tabular}{lccc}
+\toprule
+ & $p^{(0)}$ & $f^*$ & МК \\
+\midrule
+$\E[r]$ & $0{,}886$ & $0{,}919$ & $0{,}88\pm0{,}02$ \\
+$\Var(\theta)$ & $0{,}30$ & $0{,}12$ & $0{,}39\pm0{,}03$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Заключение}
+
+Для задачи Суслова с $I_{13}=D>0$: точные законы $T$ и $r$; тождество~\eqref{eq:moment};
+ведущее $p^{(0)}$ (усреднение); поправки CE $p_1$, $p_2$; $f^*$ при $\lambda\gg1$.
+Сходимость $f^\varepsilon\to p^{(0)}+\varepsilon^2 p_1+\cdots$ в строгом смысле не утверждается.
+
+\appendix
+\section{Вывод редуцированных уравнений}
+
+$I\dot{\bm\omega}+\bm\omega\times(I\bm\omega)=\bm M+\Lambda\bm e_z+\bm\xi$.
+При $\omega_3=0$ первые две компоненты не содержат $\Lambda$ и $\xi_3$.
+Для $\sigma=\sqrt{\nuz/A}$: $\E[\xi_i(t)\xi_j(s)]=A\nuz\delta_{ij}\delta(t-s)$, $i,j=1,2$.
+
+\begin{thebibliography}{99}
+
+\bibitem{Suslov1946}
+Г.~К.~Суслов.
+\newblock Теоретическая механика.
+\newblock М.; Л.: Гостехиздат, 1946.
+
+\bibitem{BorisovMamaev2001}
+А.~В.~Борисов, И.~С.~Мамаев.
+\newblock Гамильтоновость и интегрируемость задачи Суслова.
+\newblock \emph{Регулярная и хаотическая динамика}, 2001, т.~6, №~3, с.~253--280.
+
+\bibitem{Bloch2003}
+A.~M.~Bloch.
+\newblock \emph{Nonholonomic Mechanics and Control}.
+\newblock Springer, 2003.
+
+\bibitem{Bizyaev2015}
+И.~А.~Бизяев, А.~В.~Борисов, А.~О.~Казаков.
+\newblock Regular and Chaotic Dynamics, 2015, vol.~20, p.~605--626.
+
+\bibitem{Kozlov1985}
+В.~В.~Козлов.
+\newblock Успехи механики, 1985, т.~8, №~3, с.~85--107.
+
+\bibitem{Fedorov2009}
+Y.~N.~Fedorov, A.~J.~Maciejewski, M.~Przybylska.
+\newblock Nonlinearity, 2009, vol.~22, p.~2231--2259.
+
+\bibitem{Moshchuk1990}
+Н.~К.~Мощук, И.~Н.~Синицын.
+\newblock ПММ, 1990, т.~54, вып.~2, с.~213--223.
+
+\bibitem{Moshchuk1991}
+N.~K.~Moshchuk, I.~N.~Sinitsyn.
+\newblock Q.~J.~Mech. Appl. Math., 1991, vol.~44, p.~571--579.
+
+\bibitem{MatSin1996}
+С.~А.~Матюхин, И.~Н.~Синицын.
+\newblock Изв. РАН. МТТ, 1996, №~5, с.~9--12.
+
+\bibitem{Pugachev1962}
+В.~С.~Пугачёв.
+\newblock Теория случайных функций и её применение к задачам автоматического управления.
+\newblock М.: Физматгиз, 1962.
+
+\bibitem{PugachevSinitsyn1990}
+В.~С.~Пугачёв, И.~Н.~Синицын.
+\newblock Стохастические дифференциальные системы.
+\newblock М.: Наука, 1990.
+
+\bibitem{Feller1951}
+W.~Feller.
+\newblock Ann. of Math., 1951, vol.~54, p.~173--182.
+
+\bibitem{Khasminskii2012}
+R.~Khasminskii.
+\newblock \emph{Stochastic Stability of Differential Equations}.
+\newblock Springer, 2012.
+
+\bibitem{FreidlinWentzell}
+M.~Freidlin, A.~Wentzell.
+\newblock \emph{Random Perturbations of Dynamical Systems}.
+\newblock Springer.
+
+\end{thebibliography}
+
+\end{document}
